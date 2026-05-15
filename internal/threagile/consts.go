@@ -46,6 +46,7 @@ const (
 
 	CreateCommand       = "create"
 	ExplainCommand      = "explain"
+	GenerateCICommand   = "generate-ci"
 	ListCommand         = "list"
 	PrintCommand        = "print"
 	QuitCommand         = "quit"

@@ -23,6 +23,7 @@ import (
 type Model struct { // TODO: Eventually remove this and directly use ParsedModelRoot? But then the error messages for model errors are not quite as good anymore...
 	ThreagileVersion                              string                    `yaml:"threagile_version,omitempty" json:"threagile_version,omitempty"`
 	Includes                                      []string                  `yaml:"includes,omitempty" json:"includes,omitempty"`
+	FeatureIncludes                               []string                  `yaml:"feature_includes,omitempty" json:"feature_includes,omitempty"`
 	Title                                         string                    `yaml:"title,omitempty" json:"title,omitempty"`
 	Author                                        Author                    `yaml:"author,omitempty" json:"author,omitempty"`
 	Contributors                                  []Author                  `yaml:"contributors,omitempty" json:"contributors,omitempty"`
@@ -85,6 +86,23 @@ func (model *Model) Load(inputFilename string) error {
 		}
 	}
 
+	baseDir := filepath.Dir(inputFilename)
+	for _, pattern := range model.FeatureIncludes {
+		matches, globErr := filepath.Glob(filepath.Join(baseDir, pattern))
+		if globErr != nil {
+			log.Fatalf("Invalid feature_includes pattern %q: %v", pattern, globErr)
+		}
+		if len(matches) == 0 {
+			log.Printf("WARNING: feature_includes pattern %q matched no files", pattern)
+		}
+		for _, match := range matches {
+			rel, _ := filepath.Rel(baseDir, match)
+			if mergeErr := model.Merge(baseDir, rel); mergeErr != nil {
+				log.Fatalf("Unable to merge feature include %q (from pattern %q): %v", match, pattern, mergeErr)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -114,6 +132,23 @@ func (model *Model) Merge(dir string, includeFilename string) error {
 				mergeError = model.Merge(filepath.Join(dir, filepath.Dir(includeFilename)), includeFile)
 				if mergeError != nil {
 					return fmt.Errorf("failed to merge model include %q: %w", includeFile, mergeError)
+				}
+			}
+
+		case strings.ToLower("feature_includes"):
+			includeBaseDir := filepath.Join(dir, filepath.Dir(includeFilename))
+			for _, pattern := range includedModel.FeatureIncludes {
+				absPattern := filepath.Join(includeBaseDir, pattern)
+				matches, globErr := filepath.Glob(absPattern)
+				if globErr != nil {
+					return fmt.Errorf("invalid feature_includes pattern %q: %w", pattern, globErr)
+				}
+				for _, match := range matches {
+					rel, _ := filepath.Rel(includeBaseDir, match)
+					mergeError = model.Merge(includeBaseDir, rel)
+					if mergeError != nil {
+						return fmt.Errorf("failed to merge feature include %q (from pattern %q): %w", match, pattern, mergeError)
+					}
 				}
 			}
 

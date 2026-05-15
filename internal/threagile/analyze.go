@@ -2,6 +2,7 @@ package threagile
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/threagile/threagile/pkg/model"
@@ -19,12 +20,38 @@ func (what *Threagile) initAnalyze() *Threagile {
 			commands := what.readCommands()
 			progressReporter := DefaultProgressReporter{Verbose: what.config.GetVerbose()}
 
-			r, err := model.ReadAndAnalyzeModel(what.config, risks.GetBuiltInRiskRules(), progressReporter)
+			builtinRules := risks.GetBuiltInRiskRules()
+
+			if dir := what.config.GetRulesDir(); dir != "" {
+				extRules, extErr := risks.LoadExternalScriptRiskRules(dir)
+				if extErr != nil {
+					progressReporter.Warnf("Failed to load external rules from %q: %v", dir, extErr)
+				} else {
+					builtinRules = builtinRules.Merge(extRules)
+				}
+			}
+
+			if rawURL := what.config.GetRulesURL(); rawURL != "" {
+				cacheDir := filepath.Join(what.config.GetAppFolder(), "rules-cache")
+				localDir, fetchErr := risks.FetchAndCacheRules(rawURL, cacheDir)
+				if fetchErr != nil {
+					progressReporter.Warnf("Failed to fetch rules from %q: %v", rawURL, fetchErr)
+				} else {
+					remoteRules, remoteErr := risks.LoadExternalScriptRiskRules(localDir)
+					if remoteErr != nil {
+						progressReporter.Warnf("Failed to load cached remote rules from %q: %v", localDir, remoteErr)
+					} else {
+						builtinRules = builtinRules.Merge(remoteRules)
+					}
+				}
+			}
+
+			r, err := model.ReadAndAnalyzeModel(what.config, builtinRules, progressReporter)
 			if err != nil {
 				return fmt.Errorf("failed to read and analyze model: %w", err)
 			}
 
-			err = report.Generate(what.config, r, commands, risks.GetBuiltInRiskRules(), progressReporter)
+			err = report.Generate(what.config, r, commands, builtinRules, progressReporter)
 			if err != nil {
 				return fmt.Errorf("failed to generate reports: %w", err)
 			}

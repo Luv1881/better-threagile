@@ -3,10 +3,11 @@ package risks
 import (
 	"embed"
 	"fmt"
-	"github.com/threagile/threagile/pkg/risks/script"
 	"io/fs"
+	"os"
 
 	"github.com/threagile/threagile/pkg/risks/builtin"
+	"github.com/threagile/threagile/pkg/risks/script"
 	"github.com/threagile/threagile/pkg/types"
 )
 
@@ -112,4 +113,40 @@ func (what RiskRules) LoadRiskRules() (RiskRules, error) {
 	}
 
 	return what, nil
+}
+
+// LoadExternalScriptRiskRules loads YAML-based risk rules from a local directory.
+// Rules in the directory shadow built-in rules with the same ID.
+func LoadExternalScriptRiskRules(dir string) (types.RiskRules, error) {
+	fileSystem := os.DirFS(dir)
+	rules := make(types.RiskRules)
+
+	walkError := fs.WalkDir(fileSystem, ".", func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if entry.IsDir() || (len(path) < 5 || path[len(path)-5:] != ".yaml") {
+			return nil
+		}
+
+		newRule := new(script.RiskRule).Init()
+		loadError := newRule.Load(fileSystem, path, entry)
+		if loadError != nil {
+			return fmt.Errorf("failed to load external rule %q: %w", path, loadError)
+		}
+
+		if newRule.Category().ID == "" {
+			return nil
+		}
+
+		rules[newRule.Category().ID] = newRule
+		return nil
+	})
+
+	if walkError != nil {
+		return nil, walkError
+	}
+
+	return rules, nil
 }

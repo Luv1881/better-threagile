@@ -40,6 +40,11 @@ const (
 	customRiskRulesPluginFlagName = "custom-risk-rules-plugin"
 	skipRiskRulesFlagName         = "skip-risk-rules"
 	executeModelMacroFlagName     = "execute-model-macro"
+	rulesDirFlagName              = "rules-dir"
+	rulesURLFlagName              = "rules-url"
+
+	ciOutputFlagName   = "ci-output"
+	ciScheduleFlagName = "ci-schedule"
 
 	serverModeFlagName               = "server-mode"
 	serverPortFlagName               = "server-port"

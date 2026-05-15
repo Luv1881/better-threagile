@@ -125,6 +125,9 @@ func (what *Threagile) initFlags() *Threagile {
 	// AttractivenessValue not available as flags
 	// ReportConfigurationValue not available as flags
 
+	what.rootCmd.PersistentFlags().StringVar(&what.flags.RulesDirValue, rulesDirFlagName, what.config.GetRulesDir(), "directory of extra YAML risk rule files to load at runtime")
+	what.rootCmd.PersistentFlags().StringVar(&what.flags.RulesURLValue, rulesURLFlagName, what.config.GetRulesURL(), "URL to fetch extra YAML risk rule files (.tar.gz or .zip) with 24h caching")
+
 	return what
 }
 

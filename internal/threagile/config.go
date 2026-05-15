@@ -52,6 +52,8 @@ type Config struct {
 	RiskRulePluginsValue   []string        `json:"RiskRulePlugins,omitempty" yaml:"RiskRulePlugins"`
 	SkipRiskRulesValue     []string        `json:"SkipRiskRules,omitempty" yaml:"SkipRiskRules"`
 	ExecuteModelMacroValue string          `json:"ExecuteModelMacro,omitempty" yaml:"ExecuteModelMacro"`
+	RulesDirValue          string          `json:"RulesDir,omitempty" yaml:"RulesDir"`
+	RulesURLValue          string          `json:"RulesURL,omitempty" yaml:"RulesURL"`
 	RiskExcelValue         RiskExcelConfig `json:"RiskExcel" yaml:"RiskExcel"`
 
 	ServerModeValue               bool `json:"ServerMode,omitempty" yaml:"ServerMode"`
@@ -109,6 +111,8 @@ type ConfigGetter interface {
 	GetRiskRulePlugins() []string
 	GetSkipRiskRules() []string
 	GetExecuteModelMacro() string
+	GetRulesDir() string
+	GetRulesURL() string
 	GetRiskExcelConfigHideColumns() []string
 	GetRiskExcelConfigSortByColumns() []string
 	GetRiskExcelConfigWidthOfColumns() map[string]float64
@@ -431,6 +435,12 @@ func (c *Config) Merge(config Config, values map[string]any) {
 		case strings.ToLower("ExecuteModelMacro"):
 			c.ExecuteModelMacroValue = config.ExecuteModelMacroValue
 
+		case strings.ToLower("RulesDir"):
+			c.RulesDirValue = config.RulesDirValue
+
+		case strings.ToLower("RulesURL"):
+			c.RulesURLValue = config.RulesURLValue
+
 		case strings.ToLower("RiskExcel"):
 			configMap, mapOk := values[key].(map[string]any)
 			if !mapOk {
@@ -729,6 +739,22 @@ func (c *Config) SetSkipRiskRules(skipRiskRules []string) {
 
 func (c *Config) GetExecuteModelMacro() string {
 	return c.ExecuteModelMacroValue
+}
+
+func (c *Config) GetRulesDir() string {
+	return c.RulesDirValue
+}
+
+func (c *Config) SetRulesDir(dir string) {
+	c.RulesDirValue = dir
+}
+
+func (c *Config) GetRulesURL() string {
+	return c.RulesURLValue
+}
+
+func (c *Config) SetRulesURL(url string) {
+	c.RulesURLValue = url
 }
 
 func (c *Config) GetRiskExcelConfigHideColumns() []string {

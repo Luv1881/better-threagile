@@ -1,0 +1,78 @@
+id: internet-reachable-datastore
+title: Stage VII - Internet-Reachable Datastore With No Mitigation
+function: architecture
+stride: information-disclosure
+pasta: stage-risk-analysis
+cwe: 284
+description: >
+  PASTA Stage VII evaluates residual risk. A datastore (database, cache, object store)
+  that can be reached from the internet, either directly or via a chain of HTTP/plain
+  protocol hops, with no network segmentation represents one of the highest-risk
+  configurations in any architecture. Attackers who compromise any internet-facing
+  component gain a direct path to sensitive stored data.
+impact: >
+  Mass data exfiltration of all stored records, ransomware encryption of datastores,
+  complete loss of data integrity, and regulatory breach notification obligations.
+asvs: V1 - Architecture, Design and Threat Modeling Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Database_Security_Cheat_Sheet.html
+action: Segment datastores from internet-facing components
+mitigation: >
+  Place all datastores in a dedicated backend trust boundary with no direct internet
+  access. Ensure all communication links between internet-facing assets and datastores
+  go through the application tier (no direct datastore exposure). Apply defense-in-depth
+  with connection-level authentication and network ACLs.
+check: Are all datastores behind at least one application-tier trust boundary?
+detection_logic: >
+  In-scope datastore technical assets that have any incoming communication link
+  originating from an internet-exposed technical asset.
+risk_assessment: >
+  Critical when the datastore holds strictly-confidential data; high otherwise.
+false_positives: >
+  Edge datastores intentionally internet-accessible (e.g., CDN origin) with documented
+  justification, no sensitive data, and comprehensive access controls.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Internet-Reachable Datastore</b>: <b>{tech_asset.title}</b> can be reached from an internet-exposed asset with no application-tier separation"
+    severity: "calculate_severity(likely, critical)"
+    exploitation_likelihood: likely
+    exploitation_impact: critical
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - equal:
+                first: "{tech_asset.type}"
+                second: datastore
+          then:
+            - assign:
+                reachable_from_internet: false
+            - loop:
+                in: "{$model.communication_links}"
+                item: link
+                do:
+                  - if:
+                      and:
+                        - equal:
+                            first: "{link.target_id}"
+                            second: "{tech_asset.id}"
+                        - true: "{$model.technical_assets.{link.source_id}.internet}"
+                      then:
+                        - assign:
+                            reachable_from_internet: true
+            - if:
+                true: "{reachable_from_internet}"
+                then:
+                  return: true

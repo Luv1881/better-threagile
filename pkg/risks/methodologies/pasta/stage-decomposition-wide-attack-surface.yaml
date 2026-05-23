@@ -1,0 +1,90 @@
+id: wide-attack-surface-exposure
+title: Stage III - Asset Exposed With Internet-Level Attack Surface
+function: architecture
+stride: elevation-of-privilege
+pasta: stage-decomposition
+cwe: 284
+description: >
+  PASTA Stage III decomposes the application to understand what is exposed and to whom.
+  A technical asset with attack_surface_exposure set to internet and type process or
+  datastore that also lacks explicit authentication on its ingress links represents
+  an unnecessarily wide attack surface that should be minimised per least-privilege
+  network access principles.
+impact: >
+  Any internet-reachable host can attempt to interact with the asset directly,
+  bypassing intended authentication and access control layers.
+asvs: V1 - Architecture, Design and Threat Modeling Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
+action: Reduce attack surface exposure to the minimum required
+mitigation: >
+  Move assets with attack_surface_exposure of internet behind a reverse proxy, API
+  gateway, or WAF. Restrict network access via firewall rules or security groups.
+  Change attack_surface_exposure to internal_lan or partner_vpn as appropriate after
+  hardening.
+check: >
+  Are process and datastore assets with internet-level exposure protected by an
+  authentication gateway?
+detection_logic: >
+  In-scope process or datastore technical assets where attack_surface_exposure is
+  internet and at least one incoming link has authentication of none.
+risk_assessment: >
+  High for datastores; elevated for processes. Critical when combined with sensitive
+  data.
+false_positives: >
+  Public-facing APIs intended to be unauthenticated (e.g., public search, CDN assets)
+  where the exposure is intentional and confidentiality is public.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Wide Attack Surface</b>: <b>{tech_asset.title}</b> is exposed at internet level and receives unauthenticated connections"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - equal:
+                first: "{tech_asset.attack_surface_exposure}"
+                second: internet
+            - or:
+              - equal:
+                  first: "{tech_asset.type}"
+                  second: process
+              - equal:
+                  first: "{tech_asset.type}"
+                  second: datastore
+          then:
+            - assign:
+                has_unauth_ingress: false
+            - loop:
+                in: "{$model.communication_links}"
+                item: link
+                do:
+                  - if:
+                      and:
+                        - equal:
+                            first: "{link.target_id}"
+                            second: "{tech_asset.id}"
+                        - equal:
+                            first: "{link.authentication}"
+                            second: none
+                      then:
+                        - assign:
+                            has_unauth_ingress: true
+            - if:
+                true: "{has_unauth_ingress}"
+                then:
+                  return: true

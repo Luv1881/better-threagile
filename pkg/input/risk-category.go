@@ -17,6 +17,9 @@ type RiskCategory struct {
 	Check                      string                    `yaml:"check,omitempty" json:"check,omitempty"`
 	Function                   string                    `yaml:"function,omitempty" json:"function,omitempty"`
 	STRIDE                     string                    `yaml:"stride,omitempty" json:"stride,omitempty"`
+	LINDDUN                    string                    `yaml:"linddun,omitempty" json:"linddun,omitempty"`
+	PASTA                      string                    `yaml:"pasta,omitempty" json:"pasta,omitempty"`
+	VAST                       string                    `yaml:"vast,omitempty" json:"vast,omitempty"`
 	DetectionLogic             string                    `yaml:"detection_logic,omitempty" json:"detection_logic,omitempty"`
 	RiskAssessment             string                    `yaml:"risk_assessment,omitempty" json:"risk_assessment,omitempty"`
 	FalsePositives             string                    `yaml:"false_positives,omitempty" json:"false_positives,omitempty"`
@@ -77,6 +80,21 @@ func (what *RiskCategory) Merge(other RiskCategory) error {
 	what.STRIDE, mergeError = new(Strings).MergeSingleton(what.STRIDE, other.STRIDE)
 	if mergeError != nil {
 		return fmt.Errorf("failed to merge STRIDE: %w", mergeError)
+	}
+
+	what.LINDDUN, mergeError = new(Strings).MergeSingleton(what.LINDDUN, other.LINDDUN)
+	if mergeError != nil {
+		return fmt.Errorf("failed to merge LINDDUN: %w", mergeError)
+	}
+
+	what.PASTA, mergeError = new(Strings).MergeSingleton(what.PASTA, other.PASTA)
+	if mergeError != nil {
+		return fmt.Errorf("failed to merge PASTA: %w", mergeError)
+	}
+
+	what.VAST, mergeError = new(Strings).MergeSingleton(what.VAST, other.VAST)
+	if mergeError != nil {
+		return fmt.Errorf("failed to merge VAST: %w", mergeError)
 	}
 
 	what.DetectionLogic, mergeError = new(Strings).MergeSingleton(what.DetectionLogic, other.DetectionLogic)

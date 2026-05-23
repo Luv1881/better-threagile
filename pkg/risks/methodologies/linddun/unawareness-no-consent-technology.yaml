@@ -1,0 +1,72 @@
+id: unawareness-no-consent-technology
+title: Unawareness - PII Processed Without a Consent Management Component
+function: architecture
+stride: information-disclosure
+linddun: unawareness
+cwe: 359
+description: >
+  When a system processes personal data from end users but has no consent-management
+  technology in the architecture, data subjects are likely unaware of the nature and
+  extent of processing. GDPR Articles 13 and 14 require transparent disclosure.
+impact: >
+  Data subjects cannot exercise GDPR rights. Regulatory investigation risk and
+  class-action exposure in jurisdictions with private right of action.
+asvs: V8 - Data Protection Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+action: Add a consent management technical asset to the architecture
+mitigation: >
+  Introduce a consent-manager (tagged with technology consent-manager) to capture,
+  store, and honour data-subject preferences.
+check: Does the architecture include a consent management component when processing PII?
+detection_logic: >
+  In-scope user-facing technical assets that process PII data assets where no other
+  asset carries a consent_collector technology attribute.
+risk_assessment: Medium baseline; elevated for consumer-facing applications or special-category data.
+false_positives: B2B systems under a contract lawful basis where consent is not applicable.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Unawareness</b>: <b>{tech_asset.title}</b> processes end-user PII but no consent management component is present"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: improbable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.used_as_client_by_human}"
+            - any:
+                in: "{tech_asset.data_assets_processed}"
+                item: data_id
+                true: "{$model.data_assets.{data_id}.has_pii}"
+          then:
+            - assign:
+                has_consent_manager: false
+            - loop:
+                in: "{$model.technical_assets}"
+                item: other_asset
+                do:
+                  - if:
+                      any:
+                        in: "{other_asset.technologies}"
+                        or:
+                          - true: "{.attributes.consent_collector}"
+                      then:
+                        - assign:
+                            has_consent_manager: true
+            - if:
+                false: "{has_consent_manager}"
+                then:
+                  return: true

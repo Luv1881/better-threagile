@@ -1,0 +1,66 @@
+id: non-compliance-no-lawful-basis
+title: Non-Compliance - Personal Data Processed Without Lawful Basis
+function: operations
+stride: information-disclosure
+linddun: non-compliance
+cwe: 359
+description:
+  GDPR Article 6 requires that every processing activity for personal data has a declared
+  lawful basis. A technical asset that processes PII data assets with no declared
+  lawful_basis on any of those data assets is non-compliant.
+impact:
+  Regulatory fines under GDPR Articles 83(4) and 83(5), reputational damage, and
+  mandatory reporting obligations to supervisory authorities.
+asvs:
+  V8 - Data Protection Verification Requirements
+cheat_sheet:
+  https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
+action:
+  Privacy by Design - Lawful Basis Documentation
+mitigation:
+  Declare a valid GDPR lawful_basis (consent, contract, legal_obligation, vital_interest,
+  public_task, or legitimate_interest) on every data asset that contains personal data.
+  Document the processing activity in a Record of Processing Activities (RoPA).
+check:
+  Does every data asset with pii_categories have an explicit lawful_basis declared?
+detection_logic:
+  In-scope technical assets that process at least one data asset with declared pii_categories
+  but empty lawful_basis.
+risk_assessment:
+  Processing without a lawful basis is a strict GDPR violation; severity scales with
+  the sensitivity of the personal data.
+false_positives:
+  Fully anonymised data assets with no individual linkability require no lawful basis.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Non-Compliance</b>: <b>{tech_asset.title}</b> processes PII without a declared lawful basis"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.data_assets_processed}"
+                item: data_id
+                and:
+                  - true: "{$model.data_assets.{data_id}.has_pii}"
+                  - equal:
+                      first: "{$model.data_assets.{data_id}.lawful_basis}"
+                      second: ""
+          then:
+            return: true

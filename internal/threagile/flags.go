@@ -42,6 +42,8 @@ const (
 	executeModelMacroFlagName     = "execute-model-macro"
 	rulesDirFlagName              = "rules-dir"
 	rulesURLFlagName              = "rules-url"
+	methodologyFlagName           = "methodology"
+	rulePackFlagName              = "rule-pack"
 
 	ciOutputFlagName   = "ci-output"
 	ciScheduleFlagName = "ci-schedule"

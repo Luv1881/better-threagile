@@ -54,6 +54,9 @@ type Model struct {
 	DirectContainingTrustBoundaryMappedByTechnicalAssetId map[string]*TrustBoundary       `json:"direct_containing_trust_boundary_mapped_by_technical_asset_id,omitempty" yaml:"direct_containing_trust_boundary_mapped_by_technical_asset_id,omitempty"`
 	GeneratedRisksByCategory                              map[string][]*Risk              `json:"generated_risks_by_category,omitempty" yaml:"generated_risks_by_category,omitempty"`
 	GeneratedRisksBySyntheticId                           map[string]*Risk                `json:"generated_risks_by_synthetic_id,omitempty" yaml:"generated_risks_by_synthetic_id,omitempty"`
+	ActiveMethodology                                     Methodology                     `json:"active_methodology,omitempty" yaml:"active_methodology,omitempty"`
+	ThreatScenarios                                       map[string]*ThreatScenario      `json:"threat_scenarios,omitempty" yaml:"threat_scenarios,omitempty"`
+	BusinessProcesses                                     map[string]*BusinessProcess     `json:"business_processes,omitempty" yaml:"business_processes,omitempty"`
 }
 
 type ProgressReporter interface {

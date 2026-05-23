@@ -64,6 +64,8 @@ type serverConfigReader interface {
 	GetIgnoreOrphanedRiskTracking() bool
 	GetThreagileVersion() string
 	GetProgressReporter() types.ProgressReporter
+	GetMethodology() string
+	GetRulePack() string
 }
 
 type server struct {

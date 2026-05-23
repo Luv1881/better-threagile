@@ -22,6 +22,13 @@ type CommunicationLink struct {
 	DataAssetsReceived     []string       `json:"data_assets_received,omitempty" yaml:"data_assets_received,omitempty"`
 	DiagramTweakWeight     int            `json:"diagram_tweak_weight,omitempty" yaml:"diagram_tweak_weight,omitempty"`
 	DiagramTweakConstraint bool           `json:"diagram_tweak_constraint,omitempty" yaml:"diagram_tweak_constraint,omitempty"`
+	// LINDDUN privacy fields (all optional)
+	CrossBorder bool `json:"cross_border,omitempty" yaml:"cross_border,omitempty"`
+	AuditLogged bool `json:"audit_logged,omitempty" yaml:"audit_logged,omitempty"`
+	// PASTA attack-surface fields (all optional)
+	RateLimited bool   `json:"rate_limited,omitempty" yaml:"rate_limited,omitempty"`
+	TlsVersion  string `json:"tls_version,omitempty" yaml:"tls_version,omitempty"`
+	ApiStyle    string `json:"api_style,omitempty" yaml:"api_style,omitempty"`
 }
 
 func (what CommunicationLink) IsTaggedWithAny(tags ...string) bool {

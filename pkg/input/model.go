@@ -41,8 +41,10 @@ type Model struct { // TODO: Eventually remove this and directly use ParsedModel
 	TechnicalAssets                               map[string]TechnicalAsset `yaml:"technical_assets,omitempty" json:"technical_assets,omitempty"`
 	TrustBoundaries                               map[string]TrustBoundary  `yaml:"trust_boundaries,omitempty" json:"trust_boundaries,omitempty"`
 	SharedRuntimes                                map[string]SharedRuntime  `yaml:"shared_runtimes,omitempty" json:"shared_runtimes,omitempty"`
-	CustomRiskCategories                          RiskCategories            `yaml:"custom_risk_categories,omitempty" json:"custom_risk_categories,omitempty"`
-	RiskTracking                                  map[string]RiskTracking   `yaml:"risk_tracking,omitempty" json:"risk_tracking,omitempty"`
+	CustomRiskCategories                          RiskCategories              `yaml:"custom_risk_categories,omitempty" json:"custom_risk_categories,omitempty"`
+	RiskTracking                                  map[string]RiskTracking     `yaml:"risk_tracking,omitempty" json:"risk_tracking,omitempty"`
+	ThreatScenarios                               map[string]ThreatScenario   `yaml:"threat_scenarios,omitempty" json:"threat_scenarios,omitempty"`
+	BusinessProcesses                             map[string]BusinessProcess  `yaml:"business_processes,omitempty" json:"business_processes,omitempty"`
 	DiagramTweakNodesep                           int                       `yaml:"diagram_tweak_nodesep,omitempty" json:"diagram_tweak_nodesep,omitempty"`
 	DiagramTweakRanksep                           int                       `yaml:"diagram_tweak_ranksep,omitempty" json:"diagram_tweak_ranksep,omitempty"`
 	DiagramTweakEdgeLayout                        string                    `yaml:"diagram_tweak_edge_layout,omitempty" json:"diagram_tweak_edge_layout,omitempty"`
@@ -63,6 +65,8 @@ func (model *Model) Defaults() *Model {
 		SharedRuntimes:       make(map[string]SharedRuntime),
 		CustomRiskCategories: make(RiskCategories, 0),
 		RiskTracking:         make(map[string]RiskTracking),
+		ThreatScenarios:      make(map[string]ThreatScenario),
+		BusinessProcesses:    make(map[string]BusinessProcess),
 	}
 
 	return model
@@ -264,6 +268,18 @@ func (model *Model) Merge(dir string, includeFilename string) error {
 			model.RiskTracking, mergeError = new(RiskTracking).MergeMap(model.RiskTracking, includedModel.RiskTracking)
 			if mergeError != nil {
 				return fmt.Errorf("failed to merge risk tracking: %w", mergeError)
+			}
+
+		case strings.ToLower("threat_scenarios"):
+			model.ThreatScenarios, mergeError = new(ThreatScenario).MergeMap(model.ThreatScenarios, includedModel.ThreatScenarios)
+			if mergeError != nil {
+				return fmt.Errorf("failed to merge threat scenarios: %w", mergeError)
+			}
+
+		case strings.ToLower("business_processes"):
+			model.BusinessProcesses, mergeError = new(BusinessProcess).MergeMap(model.BusinessProcesses, includedModel.BusinessProcesses)
+			if mergeError != nil {
+				return fmt.Errorf("failed to merge business processes: %w", mergeError)
 			}
 
 		case "diagram_tweak_nodesep":

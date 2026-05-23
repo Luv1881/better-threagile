@@ -1,0 +1,78 @@
+id: data-disclosure-pii-unencrypted-link
+title: Data Disclosure - Personal Data Transmitted Over Unencrypted Channel
+function: architecture
+stride: information-disclosure
+linddun: data-disclosure
+cwe: 319
+description:
+  Personal data in transit over unencrypted communication links (plain HTTP, unencrypted
+  database protocols, etc.) is exposed to network observers. GDPR Article 32 requires
+  appropriate technical measures including encryption in transit.
+impact:
+  Exposure of personal data to eavesdroppers, potential data breach notification
+  obligations under GDPR Article 33, and significant regulatory penalties.
+asvs:
+  V9 - Communication Verification Requirements
+cheat_sheet:
+  https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html
+action:
+  Encrypt all links that carry personal data
+mitigation:
+  Migrate all communication links carrying PII data assets to TLS 1.2+ (preferably TLS 1.3).
+  For internal service-to-service communication, consider mutual TLS (mTLS).
+check:
+  Are all communication links carrying personal data encrypted in transit?
+detection_logic:
+  In-scope technical assets that process PII data assets AND have at least one outgoing
+  communication link that is unencrypted and not VPN-protected.
+risk_assessment:
+  High — unencrypted PII in transit is a direct GDPR Article 32 violation.
+false_positives:
+  Assets that process PII but only transmit it over TLS or VPN links; verify with
+  the full threat model review.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Data Disclosure</b>: <b>{tech_asset.title}</b> processes personal data and has an unencrypted outgoing communication link"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.data_assets_processed}"
+                item: data_id
+                true: "{$model.data_assets.{data_id}.has_pii}"
+            - any:
+                in: "{tech_asset.communication_links}"
+                item: link
+                and:
+                  - equal:
+                      first: "{link.vpn}"
+                      second: false
+                  - or:
+                    - equal:
+                        first: "{link.protocol}"
+                        second: http
+                    - equal:
+                        first: "{link.protocol}"
+                        second: sql-access-protocol
+                    - equal:
+                        first: "{link.protocol}"
+                        second: nosql-access-protocol
+          then:
+            return: true

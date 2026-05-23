@@ -1,0 +1,63 @@
+id: application-process-without-business-owner
+title: Application Threat - Business Process Has No Declared Owner
+function: operations
+stride: repudiation
+vast: application-threat
+cwe: 693
+description: >
+  VAST Application Threat Model: a business process with no declared owner. Without
+  an owner, no one is accountable for accepting residual risk, driving mitigations,
+  reviewing access controls, or approving changes that affect the process. This is
+  a governance gap that enables threats to go unaddressed through organisational
+  inertia.
+impact: >
+  Unmitigated risks accumulate because there is no accountable person to review,
+  accept, or remediate them. Security incidents have no escalation path, and changes
+  impacting the process are made without security review.
+asvs: V1 - Architecture, Design and Threat Modeling Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html
+action: Assign a business owner to every business process
+mitigation: >
+  Declare an owner field on every business process. The owner should be a named
+  individual or team (not a generic role) who is accountable for risk acceptance
+  and mitigation decisions for that process.
+check: Does every business process have an owner declared?
+detection_logic: >
+  Business processes in the model that have no owner declared.
+risk_assessment: >
+  Low technical severity but indicates a governance gap that elevates residual risk
+  across the board.
+false_positives: >
+  Processes where ownership is tracked in an external CMDB or risk register with
+  a documented reference; provide the reference in the description field.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>No Process Owner</b>: <b>{tech_asset.title}</b> supports a business process with no declared owner"
+    severity: "calculate_severity(unlikely, low)"
+    exploitation_likelihood: unlikely
+    exploitation_impact: low
+    data_breach_probability: improbable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.supported_business_processes}"
+                item: bp_id
+                equal:
+                  first: "{$model.business_processes.{bp_id}.owner}"
+                  second: ""
+          then:
+            return: true

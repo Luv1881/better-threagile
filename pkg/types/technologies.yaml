@@ -499,3 +499,36 @@ web-service-soap:
         processing_end_user_requests: true
         propagate_identity_to_outgoing_targets: true
         web_service: true
+consent-manager:
+    aliases:
+        - consent-platform
+        - cookie-consent
+    description: A consent management platform collecting and recording user consent
+    attributes:
+        consent-manager: true
+        consent_collector: true
+        pii_processor: true
+        backend_related: true
+        frontend_related: true
+        storing_end_user_data: true
+analytics-platform:
+    aliases:
+        - analytics
+        - web-analytics
+    description: An analytics or tracking platform processing user behavior data
+    attributes:
+        analytics-platform: true
+        analytics_tracker: true
+        pii_processor: true
+        backend_related: true
+        storing_end_user_data: true
+pii-processor:
+    aliases:
+        - data-processor
+    description: A service that processes personally identifiable information on behalf of a controller
+    attributes:
+        pii-processor: true
+        pii_processor: true
+        backend_related: true
+        storing_end_user_data: true
+        high_value_target: true

@@ -7,6 +7,7 @@ import (
 	"github.com/threagile/threagile/pkg/model"
 	"github.com/threagile/threagile/pkg/risks"
 	"github.com/threagile/threagile/pkg/types"
+	"strings"
 )
 
 func (what *Threagile) initList() *Threagile {
@@ -81,6 +82,54 @@ func (what *Threagile) initList() *Threagile {
 			for name, values := range types.GetBuiltinTypeValues(what.config) {
 				cmd.Println(fmt.Sprintf("  %v: %v", name, values))
 			}
+		},
+	})
+
+	what.rootCmd.AddCommand(&cobra.Command{
+		Use:   ListMethodologiesCommand,
+		Short: "Print supported threat modeling methodologies and which built-in rules cover each",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			what.processArgs(cmd, args)
+
+			cmd.Println(Logo + "\n\n" + fmt.Sprintf(VersionText, what.buildTimestamp))
+			cmd.Println("Supported threat modeling methodologies:")
+			cmd.Println()
+			for _, m := range types.MethodologyValues() {
+				meth := m.(types.Methodology)
+				cmd.Printf("  %-10s  %s\n", meth.String(), meth.Explain())
+			}
+			cmd.Println()
+			cmd.Println("Built-in rules by methodology coverage:")
+			cmd.Println()
+
+			allRules := risks.GetBuiltInRiskRules()
+			coverage := make(map[string][]string) // methodology name -> rule IDs
+			for _, m := range types.MethodologyValues() {
+				meth := m.(types.Methodology)
+				for id, rule := range allRules {
+					if rule.Category().HasClassification(meth) {
+						coverage[meth.String()] = append(coverage[meth.String()], id)
+					}
+				}
+			}
+
+			for _, m := range types.MethodologyValues() {
+				meth := m.(types.Methodology)
+				ids := coverage[meth.String()]
+				cmd.Printf("  %-10s  %d built-in rule(s)", meth.String(), len(ids))
+				if len(ids) > 0 {
+					cmd.Printf(": %s", strings.Join(ids, ", "))
+				}
+				cmd.Println()
+			}
+
+			cmd.Println()
+			cmd.Println("Available built-in rule packs (use --rule-pack=<name>):")
+			for _, pack := range risks.AvailableBuiltinPacks {
+				cmd.Printf("  %s\n", pack)
+			}
+
+			return nil
 		},
 	})
 

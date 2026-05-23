@@ -1,0 +1,60 @@
+id: detecting-no-audit-logging
+title: Detectability - PII Flows Without Audit Logging
+function: operations
+stride: repudiation
+linddun: detecting
+cwe: 778
+description: >
+  Communication links that carry personal data without audit logging enabled mean that
+  access to and use of personal data cannot be detected or reviewed after the fact.
+  GDPR Article 5(2) requires demonstrable accountability.
+impact: >
+  Inability to detect unauthorized access to personal data, failure to meet GDPR
+  accountability obligations, and potential inability to meet breach notification deadlines.
+asvs: V7 - Error Handling and Logging Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+action: Enable audit logging on all links carrying personal data
+mitigation: >
+  Set audit_logged to true on every communication link that transmits PII data assets.
+  Store logs in a tamper-evident system separate from the application.
+check: Are all communication links that carry personal data audit-logged?
+detection_logic: >
+  In-scope technical assets that process PII AND have at least one outgoing link
+  without audit logging enabled.
+risk_assessment: Medium severity baseline; elevated if the data includes sensitive categories.
+false_positives: Fully tokenised flows, or flows covered by audit logging at a gateway layer.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Detectability</b>: <b>{tech_asset.title}</b> processes PII and has communication links without audit logging"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.data_assets_processed}"
+                item: data_id
+                true: "{$model.data_assets.{data_id}.has_pii}"
+            - any:
+                in: "{tech_asset.communication_links}"
+                item: link
+                equal:
+                  first: "{link.audit_logged}"
+                  second: false
+          then:
+            return: true

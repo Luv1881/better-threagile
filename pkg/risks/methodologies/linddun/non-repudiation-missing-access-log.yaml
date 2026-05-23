@@ -1,0 +1,77 @@
+id: non-repudiation-missing-access-log
+title: Non-Repudiation - PII Datastore Lacks Audit-Logged Ingress
+function: operations
+stride: repudiation
+linddun: non-repudiation
+cwe: 778
+description: >
+  A datastore that holds personal data whose incoming communication links lack audit
+  logging allows access to personal data without any tamper-evident record.
+  This violates the GDPR accountability principle (Article 5(2)).
+impact: >
+  Inability to prove or disprove unauthorized access to personal data and failure of
+  breach investigation.
+asvs: V7 - Error Handling and Logging Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+action: Enable access logging on all PII datastores
+mitigation: >
+  Enable database query and access logging. Set audit_logged to true on the
+  datastore ingress communication links.
+check: Do all PII datastores have access logging enabled?
+detection_logic: >
+  In-scope datastore technical assets storing PII data assets that also have at least
+  one incoming communication link without audit logging enabled.
+risk_assessment: Medium baseline; elevated for highly sensitive or regulated personal data.
+false_positives: Datastores where all ingress flows are audited at a higher layer with documentation.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Non-Repudiation</b>: datastore <b>{tech_asset.title}</b> stores personal data and has ingress links without audit logging"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: improbable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - equal:
+                first: "{tech_asset.type}"
+                second: datastore
+            - any:
+                in: "{tech_asset.data_assets_stored}"
+                item: data_id
+                true: "{$model.data_assets.{data_id}.has_pii}"
+          then:
+            - assign:
+                has_unlogged_ingress: false
+            - loop:
+                in: "{$model.communication_links}"
+                item: link_id
+                do:
+                  - if:
+                      and:
+                        - equal:
+                            first: "{$model.communication_links.{link_id}.target_id}"
+                            second: "{tech_asset.id}"
+                        - equal:
+                            first: "{$model.communication_links.{link_id}.audit_logged}"
+                            second: false
+                      then:
+                        - assign:
+                            has_unlogged_ingress: true
+            - if:
+                true: "{has_unlogged_ingress}"
+                then:
+                  return: true

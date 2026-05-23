@@ -1,0 +1,84 @@
+id: no-rate-limiting-public-api
+title: Stage V - No Rate Limiting on Internet-Exposed API
+function: operations
+stride: denial-of-service
+pasta: stage-vuln-analysis
+cwe: 770
+description: >
+  PASTA Stage V identifies weaknesses that enable exploitation. An internet-accessible
+  API endpoint without rate limiting is vulnerable to brute-force credential attacks,
+  credential stuffing, API abuse, and denial-of-service amplification. Rate limiting is
+  a fundamental control for any internet-exposed API.
+impact: >
+  Brute-force attacks against authentication endpoints, mass data harvesting via
+  enumeration, DDoS amplification, and billing abuse on pay-per-use endpoints.
+asvs: V4 - Access Control Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html
+action: Implement rate limiting on all internet-exposed API entry points
+mitigation: >
+  Add rate limiting at the API gateway or application layer (token bucket, sliding
+  window). Apply stricter limits on authentication endpoints. Set rate_limited to true
+  on the corresponding communication links after implementation.
+check: >
+  Are all internet-exposed API communication links rate-limited?
+detection_logic: >
+  In-scope technical assets with entry_point_type of api or web_ui that receive
+  communication links from internet-exposed assets where rate_limited is false.
+risk_assessment: >
+  Elevated for authentication endpoints; medium for general data APIs. High when
+  the API has no authentication at all.
+false_positives: >
+  Internal APIs behind a WAF or API gateway that provides rate limiting at the
+  infrastructure layer; document and mark rate_limited as true on the comm links.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>No Rate Limiting</b>: internet-exposed API <b>{tech_asset.title}</b> has communication links without rate limiting"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - or:
+              - equal:
+                  first: "{tech_asset.entry_point_type}"
+                  second: api
+              - equal:
+                  first: "{tech_asset.entry_point_type}"
+                  second: web_ui
+          then:
+            - assign:
+                has_unrated_ingress: false
+            - loop:
+                in: "{$model.communication_links}"
+                item: link
+                do:
+                  - if:
+                      and:
+                        - equal:
+                            first: "{link.target_id}"
+                            second: "{tech_asset.id}"
+                        - equal:
+                            first: "{link.rate_limited}"
+                            second: false
+                      then:
+                        - assign:
+                            has_unrated_ingress: true
+            - if:
+                true: "{has_unrated_ingress}"
+                then:
+                  return: true

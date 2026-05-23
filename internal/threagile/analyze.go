@@ -46,6 +46,16 @@ func (what *Threagile) initAnalyze() *Threagile {
 				}
 			}
 
+			if pack := what.config.GetRulePack(); pack != "" {
+				packRules, packErr := risks.LoadRulePack(pack)
+				if packErr != nil {
+					progressReporter.Warnf("Failed to load rule pack %q: %v", pack, packErr)
+				} else {
+					progressReporter.Infof("Loaded rule pack %q (%d rules)", pack, len(packRules))
+					builtinRules = builtinRules.Merge(packRules)
+				}
+			}
+
 			r, err := model.ReadAndAnalyzeModel(what.config, builtinRules, progressReporter)
 			if err != nil {
 				return fmt.Errorf("failed to read and analyze model: %w", err)

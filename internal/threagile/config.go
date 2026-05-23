@@ -54,6 +54,8 @@ type Config struct {
 	ExecuteModelMacroValue string          `json:"ExecuteModelMacro,omitempty" yaml:"ExecuteModelMacro"`
 	RulesDirValue          string          `json:"RulesDir,omitempty" yaml:"RulesDir"`
 	RulesURLValue          string          `json:"RulesURL,omitempty" yaml:"RulesURL"`
+	MethodologyValue       string          `json:"Methodology,omitempty" yaml:"Methodology"`
+	RulePackValue          string          `json:"RulePack,omitempty" yaml:"RulePack"`
 	RiskExcelValue         RiskExcelConfig `json:"RiskExcel" yaml:"RiskExcel"`
 
 	ServerModeValue               bool `json:"ServerMode,omitempty" yaml:"ServerMode"`
@@ -113,6 +115,8 @@ type ConfigGetter interface {
 	GetExecuteModelMacro() string
 	GetRulesDir() string
 	GetRulesURL() string
+	GetMethodology() string
+	GetRulePack() string
 	GetRiskExcelConfigHideColumns() []string
 	GetRiskExcelConfigSortByColumns() []string
 	GetRiskExcelConfigWidthOfColumns() map[string]float64
@@ -755,6 +759,25 @@ func (c *Config) GetRulesURL() string {
 
 func (c *Config) SetRulesURL(url string) {
 	c.RulesURLValue = url
+}
+
+func (c *Config) GetMethodology() string {
+	if c.MethodologyValue == "" {
+		return "stride"
+	}
+	return c.MethodologyValue
+}
+
+func (c *Config) SetMethodology(methodology string) {
+	c.MethodologyValue = methodology
+}
+
+func (c *Config) GetRulePack() string {
+	return c.RulePackValue
+}
+
+func (c *Config) SetRulePack(pack string) {
+	c.RulePackValue = pack
 }
 
 func (c *Config) GetRiskExcelConfigHideColumns() []string {

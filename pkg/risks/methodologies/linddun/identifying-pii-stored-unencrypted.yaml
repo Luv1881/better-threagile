@@ -1,0 +1,65 @@
+id: identifying-pii-stored-unencrypted
+title: Identifiability - Personal Data Stored Without Encryption at Rest
+function: architecture
+stride: information-disclosure
+linddun: identifying
+cwe: 312
+description: >
+  Datastores holding personal data without encryption at rest allow anyone with
+  access to the underlying storage to read and identify data subjects.
+  GDPR Article 32 requires appropriate security measures including encryption at rest.
+impact: >
+  Physical or logical access to unencrypted volumes directly exposes personal data,
+  enabling identification of natural persons and constituting a reportable data breach.
+asvs: V6 - Stored Cryptography Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+action: Enable encryption at rest on all datastores holding personal data
+mitigation: >
+  Enable disk-level or database-level encryption on every datastore asset that stores
+  PII data assets. Use full-disk encryption (LUKS, AWS EBS encryption, Azure SSE) or
+  database-level TDE (pgcrypto, SQL Server TDE).
+check: Is every datastore that holds personal data encrypted at rest?
+detection_logic: >
+  In-scope datastore technical assets storing at least one PII data asset with
+  the encryption field set to none.
+risk_assessment: >
+  Severity matches the confidentiality classification of the PII stored.
+  Strictly confidential PII warrants Critical.
+false_positives: >
+  Datastores on a host protected by full-disk encryption with a documented configuration;
+  document and accept with justification.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Identifiability</b>: datastore <b>{tech_asset.title}</b> stores personal data without encryption at rest"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - equal:
+                first: "{tech_asset.type}"
+                second: datastore
+            - equal:
+                first: "{tech_asset.encryption}"
+                second: none
+            - any:
+                in: "{tech_asset.data_assets_stored}"
+                item: data_id
+                true: "{$model.data_assets.{data_id}.has_pii}"
+          then:
+            return: true

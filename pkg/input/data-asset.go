@@ -14,6 +14,13 @@ type DataAsset struct {
 	Integrity              string   `yaml:"integrity,omitempty" json:"integrity,omitempty"`
 	Availability           string   `yaml:"availability,omitempty" json:"availability,omitempty"`
 	JustificationCiaRating string   `yaml:"justification_cia_rating,omitempty" json:"justification_cia_rating,omitempty"`
+	// LINDDUN privacy fields (all optional — existing models work unchanged)
+	PiiCategories        []string `yaml:"pii_categories,omitempty" json:"pii_categories,omitempty"`
+	DataSubjectCategory  string   `yaml:"data_subject_category,omitempty" json:"data_subject_category,omitempty"`
+	LawfulBasis          string   `yaml:"lawful_basis,omitempty" json:"lawful_basis,omitempty"`
+	RetentionPeriod      string   `yaml:"retention_period,omitempty" json:"retention_period,omitempty"`
+	ProcessingPurpose    string   `yaml:"processing_purpose,omitempty" json:"processing_purpose,omitempty"`
+	CrossBorderTransfer  bool     `yaml:"cross_border_transfer,omitempty" json:"cross_border_transfer,omitempty"`
 }
 
 func (what *DataAsset) Merge(other DataAsset) error {
@@ -66,6 +73,32 @@ func (what *DataAsset) Merge(other DataAsset) error {
 	}
 
 	what.JustificationCiaRating = new(Strings).MergeMultiline(what.JustificationCiaRating, other.JustificationCiaRating)
+
+	what.PiiCategories = new(Strings).MergeUniqueSlice(what.PiiCategories, other.PiiCategories)
+
+	what.DataSubjectCategory, mergeError = new(Strings).MergeSingleton(what.DataSubjectCategory, other.DataSubjectCategory)
+	if mergeError != nil {
+		return fmt.Errorf("failed to merge data_subject_category: %w", mergeError)
+	}
+
+	what.LawfulBasis, mergeError = new(Strings).MergeSingleton(what.LawfulBasis, other.LawfulBasis)
+	if mergeError != nil {
+		return fmt.Errorf("failed to merge lawful_basis: %w", mergeError)
+	}
+
+	what.RetentionPeriod, mergeError = new(Strings).MergeSingleton(what.RetentionPeriod, other.RetentionPeriod)
+	if mergeError != nil {
+		return fmt.Errorf("failed to merge retention_period: %w", mergeError)
+	}
+
+	what.ProcessingPurpose, mergeError = new(Strings).MergeSingleton(what.ProcessingPurpose, other.ProcessingPurpose)
+	if mergeError != nil {
+		return fmt.Errorf("failed to merge processing_purpose: %w", mergeError)
+	}
+
+	if !what.CrossBorderTransfer {
+		what.CrossBorderTransfer = other.CrossBorderTransfer
+	}
 
 	return nil
 }

@@ -1,0 +1,79 @@
+id: missing-threat-scenario
+title: Stage I - No Threat Scenarios Defined for Internet-Exposed Entry Points
+function: operations
+stride: elevation-of-privilege
+pasta: stage-objectives
+cwe: 693
+description: >
+  PASTA Stage I defines business and security objectives and maps them to threat actors.
+  An architecture with internet-exposed entry points but no documented threat scenarios
+  means that adversarial thinking has not been applied: the team has not specified
+  who might attack, how, and with what capabilities.
+impact: >
+  Without explicit threat actor profiles and attack scenarios, mitigations are chosen
+  reactively rather than proactively, leaving systematic threat actor capabilities
+  unaddressed.
+asvs: V1 - Architecture, Design and Threat Modeling Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html
+action: Define threat scenarios for all internet-exposed entry points
+mitigation: >
+  Add a threat_scenarios section to the model with at least one scenario per distinct
+  threat actor type (e.g., script-kiddie, insider, nation-state). Each scenario should
+  document entry_assets, kill_chain_steps, and mitigated_by controls.
+check: >
+  Does the model have at least one threat_scenarios entry for each internet-facing
+  entry point?
+detection_logic: >
+  Internet-exposed technical assets with a declared entry_point_type but no matching
+  threat scenario that lists them as an entry asset.
+risk_assessment: >
+  Low severity from a technical standpoint but indicates a process gap that increases
+  risk of systematic coverage omissions.
+false_positives: >
+  Models in early development where threat scenario documentation is tracked externally
+  in a threat register; provide a reference in the management summary.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Missing Threat Scenario</b>: internet entry point <b>{tech_asset.title}</b> has no documented threat scenario"
+    severity: "calculate_severity(unlikely, low)"
+    exploitation_likelihood: unlikely
+    exploitation_impact: low
+    data_breach_probability: improbable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.internet}"
+            - not-equal:
+                first: "{tech_asset.entry_point_type}"
+                second: ""
+          then:
+            - assign:
+                covered_by_scenario: false
+            - loop:
+                in: "{$model.threat_scenarios}"
+                item: scenario
+                do:
+                  - if:
+                      contains:
+                        item: "{tech_asset.id}"
+                        in: "{scenario.entry_assets}"
+                      then:
+                        - assign:
+                            covered_by_scenario: true
+            - if:
+                false: "{covered_by_scenario}"
+                then:
+                  return: true

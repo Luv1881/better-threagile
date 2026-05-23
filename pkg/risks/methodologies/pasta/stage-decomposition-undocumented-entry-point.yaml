@@ -1,0 +1,60 @@
+id: undocumented-entry-point
+title: Stage III - Undocumented Application Entry Point
+function: architecture
+stride: elevation-of-privilege
+pasta: stage-decomposition
+cwe: 693
+description: >
+  PASTA Stage III requires decomposing the application into entry points so that threats
+  can be mapped against known attack surfaces. A technical asset reachable from the internet
+  or marked as internet-exposed that has no entry_point_type declared represents an
+  undocumented entry point that cannot be systematically analysed for threats.
+impact: >
+  Undocumented entry points are excluded from threat analysis, leaving unknown attack
+  surface that attackers can exploit without detection or mitigation.
+asvs: V1 - Architecture, Design and Threat Modeling Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
+action: Document all application entry points
+mitigation: >
+  Declare entry_point_type on every internet-exposed technical asset (api, web_ui,
+  cli, file_upload, webhook, cron, or internal_rpc). Maintain an entry point register
+  and review it as part of each release cycle.
+check: Do all internet-exposed technical assets have an entry_point_type declared?
+detection_logic: >
+  In-scope technical assets marked internet=true or reachable from an internet trust
+  boundary that do not have an entry_point_type field declared.
+risk_assessment: >
+  Medium baseline; elevated when the asset processes sensitive data or requires no
+  authentication.
+false_positives: >
+  Internal infrastructure assets (databases, caches) that happen to be reachable across
+  a network perimeter but are not themselves application entry points.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Undocumented Entry Point</b>: <b>{tech_asset.title}</b> is internet-exposed but has no entry_point_type declared"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.internet}"
+            - equal:
+                first: "{tech_asset.entry_point_type}"
+                second: ""
+          then:
+            return: true

@@ -35,6 +35,7 @@ func ListBuiltInMacros() []Macros {
 		newRemoveUnusedTags(),
 		NewSeedRiskTracking(),
 		NewSeedTags(),
+		NewDiscoverAttackSurface(),
 	}
 }
 

@@ -41,6 +41,7 @@ const (
 	ListTypesCommand            = "list-types"
 	ListRiskRulesCommand        = "list-risk-rules"
 	ListModelMacrosCommand      = "list-model-macros"
+	ListMethodologiesCommand    = "list-methodologies"
 	Print3rdPartyCommand        = "print-3rd-party-licenses"
 	PrintLicenseCommand         = "print-license"
 

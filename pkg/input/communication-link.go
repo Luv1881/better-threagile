@@ -17,6 +17,13 @@ type CommunicationLink struct {
 	DataAssetsReceived     []string `yaml:"data_assets_received,omitempty" json:"data_assets_received,omitempty"`
 	DiagramTweakWeight     int      `yaml:"diagram_tweak_weight,omitempty" json:"diagram_tweak_weight,omitempty"`
 	DiagramTweakConstraint bool     `yaml:"diagram_tweak_constraint,omitempty" json:"diagram_tweak_constraint,omitempty"`
+	// LINDDUN privacy fields (all optional)
+	CrossBorder bool `yaml:"cross_border,omitempty" json:"cross_border,omitempty"`
+	AuditLogged bool `yaml:"audit_logged,omitempty" json:"audit_logged,omitempty"`
+	// PASTA attack-surface fields (all optional)
+	RateLimited bool   `yaml:"rate_limited,omitempty" json:"rate_limited,omitempty"`
+	TlsVersion  string `yaml:"tls_version,omitempty" json:"tls_version,omitempty"`
+	ApiStyle    string `yaml:"api_style,omitempty" json:"api_style,omitempty"`
 }
 
 func (what *CommunicationLink) Merge(other CommunicationLink) error {
@@ -75,6 +82,28 @@ func (what *CommunicationLink) Merge(other CommunicationLink) error {
 
 	if !what.DiagramTweakConstraint {
 		what.DiagramTweakConstraint = other.DiagramTweakConstraint
+	}
+
+	if !what.CrossBorder {
+		what.CrossBorder = other.CrossBorder
+	}
+
+	if !what.AuditLogged {
+		what.AuditLogged = other.AuditLogged
+	}
+
+	if !what.RateLimited {
+		what.RateLimited = other.RateLimited
+	}
+
+	what.TlsVersion, mergeError = new(Strings).MergeSingleton(what.TlsVersion, other.TlsVersion)
+	if mergeError != nil {
+		return fmt.Errorf("failed to merge tls_version: %w", mergeError)
+	}
+
+	what.ApiStyle, mergeError = new(Strings).MergeSingleton(what.ApiStyle, other.ApiStyle)
+	if mergeError != nil {
+		return fmt.Errorf("failed to merge api_style: %w", mergeError)
 	}
 
 	return nil

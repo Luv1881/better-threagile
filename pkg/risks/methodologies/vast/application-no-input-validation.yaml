@@ -1,0 +1,73 @@
+id: application-no-input-validation
+title: Application Threat - No Input Validation on Customer-Facing Asset
+function: development
+stride: tampering
+vast: application-threat
+cwe: 20
+description: >
+  VAST Application Threat Model: a custom-developed asset that is directly accessible
+  by human users and accepts structured data formats (JSON, XML, file uploads) without
+  any explicit declaration of input validation controls. Absence of input validation
+  is the root cause of injection families (SQLi, XSS, XXE, command injection, path
+  traversal) and is consistently in the OWASP Top 10.
+impact: >
+  SQL injection, XSS, XXE, command injection, path traversal, and other injection
+  attacks depending on how the unvalidated input is used by the application.
+asvs: V5 - Validation, Sanitization and Encoding Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+action: Implement comprehensive input validation
+mitigation: >
+  Apply an allowlist-based input validation approach at the application boundary.
+  Use a validation framework (e.g., Joi, Zod, express-validator) to validate all
+  incoming requests. Implement output encoding for all user-controlled content
+  rendered in the browser.
+check: >
+  Does every customer-facing custom-developed asset validate and sanitize all inputs?
+detection_logic: >
+  In-scope custom-developed assets used as a client by humans that accept JSON, XML,
+  or file input formats.
+risk_assessment: >
+  High for assets accepting file or XML (XXE risk); medium for JSON-only endpoints
+  that rely on parameterised queries.
+false_positives: >
+  Assets where all input is pre-validated by an upstream gateway (WAF, API gateway)
+  with documented evidence of the validation coverage.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>No Input Validation</b>: customer-facing asset <b>{tech_asset.title}</b> accepts user data without declared input validation"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.custom_developed_parts}"
+            - true: "{tech_asset.used_as_client_by_human}"
+            - any:
+                in: "{tech_asset.data_formats_accepted}"
+                or:
+                  - equal:
+                      first: "{.}"
+                      second: json
+                  - equal:
+                      first: "{.}"
+                      second: xml
+                  - equal:
+                      first: "{.}"
+                      second: file
+          then:
+            return: true

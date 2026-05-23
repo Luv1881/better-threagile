@@ -1,0 +1,82 @@
+id: application-business-process-no-auth
+title: Application Threat - Business Process Entry Point Lacks Authentication
+function: architecture
+stride: spoofing
+vast: application-threat
+cwe: 306
+description: >
+  VAST Application Threat Model: a technical asset that supports a business process
+  and is directly reachable from the internet but receives unauthenticated connections.
+  Any actor on the internet can interact with this business process without proving
+  their identity, enabling fraud, abuse, and data manipulation.
+impact: >
+  Unauthorized access to business process functionality, data manipulation, fraud,
+  and financial or reputational damage from unauthenticated process invocations.
+asvs: V2 - Authentication Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+action: Add authentication to all business-process-supporting internet entry points
+mitigation: >
+  Require authentication on every communication link that delivers user requests to
+  a business-process-supporting technical asset reachable from the internet.
+check: >
+  Do all internet-reachable assets supporting business processes require authentication?
+detection_logic: >
+  Internet-exposed technical assets that support at least one business process and
+  receive at least one unauthenticated incoming communication link.
+risk_assessment: >
+  High; unauthenticated business process access is a fundamental design flaw.
+false_positives: >
+  Intentionally public process entry points (e.g., public product catalogue, anonymous
+  search) where the business process owner has approved anonymous access.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Unauthenticated Business Process Entry</b>: <b>{tech_asset.title}</b> supports a business process and accepts unauthenticated internet connections"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.internet}"
+            - any:
+                in: "{tech_asset.supported_business_processes}"
+                item: bp
+                not-equal:
+                  first: "{bp}"
+                  second: ""
+          then:
+            - assign:
+                has_unauth_link: false
+            - loop:
+                in: "{$model.communication_links}"
+                item: link
+                do:
+                  - if:
+                      and:
+                        - equal:
+                            first: "{link.target_id}"
+                            second: "{tech_asset.id}"
+                        - equal:
+                            first: "{link.authentication}"
+                            second: none
+                      then:
+                        - assign:
+                            has_unauth_link: true
+            - if:
+                true: "{has_unauth_link}"
+                then:
+                  return: true

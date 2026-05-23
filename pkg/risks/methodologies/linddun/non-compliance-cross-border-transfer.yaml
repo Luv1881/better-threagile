@@ -1,0 +1,61 @@
+id: non-compliance-cross-border-transfer
+title: Non-Compliance - Cross-Border Personal Data Transfer Without Safeguard
+function: operations
+stride: information-disclosure
+linddun: non-compliance
+cwe: 359
+description: >
+  GDPR Chapter V restricts transfers of personal data to third countries.
+  A communication link marked cross_border as true that also involves PII data assets
+  indicates a potential cross-border transfer that must be covered by an adequacy
+  decision, SCCs, BCRs, or another Article 46 safeguard.
+impact: >
+  Unlawful international data transfer can result in fines up to 4% of global annual
+  turnover (GDPR Article 83(5)(c)) and orders to suspend processing.
+asvs: V8 - Data Protection Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
+action: Document the transfer mechanism (SCCs, adequacy decision, BCRs)
+mitigation: >
+  Ensure every cross-border link carrying PII has a documented transfer mechanism.
+  Record this in the RoPA entry for the relevant processing activity.
+check: >
+  Are all cross_border links involving PII covered by a valid GDPR Chapter V
+  transfer mechanism?
+detection_logic: >
+  In-scope technical assets that process PII AND have at least one outgoing link
+  with cross_border set to true.
+risk_assessment: Elevated baseline; critical for transfers to countries without adequacy decisions.
+false_positives: Transfers within the EEA or to countries with an adequacy decision.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Non-Compliance</b>: <b>{tech_asset.title}</b> processes PII and has a cross-border communication link without a documented transfer safeguard"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: improbable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.data_assets_processed}"
+                item: data_id
+                true: "{$model.data_assets.{data_id}.has_pii}"
+            - any:
+                in: "{tech_asset.communication_links}"
+                item: link
+                true: "{link.cross_border}"
+          then:
+            return: true

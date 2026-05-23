@@ -8,11 +8,15 @@ import (
 type ExcelColumns map[string]ExcelColumn
 
 func (what *ExcelColumns) GetColumns() ExcelColumns {
+	return what.GetColumnsForMethodology("STRIDE")
+}
+
+func (what *ExcelColumns) GetColumnsForMethodology(methodologyTitle string) ExcelColumns {
 	*what = map[string]ExcelColumn{
 		"A": {Title: "Severity", Width: 12},
 		"B": {Title: "Likelihood", Width: 15},
 		"C": {Title: "Impact", Width: 15},
-		"D": {Title: "STRIDE", Width: 22},
+		"D": {Title: methodologyTitle, Width: 22},
 		"E": {Title: "Function", Width: 16},
 		"F": {Title: "CWE", Width: 12},
 		"G": {Title: "Risk Category", Width: 50},

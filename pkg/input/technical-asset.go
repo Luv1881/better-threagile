@@ -30,6 +30,16 @@ type TechnicalAsset struct {
 	DataFormatsAccepted     []string                     `yaml:"data_formats_accepted,omitempty" json:"data_formats_accepted,omitempty"`
 	DiagramTweakOrder       int                          `yaml:"diagram_tweak_order,omitempty" json:"diagram_tweak_order,omitempty"`
 	CommunicationLinks      map[string]CommunicationLink `yaml:"communication_links,omitempty" json:"communication_links,omitempty"`
+	// LINDDUN privacy fields (all optional)
+	IsPiiProcessor   bool `yaml:"is_pii_processor,omitempty" json:"is_pii_processor,omitempty"`
+	IsPiiController  bool `yaml:"is_pii_controller,omitempty" json:"is_pii_controller,omitempty"`
+	DataMinimisation bool `yaml:"data_minimisation,omitempty" json:"data_minimisation,omitempty"`
+	// PASTA attack-surface fields (all optional)
+	EntryPointType                 string   `yaml:"entry_point_type,omitempty" json:"entry_point_type,omitempty"`
+	AttackSurfaceExposure          string   `yaml:"attack_surface_exposure,omitempty" json:"attack_surface_exposure,omitempty"`
+	RequiresAuthenticationStrength string   `yaml:"requires_authentication_strength,omitempty" json:"requires_authentication_strength,omitempty"`
+	// VAST business-process fields (all optional)
+	SupportedBusinessProcesses []string `yaml:"supported_business_processes,omitempty" json:"supported_business_processes,omitempty"`
 }
 
 func (what *TechnicalAsset) Merge(other TechnicalAsset) error {
@@ -138,6 +148,33 @@ func (what *TechnicalAsset) Merge(other TechnicalAsset) error {
 	if mergeError != nil {
 		return fmt.Errorf("failed to merge communication_links: %w", mergeError)
 	}
+
+	if !what.IsPiiProcessor {
+		what.IsPiiProcessor = other.IsPiiProcessor
+	}
+	if !what.IsPiiController {
+		what.IsPiiController = other.IsPiiController
+	}
+	if !what.DataMinimisation {
+		what.DataMinimisation = other.DataMinimisation
+	}
+
+	what.EntryPointType, mergeError = new(Strings).MergeSingleton(what.EntryPointType, other.EntryPointType)
+	if mergeError != nil {
+		return fmt.Errorf("failed to merge entry_point_type: %w", mergeError)
+	}
+
+	what.AttackSurfaceExposure, mergeError = new(Strings).MergeSingleton(what.AttackSurfaceExposure, other.AttackSurfaceExposure)
+	if mergeError != nil {
+		return fmt.Errorf("failed to merge attack_surface_exposure: %w", mergeError)
+	}
+
+	what.RequiresAuthenticationStrength, mergeError = new(Strings).MergeSingleton(what.RequiresAuthenticationStrength, other.RequiresAuthenticationStrength)
+	if mergeError != nil {
+		return fmt.Errorf("failed to merge requires_authentication_strength: %w", mergeError)
+	}
+
+	what.SupportedBusinessProcesses = new(Strings).MergeUniqueSlice(what.SupportedBusinessProcesses, other.SupportedBusinessProcesses)
 
 	return nil
 }

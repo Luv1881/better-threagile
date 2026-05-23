@@ -1,0 +1,93 @@
+id: operational-shared-runtime-critical-process
+title: Operational Threat - Critical Business Process on Shared Runtime
+function: operations
+stride: elevation-of-privilege
+vast: operational-threat
+cwe: 284
+description: >
+  VAST Operational Threat Model: a business process marked as mission-critical or
+  critical that depends on a shared runtime (container host, VM cluster) with other,
+  lower-criticality workloads. A compromise of any co-located workload (container
+  escape, host privilege escalation) can directly impact the critical process through
+  shared kernel, storage, or network namespaces.
+impact: >
+  Lateral movement from a compromised co-located workload to the infrastructure
+  supporting a critical business process, causing service outage, data exfiltration,
+  or integrity violations at the process level.
+asvs: V1 - Architecture, Design and Threat Modeling Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+action: Isolate critical business process workloads onto dedicated runtimes
+mitigation: >
+  Run technical assets supporting critical or mission-critical business processes on
+  dedicated container hosts or hypervisors not shared with untrusted workloads. Use
+  separate node pools, VM sets, or bare-metal where process criticality demands it.
+check: >
+  Are technical assets supporting critical business processes isolated from shared
+  runtimes used by lower-criticality workloads?
+detection_logic: >
+  Shared runtimes that host assets supporting mission-critical or critical business
+  processes together with assets that do not support any business process.
+risk_assessment: >
+  High when a critical business process asset shares a runtime with an internet-facing
+  component; elevated otherwise.
+false_positives: >
+  Dev/test environments where isolation is consciously traded for resource efficiency
+  with documented approval.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Shared Runtime - Critical Process</b>: <b>{tech_asset.title}</b> supports a critical business process on a shared runtime"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.supported_business_processes}"
+                item: bp_id
+                or:
+                  - equal:
+                      first: "{$model.business_processes.{bp_id}.criticality}"
+                      second: mission-critical
+                  - equal:
+                      first: "{$model.business_processes.{bp_id}.criticality}"
+                      second: critical
+          then:
+            - assign:
+                on_shared_runtime: false
+            - loop:
+                in: "{$model.shared_runtimes}"
+                item: runtime
+                do:
+                  - if:
+                      and:
+                        - contains:
+                            item: "{tech_asset.id}"
+                            in: "{runtime.technical_assets_running}"
+                        - any:
+                            in: "{runtime.technical_assets_running}"
+                            item: co_asset_id
+                            equal:
+                              first: "{$model.technical_assets.{co_asset_id}.supported_business_processes}"
+                              second: ""
+                      then:
+                        - assign:
+                            on_shared_runtime: true
+            - if:
+                true: "{on_shared_runtime}"
+                then:
+                  return: true

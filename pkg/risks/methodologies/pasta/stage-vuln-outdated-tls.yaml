@@ -1,0 +1,68 @@
+id: outdated-tls-version
+title: Stage V - Outdated TLS Version on External Communication Link
+function: architecture
+stride: tampering
+pasta: stage-vuln-analysis
+cwe: 326
+description: >
+  PASTA Stage V identifies weaknesses. TLS 1.0 and 1.1 are deprecated and known-broken
+  (BEAST, POODLE, DROWN attacks). Using them on internet-facing communication links
+  leaves those links vulnerable to downgrade attacks and known cipher weaknesses.
+  PCI-DSS 3.2, NIST SP 800-52 Rev 2, and FIPS 140-2 all require TLS 1.2+.
+impact: >
+  Man-in-the-middle attacks exploiting known TLS weaknesses, decryption of recorded
+  traffic, and failure to meet compliance requirements.
+asvs: V9 - Communication Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html
+action: Upgrade all external communication links to TLS 1.2 or higher
+mitigation: >
+  Configure all internet-facing services to require TLS 1.2 or higher. Disable TLS 1.0,
+  TLS 1.1, and SSLv3 in all web server and load balancer configurations. Set
+  tls_version to 1.2 or 1.3 on communication links to document compliance.
+check: >
+  Are all internet-facing communication links using TLS 1.2 or higher?
+detection_logic: >
+  Communication links from internet-exposed assets where tls_version is set to 1.0
+  or 1.1, indicating explicitly declared outdated TLS.
+risk_assessment: >
+  High for any link that carries sensitive data; elevated for all links since even
+  public data integrity is at risk from tampering.
+false_positives: >
+  Test environments with deliberately downgraded TLS for compatibility testing;
+  ensure production links are never marked with outdated versions.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Outdated TLS</b>: <b>{tech_asset.title}</b> has an internet-facing link using outdated TLS"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.internet}"
+            - any:
+                in: "{tech_asset.communication_links}"
+                item: link
+                or:
+                  - equal:
+                      first: "{link.tls_version}"
+                      second: "1.0"
+                  - equal:
+                      first: "{link.tls_version}"
+                      second: "1.1"
+          then:
+            return: true

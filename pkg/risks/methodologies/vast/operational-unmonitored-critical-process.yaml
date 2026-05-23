@@ -1,0 +1,86 @@
+id: operational-unmonitored-critical-process
+title: Operational Threat - Critical Business Process Without Operational Monitoring
+function: operations
+stride: repudiation
+vast: operational-threat
+cwe: 778
+description: >
+  VAST Operational Threat Model: a business process classified as critical or
+  mission-critical whose supporting technical assets have no communication links
+  with audit logging enabled. Without monitoring, security incidents within this
+  process go undetected, incident response is hindered, and compliance with
+  accountability requirements (GDPR Art. 5(2), SOC 2, ISO 27001 A.12.4) is undermined.
+impact: >
+  Undetected breaches, inability to investigate incidents, compliance failures, and
+  violation of SLA accountability requirements.
+asvs: V7 - Error Handling and Logging Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+action: Enable audit logging on all assets supporting critical business processes
+mitigation: >
+  Set audit_logged to true on communication links feeding into technical assets that
+  support critical business processes. Ship logs to a centralised SIEM with alerting
+  on anomalous patterns.
+check: >
+  Do all assets supporting critical business processes have at least one audit-logged
+  communication link?
+detection_logic: >
+  Technical assets supporting critical or mission-critical business processes that
+  have no incoming communication link with audit_logged set to true.
+risk_assessment: >
+  High; critical processes without monitoring violate multiple compliance frameworks.
+false_positives: >
+  Assets monitored by infrastructure-layer logging (cloud-native audit trails) with
+  documented evidence of coverage.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Unmonitored Critical Process</b>: <b>{tech_asset.title}</b> supports a critical business process but has no audit-logged ingress"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: improbable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.supported_business_processes}"
+                item: bp_id
+                or:
+                  - equal:
+                      first: "{$model.business_processes.{bp_id}.criticality}"
+                      second: mission-critical
+                  - equal:
+                      first: "{$model.business_processes.{bp_id}.criticality}"
+                      second: critical
+          then:
+            - assign:
+                has_logged_ingress: false
+            - loop:
+                in: "{$model.communication_links}"
+                item: link
+                do:
+                  - if:
+                      and:
+                        - equal:
+                            first: "{link.target_id}"
+                            second: "{tech_asset.id}"
+                        - true: "{link.audit_logged}"
+                      then:
+                        - assign:
+                            has_logged_ingress: true
+            - if:
+                false: "{has_logged_ingress}"
+                then:
+                  return: true

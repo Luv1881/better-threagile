@@ -127,6 +127,8 @@ func (what *Threagile) initFlags() *Threagile {
 
 	what.rootCmd.PersistentFlags().StringVar(&what.flags.RulesDirValue, rulesDirFlagName, what.config.GetRulesDir(), "directory of extra YAML risk rule files to load at runtime")
 	what.rootCmd.PersistentFlags().StringVar(&what.flags.RulesURLValue, rulesURLFlagName, what.config.GetRulesURL(), "URL to fetch extra YAML risk rule files (.tar.gz or .zip) with 24h caching")
+	what.rootCmd.PersistentFlags().StringVar(&what.flags.MethodologyValue, methodologyFlagName, what.config.GetMethodology(), "threat modeling methodology to use (stride, linddun, pasta, vast, octave, trike)")
+	what.rootCmd.PersistentFlags().StringVar(&what.flags.RulePackValue, rulePackFlagName, what.config.GetRulePack(), "load a built-in methodology rule pack by name (linddun, pasta, vast)")
 
 	return what
 }
@@ -386,6 +388,22 @@ func (what *Threagile) processArgs(cmd *cobra.Command, args []string) bool {
 
 	if what.isFlagOverridden(cmd, skipRiskRulesFlagName) {
 		what.config.SkipRiskRulesValue = strings.Split(what.flags.skipRiskRulesValue, ",")
+	}
+
+	if what.isFlagOverridden(cmd, rulesDirFlagName) {
+		what.config.RulesDirValue = what.config.CleanPath(what.flags.RulesDirValue)
+	}
+
+	if what.isFlagOverridden(cmd, rulesURLFlagName) {
+		what.config.RulesURLValue = what.flags.RulesURLValue
+	}
+
+	if what.isFlagOverridden(cmd, methodologyFlagName) {
+		what.config.MethodologyValue = what.flags.MethodologyValue
+	}
+
+	if what.isFlagOverridden(cmd, rulePackFlagName) {
+		what.config.RulePackValue = what.flags.RulePackValue
 	}
 
 	if what.isFlagOverridden(cmd, executeModelMacroFlagName) {

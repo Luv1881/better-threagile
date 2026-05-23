@@ -1,0 +1,76 @@
+id: unencrypted-external-traffic
+title: Stage IV - Unencrypted Traffic on Internet-Facing Communication Link
+function: architecture
+stride: tampering
+pasta: stage-threat-analysis
+cwe: 319
+description: >
+  PASTA Stage IV analyses threats against identified entry points. Any communication
+  link crossing the internet boundary without TLS exposes data to interception and
+  tampering. An attacker on any hop between client and server can read credentials,
+  session tokens, and business data, or inject malicious content.
+impact: >
+  Credential interception, session token hijacking, man-in-the-middle injection of
+  malicious payloads, and loss of data confidentiality and integrity for all traffic
+  on the link.
+asvs: V9 - Communication Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html
+action: Enforce TLS on all internet-crossing communication links
+mitigation: >
+  Ensure every communication link that crosses from an internet-exposed asset to any
+  other asset uses HTTPS or another TLS-protected protocol. Set tls_version to 1.2 or
+  higher and configure HSTS, OCSP stapling, and certificate pinning where applicable.
+check: >
+  Are all communication links from internet-exposed assets using a TLS-protected protocol?
+detection_logic: >
+  Communication links originating from internet-exposed technical assets that use
+  HTTP, a plain database protocol, or another non-TLS protocol.
+risk_assessment: >
+  High; carrying credentials or sensitive data over an unencrypted internet-facing
+  link is a critical misconfiguration.
+false_positives: >
+  Internal links where the internet flag is set for routing purposes but the actual
+  traffic traverses an always-on VPN tunnel; document and set vpn to true.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Unencrypted External Traffic</b>: <b>{tech_asset.title}</b> has an internet-facing communication link without TLS"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.internet}"
+            - any:
+                in: "{tech_asset.communication_links}"
+                item: link
+                and:
+                  - equal:
+                      first: "{link.vpn}"
+                      second: false
+                  - or:
+                    - equal:
+                        first: "{link.protocol}"
+                        second: http
+                    - equal:
+                        first: "{link.protocol}"
+                        second: sql-access-protocol
+                    - equal:
+                        first: "{link.protocol}"
+                        second: nosql-access-protocol
+          then:
+            return: true

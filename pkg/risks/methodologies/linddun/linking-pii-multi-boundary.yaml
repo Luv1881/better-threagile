@@ -1,0 +1,98 @@
+id: linking-pii-multi-boundary
+title: Linkability - Same PII Data Asset Processed Across Multiple Trust Boundaries
+function: architecture
+stride: information-disclosure
+linddun: linking
+cwe: 359
+description: >
+  When the same personal-data asset is processed by technical assets in two or more
+  different trust boundaries, an attacker who compromises any one boundary gains
+  linkability across all others, enabling cross-context profiling.
+impact: >
+  Aggregation of personal data enables profiling, re-identification, and violations of
+  GDPR data minimisation and purpose limitation principles (Articles 5(1)(b) and 5(1)(c)).
+asvs: V8 - Data Protection Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
+action: Apply data minimisation and per-context pseudonymisation
+mitigation: >
+  Use per-context pseudonyms or pairwise identifiers so the same natural person cannot
+  be linked across trust boundaries.
+check: Does each PII data asset appear in assets across more than one trust boundary?
+detection_logic: >
+  Technical assets that process PII data assets that also appear in assets in at
+  least one other trust boundary.
+risk_assessment: Medium baseline; elevated for sensitive categories or high-quantity data.
+false_positives: Internal service meshes within a single logical zone modelled as separate trust boundaries.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Linkability</b>: <b>{tech_asset.title}</b> processes a PII data asset also flowing into another trust boundary"
+    severity: "calculate_severity(unlikely, medium)"
+    exploitation_likelihood: unlikely
+    exploitation_impact: medium
+    data_breach_probability: improbable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.data_assets_processed}"
+                item: data_id
+                true: "{$model.data_assets.{data_id}.has_pii}"
+          then:
+            - assign:
+                my_boundary_id: ""
+            - loop:
+                in: "{$model.trust_boundaries}"
+                item: boundary
+                do:
+                  - if:
+                      contains:
+                        item: "{tech_asset.id}"
+                        in: "{boundary.technical_assets_inside}"
+                      then:
+                        - assign:
+                            my_boundary_id: "{boundary.id}"
+            - if:
+                not-equal:
+                  first: "{my_boundary_id}"
+                  second: ""
+                then:
+                  - assign:
+                      found_cross: false
+                  - loop:
+                      in: "{$model.trust_boundaries}"
+                      item: other_boundary
+                      do:
+                        - if:
+                            and:
+                              - not-equal:
+                                  first: "{other_boundary.id}"
+                                  second: "{my_boundary_id}"
+                              - any:
+                                  in: "{other_boundary.technical_assets_inside}"
+                                  item: other_asset_id
+                                  any:
+                                    in: "{tech_asset.data_assets_processed}"
+                                    item: da_id
+                                    contains:
+                                      item: "{da_id}"
+                                      in: "{$model.technical_assets.{other_asset_id}.data_assets_processed}"
+                            then:
+                              - assign:
+                                  found_cross: true
+                  - if:
+                      true: "{found_cross}"
+                      then:
+                        return: true

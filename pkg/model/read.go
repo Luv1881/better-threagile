@@ -62,6 +62,7 @@ type configReader interface {
 	GetRiskExcelConfigHideColumns() []string
 	GetRiskExcelConfigSortByColumns() []string
 	GetRiskExcelConfigWidthOfColumns() map[string]float64
+	GetMethodology() string
 	GetServerMode() bool
 	GetDiagramDPI() int
 	GetServerPort() int
@@ -105,7 +106,7 @@ func AnalyzeModel(modelInput *input.Model, config configReader, builtinRiskRules
 
 	introTextRAA := applyRAA(parsedModel, progressReporter)
 
-	applyRiskGeneration(parsedModel, builtinRiskRules.Merge(customRiskRules), config.GetSkipRiskRules(), progressReporter)
+	applyRiskGeneration(parsedModel, builtinRiskRules.Merge(customRiskRules), config.GetSkipRiskRules(), config.GetMethodology(), progressReporter)
 	err := parsedModel.ApplyWildcardRiskTrackingEvaluation(config.GetIgnoreOrphanedRiskTracking(), progressReporter)
 	if err != nil {
 		return nil, fmt.Errorf("unable to apply wildcard risk tracking evaluation: %w", err)
@@ -126,9 +127,17 @@ func AnalyzeModel(modelInput *input.Model, config configReader, builtinRiskRules
 }
 
 func applyRiskGeneration(parsedModel *types.Model, rules types.RiskRules,
-	skipRiskRules []string,
+	skipRiskRules []string, methodology string,
 	progressReporter types.ProgressReporter) {
 	progressReporter.Info("Applying risk generation")
+
+	activeMethodology, parseErr := types.ParseMethodology(methodology)
+	if parseErr != nil {
+		progressReporter.Warnf("Unknown methodology %q, falling back to stride: %v", methodology, parseErr)
+		activeMethodology = types.StrideMethodology
+	}
+
+	parsedModel.ActiveMethodology = activeMethodology
 
 	skippedRules := make(map[string]bool)
 	if len(skipRiskRules) > 0 {
@@ -142,6 +151,11 @@ func applyRiskGeneration(parsedModel *types.Model, rules types.RiskRules,
 		if ok {
 			progressReporter.Infof("Skipping risk rule: %v", id)
 			delete(skippedRules, id)
+			continue
+		}
+
+		// Skip rules that carry no classification for the active methodology
+		if !rule.Category().HasClassification(activeMethodology) {
 			continue
 		}
 

@@ -1,0 +1,70 @@
+id: operational-critical-process-no-redundancy
+title: Operational Threat - Critical Business Process Supported by Non-Redundant Assets
+function: operations
+stride: denial-of-service
+vast: operational-threat
+cwe: 400
+description: >
+  VAST Operational Threat Model: a business process classified as mission-critical
+  or critical that is supported exclusively by technical assets with redundant=false.
+  A single point of failure in the supporting infrastructure can take down the entire
+  critical process, failing service level agreements and potentially causing significant
+  financial or safety impact.
+impact: >
+  Complete outage of a critical business process due to failure or targeted attack
+  against the sole supporting technical asset. No failover path means maximum downtime.
+asvs: V1 - Architecture, Design and Threat Modeling Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html
+action: Add redundancy for all assets supporting critical business processes
+mitigation: >
+  Deploy at least two instances of each technical asset that supports mission-critical
+  or critical business processes. Set redundant to true after adding HA configuration.
+  Implement health checks, automatic failover, and data replication.
+check: >
+  Are all assets supporting critical or mission-critical business processes deployed
+  with redundancy (redundant=true)?
+detection_logic: >
+  Business processes classified as mission-critical or critical where all supporting
+  technical assets have redundant set to false.
+risk_assessment: >
+  Critical for mission-critical processes; high for critical processes without
+  redundancy.
+false_positives: >
+  Processes where redundancy is provided at the infrastructure layer (cloud-managed
+  services with implicit HA) that are not modelled as separate assets.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>No Redundancy for Critical Process</b>: <b>{tech_asset.title}</b> supports a critical business process without redundancy"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: improbable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - false: "{tech_asset.redundant}"
+            - any:
+                in: "{tech_asset.supported_business_processes}"
+                item: bp_id
+                or:
+                  - equal:
+                      first: "{$model.business_processes.{bp_id}.criticality}"
+                      second: mission-critical
+                  - equal:
+                      first: "{$model.business_processes.{bp_id}.criticality}"
+                      second: critical
+          then:
+            return: true

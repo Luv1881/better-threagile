@@ -17,6 +17,14 @@ type AllExpression struct {
 func (what *AllExpression) ParseBool(script any) (common.BoolExpression, any, error) {
 	what.literal = common.ToLiteral(script)
 
+	if rawMap, ok := script.(map[interface{}]interface{}); ok {
+		normalised := make(map[string]any, len(rawMap))
+		for k, v := range rawMap {
+			normalised[fmt.Sprintf("%v", k)] = v
+		}
+		script = normalised
+	}
+
 	switch script.(type) {
 	case map[string]any:
 		for key, value := range script.(map[string]any) {

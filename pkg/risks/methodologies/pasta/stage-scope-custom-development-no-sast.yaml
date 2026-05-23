@@ -1,0 +1,78 @@
+id: custom-development-no-sast
+title: Stage II - Custom-Developed Asset With No Build Pipeline Security
+function: development
+stride: tampering
+pasta: stage-scope
+cwe: 693
+description: >
+  PASTA Stage II defines the technical scope and identifies custom-developed components
+  that require code-level security analysis. A custom-developed technical asset without
+  a build pipeline performing Static Application Security Testing (SAST) means that
+  code vulnerabilities are not caught before deployment, increasing the probability that
+  known vulnerability classes survive to production.
+impact: >
+  Injection vulnerabilities, insecure dependencies, hardcoded secrets, and other
+  code-level weaknesses reach production without detection, widening the attack surface.
+asvs: V14 - Configuration Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html
+action: Add SAST and dependency scanning to the CI/CD pipeline
+mitigation: >
+  Integrate static analysis (e.g., Semgrep, SonarQube, CodeQL) and dependency
+  scanning (e.g., Dependabot, OWASP Dependency-Check) into the build pipeline for
+  every custom-developed asset. Fail builds on high-severity findings.
+check: >
+  Does every custom-developed technical asset have a build pipeline with SAST
+  and dependency scanning?
+detection_logic: >
+  In-scope custom-developed technical assets where no sourcecode repository or
+  build-pipeline asset exists in the model to provide build security controls.
+risk_assessment: >
+  Medium baseline; elevated for internet-exposed custom-developed assets processing
+  sensitive data.
+false_positives: >
+  Assets where the build pipeline is managed outside this model; document with
+  a reference to the external CI/CD system.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>No Build Pipeline Security</b>: custom-developed asset <b>{tech_asset.title}</b> has no SAST or dependency scanning"
+    severity: "calculate_severity(unlikely, medium)"
+    exploitation_likelihood: unlikely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.custom_developed_parts}"
+          then:
+            - assign:
+                has_pipeline: false
+            - loop:
+                in: "{$model.technical_assets}"
+                item: other_asset
+                do:
+                  - if:
+                      any:
+                        in: "{other_asset.technologies}"
+                        or:
+                          - true: "{.attributes.build-pipeline}"
+                          - true: "{.attributes.sourcecode-repository}"
+                      then:
+                        - assign:
+                            has_pipeline: true
+            - if:
+                false: "{has_pipeline}"
+                then:
+                  return: true

@@ -127,6 +127,14 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 			Integrity:              integrity,
 			Availability:           availability,
 			JustificationCiaRating: fmt.Sprintf("%v", asset.JustificationCiaRating),
+			PiiCategories:          asset.PiiCategories,
+			DataSubjectCategory:    asset.DataSubjectCategory,
+			LawfulBasis:            asset.LawfulBasis,
+			RetentionPeriod:        asset.RetentionPeriod,
+			ProcessingPurpose:      asset.ProcessingPurpose,
+			CrossBorderTransfer:    asset.CrossBorderTransfer,
+			HasPii:                 len(asset.PiiCategories) > 0,
+			HasLawfulBasisSet:      asset.LawfulBasis != "",
 		}
 	}
 
@@ -319,6 +327,11 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 					DataAssetsReceived:     dataAssetsReceived,
 					DiagramTweakWeight:     weight,
 					DiagramTweakConstraint: !commLink.DiagramTweakConstraint,
+					CrossBorder:            commLink.CrossBorder,
+					AuditLogged:            commLink.AuditLogged,
+					RateLimited:            commLink.RateLimited,
+					TlsVersion:             commLink.TlsVersion,
+					ApiStyle:               commLink.ApiStyle,
 				}
 				communicationLinks = append(communicationLinks, commLink)
 				// track all comm links
@@ -368,6 +381,13 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 			DataFormatsAccepted:     dataFormatsAccepted,
 			CommunicationLinks:      communicationLinks,
 			DiagramTweakOrder:       asset.DiagramTweakOrder,
+			IsPiiProcessor:                 asset.IsPiiProcessor,
+			IsPiiController:                asset.IsPiiController,
+			DataMinimisation:               asset.DataMinimisation,
+			EntryPointType:                 asset.EntryPointType,
+			AttackSurfaceExposure:          asset.AttackSurfaceExposure,
+			RequiresAuthenticationStrength: asset.RequiresAuthenticationStrength,
+			SupportedBusinessProcesses:     asset.SupportedBusinessProcesses,
 		}
 	}
 
@@ -544,6 +564,33 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 			return nil, fmt.Errorf("unknown 'stride' value of individual risk category  %q: %v", customRiskCategoryCategory.Title, customRiskCategoryCategory.STRIDE)
 		}
 
+		var linddunPtr *types.LINDDUN
+		if customRiskCategoryCategory.LINDDUN != "" {
+			l, linddunErr := types.ParseLINDDUN(customRiskCategoryCategory.LINDDUN)
+			if linddunErr != nil {
+				return nil, fmt.Errorf("unknown 'linddun' value of individual risk category %q: %v", customRiskCategoryCategory.Title, customRiskCategoryCategory.LINDDUN)
+			}
+			linddunPtr = &l
+		}
+
+		var pastaPtr *types.PASTA
+		if customRiskCategoryCategory.PASTA != "" {
+			p, pastaErr := types.ParsePASTA(customRiskCategoryCategory.PASTA)
+			if pastaErr != nil {
+				return nil, fmt.Errorf("unknown 'pasta' value of individual risk category %q: %v", customRiskCategoryCategory.Title, customRiskCategoryCategory.PASTA)
+			}
+			pastaPtr = &p
+		}
+
+		var vastPtr *types.VAST
+		if customRiskCategoryCategory.VAST != "" {
+			v, vastErr := types.ParseVAST(customRiskCategoryCategory.VAST)
+			if vastErr != nil {
+				return nil, fmt.Errorf("unknown 'vast' value of individual risk category %q: %v", customRiskCategoryCategory.Title, customRiskCategoryCategory.VAST)
+			}
+			vastPtr = &v
+		}
+
 		cat := &types.RiskCategory{
 			ID:                         customRiskCategoryCategory.ID,
 			Title:                      customRiskCategoryCategory.Title,
@@ -559,6 +606,9 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 			FalsePositives:             customRiskCategoryCategory.FalsePositives,
 			Function:                   function,
 			STRIDE:                     stride,
+			LINDDUN:                    linddunPtr,
+			PASTA:                      pastaPtr,
+			VAST:                       vastPtr,
 			ModelFailurePossibleReason: customRiskCategoryCategory.ModelFailurePossibleReason,
 			CWE:                        customRiskCategoryCategory.CWE,
 		}
@@ -732,6 +782,47 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 	outJsonData, _ := json.MarshalIndent(parsedModel, "", "  ")
 	_ = os.WriteFile(filepath.Join("out.json"), outJsonData, 0644)
 	/**/
+
+	// Threat Scenarios (PASTA) ========================================================================
+	parsedModel.ThreatScenarios = make(map[string]*types.ThreatScenario)
+	for title, scenario := range modelInput.ThreatScenarios {
+		id := fmt.Sprintf("%v", scenario.ID)
+		if id == "" {
+			id = title
+		}
+		parsedModel.ThreatScenarios[id] = &types.ThreatScenario{
+			Id:                id,
+			Title:             title,
+			Description:       scenario.Description,
+			ActorCapabilities: scenario.ActorCapabilities,
+			EntryAssets:       scenario.EntryAssets,
+			KillChainSteps:    scenario.KillChainSteps,
+			MitigatedBy:       scenario.MitigatedBy,
+			AttackVector:      scenario.AttackVector,
+		}
+	}
+
+	// Business Processes (VAST) ========================================================================
+	parsedModel.BusinessProcesses = make(map[string]*types.BusinessProcess)
+	for title, bp := range modelInput.BusinessProcesses {
+		id := fmt.Sprintf("%v", bp.ID)
+		if id == "" {
+			id = title
+		}
+		criticality, bpErr := types.ParseCriticality(bp.Criticality)
+		if bpErr != nil {
+			criticality = types.Important // default if not declared
+		}
+		parsedModel.BusinessProcesses[id] = &types.BusinessProcess{
+			Id:                         id,
+			Title:                      title,
+			Description:                bp.Description,
+			Criticality:                criticality,
+			Owner:                      bp.Owner,
+			SupportedByTechnicalAssets: bp.SupportedByTechnicalAssets,
+			DataAssetsInFlight:         bp.DataAssetsInFlight,
+		}
+	}
 
 	return &parsedModel, nil
 }

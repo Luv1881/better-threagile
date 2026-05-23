@@ -1,0 +1,74 @@
+id: weak-auth-on-entry-point
+title: Stage VI - Weak Authentication Strength on Internet-Exposed Entry Point
+function: architecture
+stride: spoofing
+pasta: stage-attack-modeling
+cwe: 287
+description: >
+  PASTA Stage VI models how attackers simulate attacks against identified entry points.
+  Internet-exposed entry points with weak authentication (none or password-only) are
+  prime targets for credential stuffing, phishing, and account takeover attacks.
+  High-value or sensitive entry points should require MFA or hardware tokens.
+impact: >
+  Full account takeover, lateral movement into internal systems, and data exfiltration.
+  Credential stuffing attacks against password-only endpoints succeed at statistically
+  predictable rates given leaked credential databases.
+asvs: V2 - Authentication Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+action: Strengthen authentication on all internet-exposed entry points
+mitigation: >
+  Require MFA for all user-facing internet entry points handling sensitive data.
+  Declare requires_authentication_strength as mfa or hardware on the technical asset.
+  Consider phishing-resistant authentication (WebAuthn, FIDO2) for high-value assets.
+check: >
+  Do all internet-exposed entry points with confidential or higher data have
+  requires_authentication_strength set to mfa or hardware?
+detection_logic: >
+  Internet-exposed technical assets classified as entry points where
+  requires_authentication_strength is not mfa or hardware and the asset handles
+  confidential or strictly-confidential data.
+risk_assessment: >
+  High for entry points storing or processing strictly-confidential data with no MFA.
+  Elevated for confidential data with password-only authentication.
+false_positives: >
+  Public APIs serving non-sensitive, non-authenticated data (e.g., public search) do
+  not require strong authentication; ensure confidentiality is set to public.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Weak Authentication</b>: internet-exposed entry point <b>{tech_asset.title}</b> lacks strong authentication for confidential data"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.internet}"
+            - not-equal:
+                first: "{tech_asset.entry_point_type}"
+                second: ""
+            - equal-or-greater:
+                first: "{tech_asset.confidentiality}"
+                second: confidential
+                as: confidentiality
+            - not-equal:
+                first: "{tech_asset.requires_authentication_strength}"
+                second: mfa
+            - not-equal:
+                first: "{tech_asset.requires_authentication_strength}"
+                second: hardware
+          then:
+            return: true

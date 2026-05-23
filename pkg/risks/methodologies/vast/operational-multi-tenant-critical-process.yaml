@@ -1,0 +1,72 @@
+id: operational-multi-tenant-critical-process
+title: Operational Threat - Critical Business Process on Multi-Tenant Asset
+function: architecture
+stride: information-disclosure
+vast: operational-threat
+cwe: 284
+description: >
+  VAST Operational Threat Model: a technical asset that supports a critical business
+  process but is deployed in multi-tenant mode. In a multi-tenant deployment, a
+  tenant isolation failure, noisy-neighbour attack, or metadata leak can expose
+  the critical process to data belonging to another tenant or to interference that
+  degrades availability.
+impact: >
+  Tenant isolation failure leading to cross-tenant data exposure or process
+  interference, potentially affecting SLA, compliance obligations, and the
+  confidentiality of critical business data.
+asvs: V4 - Access Control Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Multi_Tenant_Security_Cheat_Sheet.html
+action: Isolate critical business processes onto single-tenant infrastructure
+mitigation: >
+  Deploy the technical assets supporting critical business processes on dedicated,
+  single-tenant infrastructure (set multi_tenant to false). Where multi-tenancy is
+  required, enforce strong tenant isolation at the application and infrastructure
+  layers and document the controls.
+check: >
+  Are technical assets supporting critical business processes running in single-tenant
+  mode?
+detection_logic: >
+  Multi-tenant technical assets that support critical or mission-critical business
+  processes.
+risk_assessment: >
+  High for mission-critical processes; medium for critical processes where tenant
+  isolation controls are well-documented.
+false_positives: >
+  Cloud-managed services with strong tenant isolation guarantees (e.g., AWS RDS,
+  Azure SQL) where the cloud provider's shared-responsibility model covers isolation.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Multi-Tenant Critical Process</b>: <b>{tech_asset.title}</b> supports a critical business process but runs in multi-tenant mode"
+    severity: "calculate_severity(unlikely, high)"
+    exploitation_likelihood: unlikely
+    exploitation_impact: high
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.multi_tenant}"
+            - any:
+                in: "{tech_asset.supported_business_processes}"
+                item: bp_id
+                or:
+                  - equal:
+                      first: "{$model.business_processes.{bp_id}.criticality}"
+                      second: mission-critical
+                  - equal:
+                      first: "{$model.business_processes.{bp_id}.criticality}"
+                      second: critical
+          then:
+            return: true

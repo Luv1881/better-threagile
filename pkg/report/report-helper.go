@@ -67,6 +67,22 @@ func reduceToSTRIDERisk(parsedModel *types.Model, risksByCategory map[string][]*
 	return result
 }
 
+// reduceToMethodologyClassification filters risks to those whose category matches
+// the given classification label for the model's active methodology.
+func reduceToMethodologyClassification(parsedModel *types.Model, risksByCategory map[string][]*types.Risk, label string) map[string][]*types.Risk {
+	result := make(map[string][]*types.Risk)
+	for categoryId, risks := range risksByCategory {
+		category := parsedModel.GetRiskCategory(categoryId)
+		if category == nil {
+			continue
+		}
+		if category.ClassificationLabel(parsedModel.ActiveMethodology) == label {
+			result[categoryId] = append(result[categoryId], risks...)
+		}
+	}
+	return result
+}
+
 func countRisks(risksByCategory map[string][]*types.Risk) int {
 	result := 0
 	for _, risks := range risksByCategory {

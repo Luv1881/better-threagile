@@ -37,6 +37,16 @@ type TechnicalAsset struct {
 	CommunicationLinks      []*CommunicationLink  `json:"communication_links,omitempty" yaml:"communication_links,omitempty"`
 	DiagramTweakOrder       int                   `json:"diagram_tweak_order,omitempty" yaml:"diagram_tweak_order,omitempty"`
 	RAA                     float64               `json:"raa,omitempty" yaml:"raa,omitempty"` // will be set by separate calculation step
+	// LINDDUN privacy fields (all optional)
+	IsPiiProcessor   bool `json:"is_pii_processor,omitempty" yaml:"is_pii_processor,omitempty"`
+	IsPiiController  bool `json:"is_pii_controller,omitempty" yaml:"is_pii_controller,omitempty"`
+	DataMinimisation bool `json:"data_minimisation,omitempty" yaml:"data_minimisation,omitempty"`
+	// PASTA attack-surface fields (all optional)
+	EntryPointType                 string   `json:"entry_point_type,omitempty" yaml:"entry_point_type,omitempty"`
+	AttackSurfaceExposure          string   `json:"attack_surface_exposure,omitempty" yaml:"attack_surface_exposure,omitempty"`
+	RequiresAuthenticationStrength string   `json:"requires_authentication_strength,omitempty" yaml:"requires_authentication_strength,omitempty"`
+	// VAST business-process fields (all optional)
+	SupportedBusinessProcesses []string `json:"supported_business_processes,omitempty" yaml:"supported_business_processes,omitempty"`
 }
 
 func (what TechnicalAsset) IsTaggedWithAny(tags ...string) bool {

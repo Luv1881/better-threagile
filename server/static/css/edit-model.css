@@ -33,6 +33,12 @@ body {
   gap: 10px;
 }
 
+.buttons-container select,
+.buttons-container button,
+.input-container input {
+  min-height: 32px;
+}
+
 .diagram {
   width: 60%;
   height: 700px;
@@ -56,6 +62,12 @@ body {
   height: 320px;
   background-color: #efb9b9;
   overflow-y: auto; /* Enable vertical scroll */
+}
+
+.risk-summary {
+  font-size: 0.8em;
+  font-weight: bold;
+  margin-bottom: 12px;
 }
 
 .property-editor-item {

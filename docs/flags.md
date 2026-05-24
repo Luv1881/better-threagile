@@ -42,3 +42,17 @@ This flags is used when application run in [server mode](./mode-server.md)
 |----------------|---------------------------|---------------------------------------------------------| ---------------|
 | `-server-dir`  | string(path to directory) | path to directory where static server files are located | /server        |
 | `-server-port` | int                       | which port will be used to run the server               | 8080           |
+
+## Methodology and rule-pack flags
+
+These flags are accepted by `analyze-model`, `diff`, `watch`, `lint`, `validate`, and `test-rules`.
+
+| Flag                     | Type                           | Description                                                                                         | Default Value |
+|--------------------------|--------------------------------|-----------------------------------------------------------------------------------------------------|---------------|
+| `--methodology`          | string                         | Active threat modeling methodology: `stride`, `linddun`, `pasta`, `vast`, `octave`, `trike`, `custom` | `stride`    |
+| `--rule-pack`            | string                         | Load a built-in methodology rule pack by name (`linddun`, `pasta`, `vast`)                          | `""`          |
+| `--rules-dir`            | string(path to directory)      | Directory containing additional YAML script risk rules to load                                      | `""`          |
+| `--rules-url`            | string (repeatable)            | URL of a rules archive (`.tar.gz` or `.zip`); supports `#sha256=` and `#ttl=` fragments             | `""`          |
+| `--rules-url-file`       | string(path to file)           | Newline-delimited file of rules archive URLs (blank lines and `#` comments ignored)                 | `""`          |
+| `--rules-trusted-key`    | string (repeatable, base64)    | Ed25519 public key for verifying `.sig` sidecar signatures on rule archives                         | `""`          |
+| `--rules-require-signed` | bool                           | Reject any remote rule archive that lacks a valid signature from a trusted key                      | `false`       |

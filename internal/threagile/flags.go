@@ -42,6 +42,9 @@ const (
 	executeModelMacroFlagName     = "execute-model-macro"
 	rulesDirFlagName              = "rules-dir"
 	rulesURLFlagName              = "rules-url"
+	rulesURLFileFlagName          = "rules-url-file"
+	rulesTrustedKeyFlagName       = "rules-trusted-key"
+	rulesRequireSignedFlagName    = "rules-require-signed"
 	methodologyFlagName           = "methodology"
 	rulePackFlagName              = "rule-pack"
 
@@ -85,6 +88,8 @@ type Flags struct {
 	configFlag           string
 	riskRulePluginsValue string
 	skipRiskRulesValue   string
+	rulesURLValues       []string
+	rulesTrustedKeys     []string
 
 	generateDataFlowDiagramFlag     bool // deprecated
 	generateDataAssetDiagramFlag    bool // deprecated

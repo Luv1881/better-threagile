@@ -31,12 +31,27 @@ func (what *Threagile) initAnalyze() *Threagile {
 				}
 			}
 
-			if rawURL := what.config.GetRulesURL(); rawURL != "" {
-				cacheDir := filepath.Join(what.config.GetAppFolder(), "rules-cache")
-				localDir, fetchErr := risks.FetchAndCacheRules(rawURL, cacheDir)
-				if fetchErr != nil {
-					progressReporter.Warnf("Failed to fetch rules from %q: %v", rawURL, fetchErr)
+			rulesURLs := append([]string{}, what.config.GetRulesURLs()...)
+			if urlFile := what.config.GetRulesURLFile(); urlFile != "" {
+				fileURLs, fileErr := risks.ReadRulesURLFile(urlFile)
+				if fileErr != nil {
+					progressReporter.Warnf("Failed to read rules URL file %q: %v", urlFile, fileErr)
 				} else {
+					rulesURLs = append(rulesURLs, fileURLs...)
+				}
+			}
+
+			if len(rulesURLs) > 0 {
+				cacheDir := filepath.Join(what.config.GetAppFolder(), "rules-cache")
+				fetchOptions := risks.FetchOptions{
+					TrustedKeys:   what.config.GetRulesTrustedKeys(),
+					RequireSigned: what.config.GetRulesRequireSigned(),
+				}
+				localDirs, fetchErr := risks.FetchAndCacheRuleSources(rulesURLs, cacheDir, fetchOptions)
+				if fetchErr != nil {
+					progressReporter.Warnf("Failed to fetch remote rules: %v", fetchErr)
+				}
+				for _, localDir := range localDirs {
 					remoteRules, remoteErr := risks.LoadExternalScriptRiskRules(localDir)
 					if remoteErr != nil {
 						progressReporter.Warnf("Failed to load cached remote rules from %q: %v", localDir, remoteErr)

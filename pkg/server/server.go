@@ -17,7 +17,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/threagile/threagile/pkg/macros"
 	"github.com/threagile/threagile/pkg/model"
+	"github.com/threagile/threagile/pkg/risks"
 	"github.com/threagile/threagile/pkg/types"
 )
 
@@ -107,6 +109,9 @@ func RunServer(config serverConfigReader, builtinRiskRules types.RiskRules) {
 	router.HEAD("/edit-model", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "edit-model.html", gin.H{})
 	})
+	router.GET("/dashboard", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "dashboard.html", gin.H{})
+	})
 	router.StaticFile("/css/edit-model.css", filepath.Join(s.config.GetServerFolder(), "static", "css", "edit-model.css"))       // <==
 	router.StaticFile("/js/edit-model.js", filepath.Join(s.config.GetServerFolder(), "static", "js", "edit-model.js"))           // <==
 	router.StaticFile("/js/property-editor.js", filepath.Join(s.config.GetServerFolder(), "static", "js", "property-editor.js")) // <==
@@ -139,6 +144,7 @@ func RunServer(config serverConfigReader, builtinRiskRules types.RiskRules) {
 			"build_timestamp": s.config.GetBuildTimestamp(),
 		})
 	})
+	router.GET("/meta/methodologies", s.metaMethodologies)
 	router.GET("/meta/types", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"quantity":                     arrayOfStringValues(types.QuantityValues()),
@@ -162,17 +168,19 @@ func RunServer(config serverConfigReader, builtinRiskRules types.RiskRules) {
 			"risk_function":                arrayOfStringValues(types.RiskFunctionValues()),
 			"risk_status":                  arrayOfStringValues(types.RiskStatusValues()),
 			"stride":                       arrayOfStringValues(types.STRIDEValues()),
+			"methodology":                  arrayOfStringValues(types.MethodologyValues()),
 		})
 	})
 
-	// TODO router.GET("/meta/risk-rules", listRiskRules)
-	// TODO router.GET("/meta/model-macros", listModelMacros)
+	router.GET("/meta/risk-rules", s.listRiskRules)
+	router.GET("/meta/model-macros", s.listModelMacros)
 
 	router.GET("/meta/stats", s.stats)
 
 	router.POST("/edit-model/analyze", s.editModelAnalyze)
 
 	router.POST("/direct/analyze", s.analyze)
+	router.POST("/direct/diff", s.directDiff)
 	router.POST("/direct/check", s.check)
 	router.GET("/direct/stub", s.stubFile)
 
@@ -195,6 +203,8 @@ func RunServer(config serverConfigReader, builtinRiskRules types.RiskRules) {
 	router.GET("/models/:model-id/technical-assets", s.streamTechnicalAssetsJSON)
 	router.GET("/models/:model-id/stats", s.streamStatsJSON)
 	router.GET("/models/:model-id/analysis", s.analyzeModelOnServerDirectly)
+	router.GET("/models/:model-id/risk-tracking-summary", s.riskTrackingSummary)
+	router.POST("/models/:model-id/explain-risk", s.explainRisk)
 
 	router.GET("/models/:model-id/cover", s.getCover)
 	router.PUT("/models/:model-id/cover", s.setCover)
@@ -340,6 +350,58 @@ func (s *server) stats(ginContext *gin.Context) {
 		"success_count": s.successCount,
 		"error_count":   s.errorCount,
 	})
+}
+
+func (s *server) listRiskRules(ginContext *gin.Context) {
+	allRules := risks.GetBuiltInRiskRules().Merge(s.customRiskRules)
+	type ruleEntry struct {
+		ID          string   `json:"id"`
+		Title       string   `json:"title"`
+		Description string   `json:"description,omitempty"`
+		Tags        []string `json:"supported_tags,omitempty"`
+		Builtin     bool     `json:"builtin"`
+	}
+	ids := make([]string, 0, len(allRules))
+	for id := range allRules {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	entries := make([]ruleEntry, 0, len(ids))
+	for _, id := range ids {
+		rule := allRules[id]
+		cat := rule.Category()
+		_, isBuiltin := s.builtinRiskRules[id]
+		entry := ruleEntry{
+			ID:      id,
+			Tags:    rule.SupportedTags(),
+			Builtin: isBuiltin,
+		}
+		if cat != nil {
+			entry.Title = cat.Title
+			entry.Description = cat.Description
+		}
+		entries = append(entries, entry)
+	}
+	ginContext.JSON(http.StatusOK, gin.H{"risk_rules": entries})
+}
+
+func (s *server) listModelMacros(ginContext *gin.Context) {
+	type macroEntry struct {
+		ID          string `json:"id"`
+		Title       string `json:"title"`
+		Description string `json:"description,omitempty"`
+	}
+	all := macros.ListBuiltInMacros()
+	entries := make([]macroEntry, 0, len(all))
+	for _, m := range all {
+		details := m.GetMacroDetails()
+		entries = append(entries, macroEntry{
+			ID:          details.ID,
+			Title:       details.Title,
+			Description: details.Description,
+		})
+	}
+	ginContext.JSON(http.StatusOK, gin.H{"model_macros": entries})
 }
 
 func handleErrorInServiceCall(err error, ginContext *gin.Context) {

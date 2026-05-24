@@ -1,0 +1,86 @@
+id: per-operation-rate-limiting-missing
+title: Stage V - Custom-Developed Service Without Per-Operation Rate Limiting
+function: operations
+stride: denial-of-service
+pasta: stage-vuln-analysis
+cwe: 770
+description: >
+  PASTA Stage V identifies vulnerabilities in the attack surface. Custom-developed
+  services that process authentication credentials or session tokens and have outgoing
+  communication links without rate limiting are vulnerable to credential stuffing,
+  brute-force, bulk data exfiltration, and resource exhaustion. Global API rate limits
+  are too coarse to prevent targeted abuse of individual high-value operations such as
+  login, password reset, or bulk data exports.
+impact: >
+  Attackers can enumerate users, brute-force credentials, bulk-download sensitive data,
+  or exhaust backend resources by sending unlimited requests to unthrottled operations.
+  Business process integrity degrades when operations can be repeated without throttling.
+asvs: V4 - Access Control Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html
+action: Add per-operation rate limiting to all communication links in the authentication and data flow paths
+mitigation: >
+  Apply rate limiting at the operation level using token-bucket or sliding-window
+  algorithms, enforced per-user for authenticated requests and per-IP for unauthenticated
+  requests. Set rate_limited: true on every communication link once per-operation limits
+  are implemented and verified.
+check: >
+  Is rate_limited set to true on every communication link that participates in
+  authentication or sensitive data processing? Are per-user limits enforced in addition
+  to any global API limits?
+detection_logic: >
+  In-scope custom-developed process-type technical assets that process authentication
+  data (user-credentials or session-tokens) and have at least one outgoing communication
+  link where rate_limited is false and usage is not devops.
+risk_assessment: >
+  Medium baseline. Elevated for assets with internet-exposed entry points or those
+  processing strictly-confidential authentication credentials.
+false_positives: >
+  Internal service-to-service links that are not reachable from untrusted callers, or
+  where rate limiting is enforced by an upstream proxy (e.g., Nginx limit_req). Set
+  rate_limited: true on the link or change usage to devops to suppress.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Missing Per-Operation Rate Limiting</b>: custom service <b>{tech_asset.title}</b> processes auth data with unthrottled outgoing communication links"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.custom_developed_parts}"
+            - any:
+                in: "{tech_asset.data_assets_processed}"
+                item: data_id
+                or:
+                  - contains:
+                      item: password-hash
+                      in: "{$model.data_assets.{data_id}.pii_categories}"
+                  - contains:
+                      item: session-identifier
+                      in: "{$model.data_assets.{data_id}.pii_categories}"
+            - any:
+                in: "{tech_asset.communication_links}"
+                item: link
+                and:
+                  - equal:
+                      first: "{link.rate_limited}"
+                      second: false
+                  - not-equal:
+                      first: "{link.usage}"
+                      second: devops
+          then:
+            return: true

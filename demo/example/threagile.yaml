@@ -9,6 +9,18 @@ threagile_version: 1.0.0
 # from the live-templates.txt file into your IDE as live editing templates.
 #
 # You might also want to try the REST API when running in server mode...
+#
+# MIGRATION NOTE — Multi-Methodology Fields:
+#
+# This example demonstrates the optional fields introduced for LINDDUN, PASTA, and VAST
+# methodologies. All fields below (pii_categories, lawful_basis, entry_point_type,
+# attack_surface_exposure, audit_logged, business_processes, etc.) are fully optional.
+# Existing models that do not declare them continue to work unchanged with the default
+# --methodology=stride. To activate a methodology:
+#
+#   threagile analyze-model --methodology linddun --rule-pack linddun --model this-file.yaml
+#   threagile analyze-model --methodology pasta   --rule-pack pasta   --model this-file.yaml
+#   threagile analyze-model --methodology vast    --rule-pack vast    --model this-file.yaml
 
 
 
@@ -130,6 +142,15 @@ data_assets:
     justification_cia_rating: >
       Contract data might contain financial data as well as personally identifiable information (PII). The integrity and
       availability of contract data is required for clearing payment disputes.
+    # LINDDUN privacy fields (optional — used when --methodology=linddun --rule-pack=linddun)
+    pii_categories:
+      - name
+      - address
+    data_subject_category: customer   # employee | customer | minor | anonymous
+    lawful_basis: contract            # consent | contract | legal_obligation | vital_interest | public_task | legitimate_interest
+    retention_period: "7 years"       # contractual / legal retention period
+    processing_purpose: "Contract management and payment dispute resolution"
+    cross_border_transfer: false      # true if data leaves the EU/EEA
 
 
   Customer Contract Summaries:
@@ -162,6 +183,14 @@ data_assets:
     availability: critical # values: archive, operational, important, critical, mission-critical
     justification_cia_rating: >
       Customer account data for using the portal are required to be available to offer the portal functionality.
+    # LINDDUN — override inherited pii_categories for this asset
+    pii_categories:
+      - email
+      - name
+      - password_hash
+    lawful_basis: contract
+    retention_period: "Account lifetime + 30 days"
+    processing_purpose: "Authentication and account management"
 
 
   Some Internal Business Data:
@@ -336,6 +365,13 @@ technical_assets:
           - customer-contracts
           - client-application-code
           - marketing-material
+        # LINDDUN — PII flows over this link; audit_logged confirms access is recorded
+        audit_logged: true
+        cross_border: false
+        # PASTA — documents API style and rate-limiting on the public-facing endpoint
+        rate_limited: true
+        tls_version: "1.3"
+        api_style: rest
         #diagram_tweak_weight: 1
         #diagram_tweak_constraint: false
 
@@ -519,6 +555,13 @@ technical_assets:
     multi_tenant: false
     redundant: false
     custom_developed_parts: false
+    # PASTA entry-point classification (optional — used when --methodology=pasta --rule-pack=pasta)
+    entry_point_type: api                   # api | web_ui | cli | file_upload | webhook | cron | internal_rpc
+    attack_surface_exposure: internet       # internet | partner_vpn | internal_lan | air_gapped
+    requires_authentication_strength: none  # none | mfa | hardware (none = pre-auth termination point)
+    # VAST back-reference to business processes supported by this asset
+    supported_business_processes:
+      - customer-portal
     data_assets_processed: # sequence of IDs to reference
       - customer-accounts
       - customer-operational-data
@@ -595,6 +638,17 @@ technical_assets:
     multi_tenant: false
     redundant: false
     custom_developed_parts: true
+    # LINDDUN — this asset processes PII (customer accounts) and is a data processor
+    is_pii_processor: true    # processes PII on behalf of the company (data controller)
+    is_pii_controller: false
+    data_minimisation: true
+    # PASTA — documents this as the application entry point behind the load balancer
+    entry_point_type: web_ui
+    attack_surface_exposure: internal_lan   # behind the load balancer; not directly internet-exposed
+    requires_authentication_strength: mfa
+    # VAST
+    supported_business_processes:
+      - customer-portal
     data_assets_processed: # sequence of IDs to reference
       - customer-accounts
       - customer-operational-data
@@ -1152,6 +1206,39 @@ technical_assets:
 
 
 
+
+
+# VAST business processes (optional — used when --methodology=vast --rule-pack=vast)
+# Defines the business processes that technical assets support, enabling VAST to bucket
+# findings by process criticality and produce an operational vs. application threat split.
+business_processes:
+
+  customer-portal:
+    id: customer-portal
+    title: "Customer Portal"
+    criticality: critical   # archive | operational | important | critical | mission-critical
+    owner: "E-Commerce Team"
+    supported_by_technical_assets:
+      - load-balancer
+      - apache-webserver
+      - sql-database
+    data_assets_in_flight:
+      - customer-accounts
+      - customer-operational-data
+      - customer-contracts
+
+  erp-internal:
+    id: erp-internal
+    title: "Internal ERP Operations"
+    criticality: important
+    owner: "Operations Team"
+    supported_by_technical_assets:
+      - erp-system
+      - sql-database
+      - ldap-auth-server
+    data_assets_in_flight:
+      - internal-business-data
+      - erp-customizing
 
 
 trust_boundaries:

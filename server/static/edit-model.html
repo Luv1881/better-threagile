@@ -18,6 +18,9 @@
         </div>
 
         <div class="buttons-container">
+          <select id="methodologySelect" title="Methodology">
+            <option value="stride">STRIDE</option>
+          </select>
           <button id="btnRestoreChanges">Restore Changes</button>
           <button id="btnExportDiagram">Export</button>
           <button id="btnAnalyze">Analyze</button>
@@ -44,10 +47,34 @@
         <div class="diagram-container">
           <div id="riskTrackingPropertyEditor" class="risk-property-editor"></div>
           <div id="riskAnalyzeContent" class="risk-property-editor">
+          </div>
         </div>
     </body>
     <script src="./js/schema.js"></script>
     <script src="./js/property-editor.js"></script>
     <script src="./js/edit-model.js"></script>
     <link href="./css/edit-model.css" rel="stylesheet" />
+    <script>
+      // Populate methodology dropdown from server so it stays in sync with available methodologies.
+      (function () {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "/meta/methodologies");
+        xhr.onload = function () {
+          if (xhr.status !== 200) return;
+          try {
+            var resp = JSON.parse(xhr.responseText);
+            var sel = document.getElementById("methodologySelect");
+            sel.innerHTML = "";
+            (resp.methodologies || []).forEach(function (m) {
+              var opt = document.createElement("option");
+              opt.value = m.name;
+              opt.textContent = m.title || m.name;
+              if (m.name === (resp.active || "stride")) opt.selected = true;
+              sel.appendChild(opt);
+            });
+          } catch (e) { /* keep the fallback STRIDE option */ }
+        };
+        xhr.send();
+      })();
+    </script>
 </html>

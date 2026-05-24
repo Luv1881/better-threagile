@@ -49,14 +49,18 @@ type Config struct {
 	TechnologyFilenameValue          string `json:"TechnologyFilename,omitempty" yaml:"TechnologyFilename"`
 	HideEmptyChaptersValue           bool   `json:"HideEmptyChapters,omitempty" yaml:"HideEmptyChapters"`
 
-	RiskRulePluginsValue   []string        `json:"RiskRulePlugins,omitempty" yaml:"RiskRulePlugins"`
-	SkipRiskRulesValue     []string        `json:"SkipRiskRules,omitempty" yaml:"SkipRiskRules"`
-	ExecuteModelMacroValue string          `json:"ExecuteModelMacro,omitempty" yaml:"ExecuteModelMacro"`
-	RulesDirValue          string          `json:"RulesDir,omitempty" yaml:"RulesDir"`
-	RulesURLValue          string          `json:"RulesURL,omitempty" yaml:"RulesURL"`
-	MethodologyValue       string          `json:"Methodology,omitempty" yaml:"Methodology"`
-	RulePackValue          string          `json:"RulePack,omitempty" yaml:"RulePack"`
-	RiskExcelValue         RiskExcelConfig `json:"RiskExcel" yaml:"RiskExcel"`
+	RiskRulePluginsValue    []string        `json:"RiskRulePlugins,omitempty" yaml:"RiskRulePlugins"`
+	SkipRiskRulesValue      []string        `json:"SkipRiskRules,omitempty" yaml:"SkipRiskRules"`
+	ExecuteModelMacroValue  string          `json:"ExecuteModelMacro,omitempty" yaml:"ExecuteModelMacro"`
+	RulesDirValue           string          `json:"RulesDir,omitempty" yaml:"RulesDir"`
+	RulesURLValue           string          `json:"RulesURL,omitempty" yaml:"RulesURL"`
+	RulesURLsValue          []string        `json:"RulesURLs,omitempty" yaml:"RulesURLs"`
+	RulesURLFileValue       string          `json:"RulesURLFile,omitempty" yaml:"RulesURLFile"`
+	RulesTrustedKeysValue   []string        `json:"RulesTrustedKeys,omitempty" yaml:"RulesTrustedKeys"`
+	RulesRequireSignedValue bool            `json:"RulesRequireSigned,omitempty" yaml:"RulesRequireSigned"`
+	MethodologyValue        string          `json:"Methodology,omitempty" yaml:"Methodology"`
+	RulePackValue           string          `json:"RulePack,omitempty" yaml:"RulePack"`
+	RiskExcelValue          RiskExcelConfig `json:"RiskExcel" yaml:"RiskExcel"`
 
 	ServerModeValue               bool `json:"ServerMode,omitempty" yaml:"ServerMode"`
 	ServerPortValue               int  `json:"ServerPort,omitempty" yaml:"ServerPort"`
@@ -115,6 +119,10 @@ type ConfigGetter interface {
 	GetExecuteModelMacro() string
 	GetRulesDir() string
 	GetRulesURL() string
+	GetRulesURLs() []string
+	GetRulesURLFile() string
+	GetRulesTrustedKeys() []string
+	GetRulesRequireSigned() bool
 	GetMethodology() string
 	GetRulePack() string
 	GetRiskExcelConfigHideColumns() []string
@@ -200,6 +208,8 @@ func (c *Config) Defaults(buildTimestamp string) *Config {
 		RiskRulePluginsValue:   make([]string, 0),
 		SkipRiskRulesValue:     make([]string, 0),
 		ExecuteModelMacroValue: "",
+		RulesURLsValue:         make([]string, 0),
+		RulesTrustedKeysValue:  make([]string, 0),
 		RiskExcelValue: RiskExcelConfig{
 			HideColumns:        make([]string, 0),
 			SortByColumns:      make([]string, 0),
@@ -444,6 +454,24 @@ func (c *Config) Merge(config Config, values map[string]any) {
 
 		case strings.ToLower("RulesURL"):
 			c.RulesURLValue = config.RulesURLValue
+
+		case strings.ToLower("RulesURLs"):
+			c.RulesURLsValue = config.RulesURLsValue
+
+		case strings.ToLower("RulesURLFile"):
+			c.RulesURLFileValue = config.RulesURLFileValue
+
+		case strings.ToLower("RulesTrustedKeys"):
+			c.RulesTrustedKeysValue = config.RulesTrustedKeysValue
+
+		case strings.ToLower("RulesRequireSigned"):
+			c.RulesRequireSignedValue = config.RulesRequireSignedValue
+
+		case strings.ToLower("Methodology"):
+			c.MethodologyValue = config.MethodologyValue
+
+		case strings.ToLower("RulePack"):
+			c.RulePackValue = config.RulePackValue
 
 		case strings.ToLower("RiskExcel"):
 			configMap, mapOk := values[key].(map[string]any)
@@ -759,6 +787,31 @@ func (c *Config) GetRulesURL() string {
 
 func (c *Config) SetRulesURL(url string) {
 	c.RulesURLValue = url
+}
+
+func (c *Config) GetRulesURLs() []string {
+	urls := make([]string, 0, len(c.RulesURLsValue)+1)
+	if strings.TrimSpace(c.RulesURLValue) != "" {
+		urls = append(urls, c.RulesURLValue)
+	}
+	for _, rawURL := range c.RulesURLsValue {
+		if strings.TrimSpace(rawURL) != "" {
+			urls = append(urls, rawURL)
+		}
+	}
+	return urls
+}
+
+func (c *Config) GetRulesURLFile() string {
+	return c.RulesURLFileValue
+}
+
+func (c *Config) GetRulesTrustedKeys() []string {
+	return c.RulesTrustedKeysValue
+}
+
+func (c *Config) GetRulesRequireSigned() bool {
+	return c.RulesRequireSignedValue
 }
 
 func (c *Config) GetMethodology() string {

@@ -18,7 +18,8 @@ var embeddedPacks embed.FS
 var AvailableBuiltinPacks = []string{"linddun", "pasta", "vast"}
 
 // LoadRulePack loads a named built-in methodology rule pack by name (e.g., "linddun").
-// It extracts the embedded tar.gz into a temporary directory and loads its YAML risk rules.
+// It extracts the embedded tar.gz into a temporary directory, loads the YAML risk rules,
+// and cleans up the temporary directory before returning.
 func LoadRulePack(name string) (types.RiskRules, error) {
 	name = strings.ToLower(strings.TrimSpace(name))
 	packPath := fmt.Sprintf("methodologies/%s.tar.gz", name)
@@ -33,6 +34,7 @@ func LoadRulePack(name string) (types.RiskRules, error) {
 	if tmpErr != nil {
 		return nil, fmt.Errorf("failed to create temp dir for rule pack %q: %w", name, tmpErr)
 	}
+	defer os.RemoveAll(tmpDir)
 
 	if err := extractTarGz(bytes.NewReader(data), tmpDir); err != nil {
 		return nil, fmt.Errorf("failed to extract rule pack %q: %w", name, err)

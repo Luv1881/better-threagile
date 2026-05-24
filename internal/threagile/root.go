@@ -126,7 +126,12 @@ func (what *Threagile) initFlags() *Threagile {
 	// ReportConfigurationValue not available as flags
 
 	what.rootCmd.PersistentFlags().StringVar(&what.flags.RulesDirValue, rulesDirFlagName, what.config.GetRulesDir(), "directory of extra YAML risk rule files to load at runtime")
-	what.rootCmd.PersistentFlags().StringVar(&what.flags.RulesURLValue, rulesURLFlagName, what.config.GetRulesURL(), "URL to fetch extra YAML risk rule files (.tar.gz or .zip) with 24h caching")
+	what.flags.rulesURLValues = append([]string{}, what.config.GetRulesURLs()...)
+	what.flags.rulesTrustedKeys = append([]string{}, what.config.GetRulesTrustedKeys()...)
+	what.rootCmd.PersistentFlags().StringArrayVar(&what.flags.rulesURLValues, rulesURLFlagName, what.config.GetRulesURLs(), "URL to fetch extra YAML risk rule files (.tar.gz or .zip); repeatable; supports #sha256=... and #ttl=24h")
+	what.rootCmd.PersistentFlags().StringVar(&what.flags.RulesURLFileValue, rulesURLFileFlagName, what.config.GetRulesURLFile(), "file containing rules URLs to fetch, one per line")
+	what.rootCmd.PersistentFlags().StringArrayVar(&what.flags.rulesTrustedKeys, rulesTrustedKeyFlagName, what.config.GetRulesTrustedKeys(), "trusted Ed25519 public key for remote rule signatures; repeatable")
+	what.rootCmd.PersistentFlags().BoolVar(&what.flags.RulesRequireSignedValue, rulesRequireSignedFlagName, what.config.GetRulesRequireSigned(), "require remote rule archives to have a valid .sig sidecar signature")
 	what.rootCmd.PersistentFlags().StringVar(&what.flags.MethodologyValue, methodologyFlagName, what.config.GetMethodology(), "threat modeling methodology to use (stride, linddun, pasta, vast, octave, trike)")
 	what.rootCmd.PersistentFlags().StringVar(&what.flags.RulePackValue, rulePackFlagName, what.config.GetRulePack(), "load a built-in methodology rule pack by name (linddun, pasta, vast)")
 
@@ -395,7 +400,20 @@ func (what *Threagile) processArgs(cmd *cobra.Command, args []string) bool {
 	}
 
 	if what.isFlagOverridden(cmd, rulesURLFlagName) {
-		what.config.RulesURLValue = what.flags.RulesURLValue
+		what.config.RulesURLValue = ""
+		what.config.RulesURLsValue = append([]string{}, what.flags.rulesURLValues...)
+	}
+
+	if what.isFlagOverridden(cmd, rulesURLFileFlagName) {
+		what.config.RulesURLFileValue = what.config.CleanPath(what.flags.RulesURLFileValue)
+	}
+
+	if what.isFlagOverridden(cmd, rulesTrustedKeyFlagName) {
+		what.config.RulesTrustedKeysValue = append([]string{}, what.flags.rulesTrustedKeys...)
+	}
+
+	if what.isFlagOverridden(cmd, rulesRequireSignedFlagName) {
+		what.config.RulesRequireSignedValue = what.flags.RulesRequireSignedValue
 	}
 
 	if what.isFlagOverridden(cmd, methodologyFlagName) {

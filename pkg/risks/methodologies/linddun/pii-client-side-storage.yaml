@@ -1,0 +1,88 @@
+id: pii-client-side-storage
+title: Non-Repudiation - PII or Auth Tokens Accessible in Browser-Side Storage
+function: development
+stride: information-disclosure
+linddun: non-repudiation
+cwe: 922
+description: >
+  Browser-based clients (SPAs, web apps) that process personal data or authentication
+  tokens typically persist them in localStorage or sessionStorage. This browser-accessible
+  storage is readable by any JavaScript running in the same origin — including injected
+  scripts. Without HttpOnly cookies or a strict Content-Security-Policy, the stored
+  tokens and PII are one XSS payload away from full exfiltration.
+  From a LINDDUN perspective this enables Non-Repudiation attacks: an adversary who
+  steals a token can act as the victim, making it impossible to distinguish attacker
+  actions from legitimate user actions in audit logs.
+impact: >
+  Stolen session tokens allow account takeover and impersonation. The original user
+  cannot repudiate actions performed by the attacker. Stolen PII violates GDPR data
+  minimisation and storage limitation principles.
+asvs: V3 - Session Management Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html
+action: Move session tokens to HttpOnly cookies; apply Content-Security-Policy
+mitigation: >
+  Replace localStorage/sessionStorage token storage with HttpOnly, Secure, SameSite=Strict
+  cookies. Cookies with the HttpOnly flag are inaccessible to JavaScript, eliminating
+  the XSS token-theft vector. Deploy a strict Content-Security-Policy to limit damage
+  from any residual XSS. Tag the asset has-httponly-session once deployed.
+check: >
+  Are authentication tokens stored in HttpOnly cookies rather than localStorage?
+  Is a Content-Security-Policy header present on all pages served to this browser client?
+detection_logic: >
+  In-scope technical assets with browser (client) technology that process PII data
+  assets and are not tagged with has-httponly-session.
+risk_assessment: >
+  Medium baseline. Elevated when tokens have long TTL (>1 hour) or when no CSP is
+  configured on the serving origin.
+false_positives: >
+  Applications that exclusively use HttpOnly cookies for session management and do not
+  store any PII in JavaScript-accessible storage. Tag the asset has-httponly-session
+  to suppress this finding once verified.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>PII in Client-Side Storage</b>: browser asset <b>{tech_asset.title}</b> processes personal data that may be stored in JavaScript-accessible browser storage"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.client}"
+            - any:
+                in: "{tech_asset.data_assets_processed}"
+                item: data_id
+                true: "{$model.data_assets.{data_id}.has_pii}"
+          then:
+            - assign:
+                has_httponly: false
+            - loop:
+                in: "{tech_asset.tags}"
+                item: tag
+                do:
+                  - if:
+                      equal:
+                        first: "{tag}"
+                        second: has-httponly-session
+                      then:
+                        - assign:
+                            has_httponly: true
+            - if:
+                false: "{has_httponly}"
+                then:
+                  return: true

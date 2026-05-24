@@ -30,5 +30,27 @@ func (what *Threagile) Execute() {
 
 func (what *Threagile) Init(buildTimestamp string) *Threagile {
 	what.buildTimestamp = buildTimestamp
-	return what.initRoot().initImport().initAnalyze().initCreate().initExecute().initExplain().initList().initPrint().initQuit().initServer().initVersion().initGenerateCI().processSystemArgs(what.rootCmd)
+	return what.initRoot().
+		initImport().
+		initAnalyze().
+		initCreate().
+		initExecute().
+		initExplain().
+		initList().
+		initPrint().
+		initQuit().
+		initServer().
+		initVersion().
+		initGenerateCI().
+		initValidate().
+		initLint().
+		initDiff().
+		initWatch().
+		initInit().
+		initFmt().
+		initRulePack().
+		initTestRules().
+		initCompletion().
+		initLSP().
+		processSystemArgs(what.rootCmd)
 }

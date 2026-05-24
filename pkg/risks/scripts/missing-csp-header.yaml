@@ -1,0 +1,88 @@
+id: missing-csp-header
+title: Missing Content-Security-Policy Header on Web Entry Point
+function: operations
+stride: information-disclosure
+cwe: 693
+description: >
+  Web entry points (reverse proxies and web applications) that serve browser-based
+  clients and process authentication tokens without a Content-Security-Policy (CSP)
+  header are vulnerable to XSS-facilitated token theft. An attacker who achieves
+  XSS in the browser can read localStorage/sessionStorage tokens and replay them
+  without any client-side protection if CSP is absent.
+impact: >
+  An attacker who successfully injects client-side script can exfiltrate authentication
+  tokens, impersonate users, and access all data the victim can access. Without CSP,
+  there is no browser-enforced barrier against inline script execution or data exfiltration.
+asvs: V14 - Configuration Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+action: Configure a Content-Security-Policy response header on the web entry point
+mitigation: >
+  Add a strict Content-Security-Policy header to all responses served to browser clients.
+  At minimum use: default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'.
+  Combine with Subresource Integrity (SRI) for external scripts and avoid inline event
+  handlers. Once deployed, tag the asset has-csp to suppress this finding.
+check: >
+  Is a Content-Security-Policy response header present and non-trivial on all pages
+  served to browsers? Use browser DevTools or securityheaders.com to verify.
+detection_logic: >
+  In-scope technical assets with reverse-proxy or web-application technology that
+  process PII data assets and are not tagged with has-csp. The has-csp tag serves
+  as the in-model confirmation that CSP is deployed and verified.
+risk_assessment: >
+  Medium baseline. Elevated when the application uses long-lived tokens (>1 h TTL)
+  stored in browser-accessible storage, or when no WAF is present to block reflected XSS.
+false_positives: >
+  Add the tag has-csp to the technical asset once a Content-Security-Policy header
+  is verified in production responses. Also false positive when the application
+  exclusively uses HttpOnly cookies for session management and no JS-accessible
+  token storage is used.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Missing Content-Security-Policy</b>: <b>{tech_asset.title}</b> serves browser clients handling auth tokens without a verified CSP header"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.reverse-proxy}"
+                  - true: "{.attributes.web-application}"
+            - any:
+                in: "{tech_asset.data_assets_processed}"
+                item: data_id
+                true: "{$model.data_assets.{data_id}.has_pii}"
+          then:
+            - assign:
+                has_csp: false
+            - loop:
+                in: "{tech_asset.tags}"
+                item: tag
+                do:
+                  - if:
+                      equal:
+                        first: "{tag}"
+                        second: has-csp
+                      then:
+                        - assign:
+                            has_csp: true
+            - if:
+                false: "{has_csp}"
+                then:
+                  return: true

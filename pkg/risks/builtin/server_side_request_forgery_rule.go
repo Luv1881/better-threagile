@@ -45,7 +45,12 @@ func (r *ServerSideRequestForgeryRule) GenerateRisks(input *types.Model) ([]*typ
 	risks := make([]*types.Risk, 0)
 	for _, id := range input.SortedTechnicalAssetIDs() {
 		technicalAsset := input.TechnicalAssets[id]
-		if technicalAsset.OutOfScope || technicalAsset.Technologies.GetAttribute(types.IsClient) || technicalAsset.Technologies.GetAttribute(types.LoadBalancer) {
+		// Traffic-forwarding assets (reverse proxies, load balancers) relay requests based on static
+		// config, not user-supplied URLs, so they are not SSRF-vulnerable in the traditional sense.
+		if technicalAsset.OutOfScope ||
+			technicalAsset.Technologies.GetAttribute(types.IsClient) ||
+			technicalAsset.Technologies.GetAttribute(types.LoadBalancer) ||
+			technicalAsset.Technologies.GetAttribute(types.IsTrafficForwarding) {
 			continue
 		}
 		for _, outgoingFlow := range technicalAsset.CommunicationLinks {

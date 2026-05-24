@@ -129,10 +129,12 @@ func (s *server) execute(ginContext *gin.Context, dryRun bool) (yamlContent []by
 	}
 	defer func() { _ = os.Remove(tmpResultFile.Name()) }()
 
+	methodology := ginContext.DefaultQuery("methodology", s.config.GetMethodology())
+
 	if dryRun {
-		s.doItViaRuntimeCall(yamlFile, tmpOutputDir, false, false, false, false, false, true, true, true, 40)
+		s.doItViaRuntimeCall(yamlFile, tmpOutputDir, false, false, false, false, false, true, true, true, 40, methodology)
 	} else {
-		s.doItViaRuntimeCall(yamlFile, tmpOutputDir, true, true, true, true, true, true, true, true, dpi)
+		s.doItViaRuntimeCall(yamlFile, tmpOutputDir, true, true, true, true, true, true, true, true, dpi, methodology)
 	}
 
 	yamlContent, err = os.ReadFile(filepath.Clean(yamlFile))
@@ -179,7 +181,7 @@ func (s *server) execute(ginContext *gin.Context, dryRun bool) (yamlContent []by
 // ultimately to avoid any in-process memory and/or data leaks by the used third party libs like PDF generation: exec and quit
 func (s *server) doItViaRuntimeCall(modelFile string, outputDir string,
 	generateDataFlowDiagram, generateDataAssetDiagram, generateReportPdf, generateRisksExcel, generateTagsExcel, generateRisksJSON, generateTechnicalAssetsJSON, generateStatsJSON bool,
-	dpi int) {
+	dpi int, methodology string) {
 	// Remember to also add the same args to the exec based sub-process calls!
 	var cmd *exec.Cmd
 	args := []string{"analyze-model",
@@ -189,6 +191,10 @@ func (s *server) doItViaRuntimeCall(modelFile string, outputDir string,
 		"--custom-risk-rules-plugin", strings.Join(s.config.GetRiskRulePlugins(), ","),
 		"--skip-risk-rules", strings.Join(s.config.GetSkipRiskRules(), ","),
 		"--diagram-dpi", strconv.Itoa(dpi),
+		"--methodology", methodology,
+	}
+	if s.config.GetRulePack() != "" {
+		args = append(args, "--rule-pack", s.config.GetRulePack())
 	}
 	if s.config.GetVerbose() {
 		args = append(args, "--verbose")
@@ -267,7 +273,8 @@ func (s *server) editModelAnalyze(ginContext *gin.Context) {
 	customRiskRules := model.LoadCustomRiskRules(s.config.GetPluginFolder(), s.config.GetRiskRulePlugins(), progressReporter)
 	builtinRiskRules := risks.GetBuiltInRiskRules()
 
-	result, err := model.AnalyzeModel(&modelInput, s.config, builtinRiskRules, customRiskRules, progressReporter)
+	methodology := ginContext.DefaultQuery("methodology", s.config.GetMethodology())
+	result, err := model.AnalyzeModel(&modelInput, methodologyOverrideConfig{s.config, methodology}, builtinRiskRules, customRiskRules, progressReporter)
 	if err != nil {
 		ginContext.JSON(http.StatusBadRequest, gin.H{
 			"error": "Unable to analyze model: " + err.Error(),

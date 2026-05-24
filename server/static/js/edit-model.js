@@ -5,6 +5,7 @@ var diagramYaml;
 
 $(document).ready(function() {
   $("#projectTabs").tabs();
+  loadMethodologies();
 
 
   myDiagram = new go.Diagram('myDiagramDiv');
@@ -87,13 +88,15 @@ $(document).ready(function() {
   $('#btnAnalyze').on('click', function() {
     try {
       $.ajax({
-        url: "/edit-model/analyze",
+        url: "/edit-model/analyze?methodology=" + encodeURIComponent($('#methodologySelect').val()),
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify(diagramYaml),
         success: function(response) {
           try {
             const risksByCategory = response.data.ParsedModel.generated_risks_by_category;
+            const activeMethodology = response.data.ParsedModel.active_methodology || $('#methodologySelect').val();
+            $("#riskAnalyzeContent").html($("<div>").addClass("risk-summary").text("Methodology: " + activeMethodology));
             renderRiskTables(risksByCategory, diagramYaml.risk_tracking);
           } catch (e) {
             console.error("Error analyzing model");
@@ -299,7 +302,13 @@ $(document).ready(function() {
 
   function renderRiskTables(generatedRisksByCategory, riskTracking) {
     const container = $("#riskAnalyzeContent");
-    container.empty(); // Clear any existing content
+    const summary = container.find(".risk-summary").first();
+    container.empty();
+    if (summary.length) {
+      container.append(summary);
+    }
+    riskTracking = riskTracking || {};
+    generatedRisksByCategory = generatedRisksByCategory || {};
 
     // Iterate over each category in the risks object
     $.each(generatedRisksByCategory, function(category, risks) {
@@ -353,4 +362,19 @@ $(document).ready(function() {
         container.append(table);
     });
 }
+
+  function loadMethodologies() {
+    $.ajax({
+      url: "/meta/methodologies",
+      type: "GET",
+      success: function(response) {
+        const selector = $('#methodologySelect');
+        selector.empty();
+        response.methodologies.forEach(item => {
+          selector.append($("<option>").val(item.name).text(item.title));
+        });
+        selector.val(response.active || "stride");
+      }
+    });
+  }
 });

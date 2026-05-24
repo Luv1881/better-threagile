@@ -51,8 +51,11 @@ func (r *SqlNoSqlInjectionRule) GenerateRisks(input *types.Model) ([]*types.Risk
 			potentialDatabaseAccessProtocol := incomingFlow.Protocol.IsPotentialDatabaseAccessProtocol()
 			isVulnerableToQueryInjection := technicalAsset.Technologies.GetAttribute(types.IsVulnerableToQueryInjection)
 			potentialLaxDatabaseAccessProtocol := incomingFlow.Protocol.IsPotentialLaxDatabaseAccessProtocol()
-			if potentialDatabaseAccessProtocol && isVulnerableToQueryInjection ||
-				potentialLaxDatabaseAccessProtocol {
+			// Lax protocol match (HTTP/binary) only applies to REST-based query databases, not file/object stores.
+			// S3-compatible object stores (MinIO, S3) use HTTP but have no query injection surface.
+			isFileStorage := technicalAsset.Technologies.GetAttribute(types.IsFileStorage)
+			if (potentialDatabaseAccessProtocol && isVulnerableToQueryInjection) ||
+				(potentialLaxDatabaseAccessProtocol && !isFileStorage) {
 				risks = append(risks, r.createRisk(input, technicalAsset, incomingFlow))
 			}
 		}

@@ -95,6 +95,10 @@ func (r *UnencryptedCommunicationRule) createRisk(input *types.Model, technicalA
 	likelihood := types.Unlikely
 	if isAcrossTrustBoundaryNetworkOnly(input, dataFlow) {
 		likelihood = types.Likely
+	} else if technicalAsset.Machine == types.Container || target.Machine == types.Container {
+		// Within the same Docker network, a compromised container can sniff plaintext traffic
+		// between sibling containers via ARP spoofing or tcpdump — treat as Likely even intra-boundary.
+		likelihood = types.Likely
 	}
 	risk := &types.Risk{
 		CategoryId:                      r.Category().ID,

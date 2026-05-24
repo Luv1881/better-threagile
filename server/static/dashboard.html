@@ -1,0 +1,221 @@
+<html>
+  <head>
+    <title>Threagile Dashboard</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        color: #24313f;
+        background: #f7f8fa;
+      }
+      header, main {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        border-bottom: 1px solid #d7dde4;
+      }
+      h1 {
+        margin: 0;
+        font-size: 24px;
+      }
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      input, select, button {
+        min-height: 34px;
+      }
+      button {
+        border: 1px solid #51606f;
+        background: #24313f;
+        color: white;
+        padding: 0 14px;
+        cursor: pointer;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        margin: 18px 0;
+      }
+      .stat {
+        border: 1px solid #d7dde4;
+        background: white;
+        padding: 12px;
+      }
+      .stat strong {
+        display: block;
+        font-size: 24px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+      }
+      th, td {
+        border-bottom: 1px solid #d7dde4;
+        padding: 8px;
+        text-align: left;
+        font-size: 14px;
+        vertical-align: top;
+      }
+      th {
+        background: #eef1f4;
+      }
+      .message {
+        margin: 14px 0;
+        color: #7a2d2d;
+      }
+      .sev-critical { background: #7a2d2d; color: white; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+      .sev-high     { background: #c0392b; color: white; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+      .sev-elevated { background: #e67e22; color: white; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+      .sev-medium   { background: #f1c40f; color: #24313f; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+      .sev-low      { background: #27ae60; color: white; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+      button:disabled { opacity: 0.6; cursor: default; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Risk Dashboard</h1>
+      <div class="controls">
+        <input type="file" id="modelFile" accept=".yaml,.yml">
+        <select id="methodologySelect"></select>
+        <button id="analyzeButton">Analyze</button>
+      </div>
+    </header>
+    <main>
+      <div id="message" class="message"></div>
+      <div id="stats" class="stats"></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Synthetic ID</th>
+            <th>Category</th>
+            <th>Severity</th>
+            <th>Status</th>
+            <th>Title</th>
+          </tr>
+        </thead>
+        <tbody id="riskRows"></tbody>
+      </table>
+    </main>
+    <script>
+      const SEV_ORDER = ["critical", "high", "elevated", "medium", "low"];
+      let currentModel = null;
+
+      $.getJSON("/meta/methodologies", response => {
+        const selector = $("#methodologySelect");
+        selector.empty();
+        response.methodologies.forEach(item => selector.append($("<option>").val(item.name).text(item.title || item.name)));
+        selector.val(response.active || "stride");
+      });
+
+      $("#modelFile").on("change", event => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+          try {
+            currentModel = jsyaml.load(e.target.result);
+            $("#message").text("");
+          } catch (err) {
+            currentModel = null;
+            $("#message").text("Unable to parse YAML: " + err.message);
+          }
+        };
+        reader.readAsText(file);
+      });
+
+      $("#analyzeButton").on("click", () => {
+        if (!currentModel) {
+          $("#message").text("Choose a model YAML file first.");
+          return;
+        }
+        const btn = $("#analyzeButton").prop("disabled", true).text("Analyzing…");
+        $("#message").text("");
+        $.ajax({
+          url: "/edit-model/analyze?methodology=" + encodeURIComponent($("#methodologySelect").val()),
+          type: "POST",
+          contentType: "application/json",
+          data: JSON.stringify(currentModel),
+          success: response => {
+            btn.prop("disabled", false).text("Analyze");
+            renderDashboard(response.data.ParsedModel);
+          },
+          error: xhr => {
+            btn.prop("disabled", false).text("Analyze");
+            $("#message").text((xhr.responseJSON && xhr.responseJSON.error) || "Analysis failed.");
+          }
+        });
+      });
+
+      function sevClass(sev) {
+        return "sev-" + (sev || "low").toLowerCase();
+      }
+
+      function renderDashboard(model) {
+        const risksByCategory = model.generated_risks_by_category || {};
+        const risks = [];
+        Object.keys(risksByCategory).forEach(category => {
+          risksByCategory[category].forEach(risk => risks.push(Object.assign({ _category: category }, risk)));
+        });
+
+        const byStatus = {};
+        const bySeverity = {};
+        risks.forEach(risk => {
+          const s = (risk.risk_status || "unchecked").toLowerCase();
+          const sv = (risk.severity || "unknown").toLowerCase();
+          byStatus[s] = (byStatus[s] || 0) + 1;
+          bySeverity[sv] = (bySeverity[sv] || 0) + 1;
+        });
+
+        const activeMethodology = (typeof model.active_methodology === "object")
+          ? (model.active_methodology.name || JSON.stringify(model.active_methodology))
+          : (model.active_methodology || $("#methodologySelect").val());
+
+        $("#stats").empty()
+          .append(stat("Methodology", activeMethodology))
+          .append(stat("Risks", risks.length))
+          .append(stat("Statuses", Object.entries(byStatus).map(([k, v]) => `${k}: ${v}`).join(", ") || "none"))
+          .append(stat("Severities", SEV_ORDER.filter(s => bySeverity[s]).map(s => `${s}: ${bySeverity[s]}`).join(", ") || "none"));
+
+        // Sort by severity descending, then synthetic_id ascending.
+        risks.sort((a, b) => {
+          const ai = SEV_ORDER.indexOf((a.severity || "").toLowerCase());
+          const bi = SEV_ORDER.indexOf((b.severity || "").toLowerCase());
+          const sevDiff = (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+          if (sevDiff !== 0) return sevDiff;
+          return (a.synthetic_id || "").localeCompare(b.synthetic_id || "");
+        });
+
+        const rows = $("#riskRows").empty();
+        risks.forEach(risk => {
+          const sev = (risk.severity || "").toLowerCase();
+          rows.append($("<tr>")
+            .append($("<td>").text(risk.synthetic_id || ""))
+            .append($("<td>").text(risk._category || ""))
+            .append($("<td>").append($("<span>").addClass(sevClass(sev)).text(sev || "unknown")))
+            .append($("<td>").text(risk.risk_status || "unchecked"))
+            .append($("<td>").text(risk.title || "")));
+        });
+        $("#message").text("");
+      }
+
+      function stat(label, value) {
+        return $("<div>").addClass("stat").append($("<strong>").text(value)).append($("<span>").text(label));
+      }
+    </script>
+  </body>
+</html>

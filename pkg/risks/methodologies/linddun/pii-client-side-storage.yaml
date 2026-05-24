@@ -68,21 +68,9 @@ risk:
                 in: "{tech_asset.data_assets_processed}"
                 item: data_id
                 true: "{$model.data_assets.{data_id}.has_pii}"
+            - not:
+                contains:
+                  item: has-httponly-session
+                  in: "{tech_asset.tags}"
           then:
-            - assign:
-                has_httponly: false
-            - loop:
-                in: "{tech_asset.tags}"
-                item: tag
-                do:
-                  - if:
-                      equal:
-                        first: "{tag}"
-                        second: has-httponly-session
-                      then:
-                        - assign:
-                            has_httponly: true
-            - if:
-                false: "{has_httponly}"
-                then:
-                  return: true
+            return: true

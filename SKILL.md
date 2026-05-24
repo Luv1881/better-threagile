@@ -824,7 +824,36 @@ All expressions live under `if:`, `any:`, `all:` conditions or inline in `loop:`
       first: "{link.audit_logged}"
       second: true
 
-# Loop with assignment (use for absence checks — DSL has no `not:` operator)
+# Logical NOT — negate any bool expression (preferred over assign/loop pattern for tag absence)
+- not:
+    contains:
+      item: has-csp
+      in: "{tech_asset.tags}"
+
+# Regex match — test a string value against a regular expression pattern
+- regex-match:
+    pattern: "(?i)password|secret|token"
+    value: "{link.description}"
+
+# Between — inclusive numeric or enum range check
+- between:
+    value: "{tech_asset.raa}"
+    min: 50
+    max: 100
+
+- between:
+    value: "{data_asset.confidentiality}"
+    min: confidential
+    max: strictly-confidential
+    as: confidentiality
+
+# Built-in string functions (usable in value expressions)
+# lower("{tech_asset.id}"), upper("{tech_asset.id}"), trim("{s}"), len("{tech_asset.tags}")
+- equal:
+    first: "lower({tech_asset.id})"
+    second: "api-server"
+
+# Loop with assignment (legacy pattern — still works, use not: when simpler)
 - assign:
     my_flag: false
 - loop:

@@ -2,6 +2,9 @@ package model
 
 import (
 	"fmt"
+	"runtime"
+	"sync"
+
 	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
@@ -146,28 +149,73 @@ func applyRiskGeneration(parsedModel *types.Model, rules types.RiskRules,
 		}
 	}
 
+	// Collect the rules that will actually run so we can fan them out to workers.
+	type ruleEntry struct {
+		id   string
+		rule types.RiskRule
+	}
+	activeRules := make([]ruleEntry, 0, len(rules))
 	for id, rule := range rules {
-		_, ok := skippedRules[id]
-		if ok {
+		if _, skip := skippedRules[id]; skip {
 			progressReporter.Infof("Skipping risk rule: %v", id)
 			delete(skippedRules, id)
 			continue
 		}
-
-		// Skip rules that carry no classification for the active methodology
 		if !rule.Category().HasClassification(activeMethodology) {
 			continue
 		}
-
+		// SupportedTags registration is read-only on parsedModel so safe to do here.
 		parsedModel.AddToListOfSupportedTags(rule.SupportedTags())
-		newRisks, riskError := rule.GenerateRisks(parsedModel)
-		if riskError != nil {
-			progressReporter.Warnf("Error generating risks for %q: %v", id, riskError)
+		activeRules = append(activeRules, ruleEntry{id: id, rule: rule})
+	}
+
+	// Fan out rule evaluation across a bounded goroutine pool.
+	// Each rule reads parsedModel (read-only) and writes only to its own result bucket.
+	// We collect results via a channel and merge after all workers finish.
+	type ruleResult struct {
+		id    string
+		risks []*types.Risk
+		err   error
+	}
+
+	workers := runtime.NumCPU()
+	if workers < 1 {
+		workers = 1
+	}
+
+	jobs := make(chan ruleEntry, len(activeRules))
+	results := make(chan ruleResult, len(activeRules))
+	var wg sync.WaitGroup
+
+	for w := 0; w < workers; w++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for entry := range jobs {
+				newRisks, riskErr := entry.rule.GenerateRisks(parsedModel)
+				results <- ruleResult{id: entry.id, risks: newRisks, err: riskErr}
+			}
+		}()
+	}
+
+	for _, entry := range activeRules {
+		jobs <- entry
+	}
+	close(jobs)
+
+	// Wait for all workers, then close results.
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	for res := range results {
+		if res.err != nil {
+			progressReporter.Warnf("Error generating risks for %q: %v", res.id, res.err)
 			continue
 		}
-
-		if len(newRisks) > 0 {
-			parsedModel.GeneratedRisksByCategory[id] = newRisks
+		if len(res.risks) > 0 {
+			parsedModel.GeneratedRisksByCategory[res.id] = res.risks
 		}
 	}
 

@@ -17,5 +17,9 @@ type Risk struct {
 	DataBreachTechnicalAssetIDs     []string                   `yaml:"data_breach_technical_assets,omitempty" json:"data_breach_technical_assets,omitempty"`
 	RiskExplanation                 []string                   `yaml:"risk_explanation,omitempty" json:"risk_explanation,omitempty"`
 	RatingExplanation               []string                   `yaml:"rating_explanation,omitempty" json:"rating_explanation,omitempty"`
+	// Confidence is a 0–1 score expressing how certain we are this finding is a true positive.
+	// 1.0 means fully deterministic (e.g. tag present + confidentiality check), lower values
+	// indicate rules with broader heuristics. Findings sort by Severity*Confidence descending.
+	Confidence float64 `yaml:"confidence,omitempty" json:"confidence,omitempty"`
 	// TODO: refactor all "ID" here to "ID"?
 }

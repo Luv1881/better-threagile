@@ -68,21 +68,9 @@ risk:
                 in: "{tech_asset.data_assets_processed}"
                 item: data_id
                 true: "{$model.data_assets.{data_id}.has_pii}"
+            - not:
+                contains:
+                  item: has-csp
+                  in: "{tech_asset.tags}"
           then:
-            - assign:
-                has_csp: false
-            - loop:
-                in: "{tech_asset.tags}"
-                item: tag
-                do:
-                  - if:
-                      equal:
-                        first: "{tag}"
-                        second: has-csp
-                      then:
-                        - assign:
-                            has_csp: true
-            - if:
-                false: "{has_csp}"
-                then:
-                  return: true
+            return: true

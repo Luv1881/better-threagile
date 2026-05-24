@@ -22,6 +22,9 @@ func (what *ExpressionList) ParseExpression(script map[string]any) (common.Expre
 		case common.And:
 			return new(AndExpression).ParseBool(value)
 
+		case common.Between:
+			return new(BetweenExpression).ParseBool(value)
+
 		case common.Contains:
 			return new(ContainsExpression).ParseBool(value)
 
@@ -46,11 +49,17 @@ func (what *ExpressionList) ParseExpression(script map[string]any) (common.Expre
 		case common.Less:
 			return new(LessExpression).ParseBool(value)
 
+		case common.Not:
+			return new(NotExpression).ParseBool(value)
+
 		case common.NotEqual:
 			return new(NotEqualExpression).ParseBool(value)
 
 		case common.Or:
 			return new(OrExpression).ParseBool(value)
+
+		case common.RegexMatch:
+			return new(RegexMatchExpression).ParseBool(value)
 
 		case common.True:
 			return new(TrueExpression).ParseBool(value)

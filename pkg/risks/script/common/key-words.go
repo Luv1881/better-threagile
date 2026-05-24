@@ -31,6 +31,7 @@ const (
 	All            = "all"
 	And            = "and"
 	Any            = "any"
+	Between        = "between"
 	Contains       = "contains"
 	Count          = "count"
 	Equal          = "equal"
@@ -39,7 +40,9 @@ const (
 	False          = "false"
 	Greater        = "greater"
 	Less           = "less"
+	Not            = "not"
 	NotEqual       = "not-equal"
 	Or             = "or"
+	RegexMatch     = "regex-match"
 	True           = "true"
 )

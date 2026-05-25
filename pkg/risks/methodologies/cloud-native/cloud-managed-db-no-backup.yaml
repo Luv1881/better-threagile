@@ -1,0 +1,84 @@
+id: cloud-managed-db-no-backup
+title: Cloud Data - Managed Database Without Automated Backup
+function: operations
+stride: denial-of-service
+cloud-native: data
+cwe: 693
+description: >
+  Managed databases without automated backup and point-in-time recovery (PITR)
+  are vulnerable to permanent data loss from accidental deletion, ransomware
+  encryption, and destructive SQL injection. Automated daily snapshots and
+  transaction-log-based PITR are available on all major cloud-managed database
+  services and should be enabled for any database processing business data.
+impact: >
+  Without automated backups, a single destructive event (DROP TABLE, ransomware,
+  or provider failure) causes permanent loss of all data. Recovery requires
+  rebuilding from application logs or accepting the loss, which may violate
+  contractual SLAs and data-retention obligations.
+asvs: V9 - Communications Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
+action: Enable automated daily snapshots and point-in-time recovery on all managed databases
+mitigation: >
+  Enable automated backups with a retention window matching your RPO requirements
+  (minimum 7 days for production). Enable PITR to allow recovery to any second in
+  the retention window. Test the restore procedure at least quarterly. Tag the
+  asset has-automated-backup once verified.
+check: >
+  Are automated backups enabled with a retention period meeting your RPO?
+  Has a database restore been tested within the last quarter?
+detection_logic: >
+  In-scope technical assets with managed-database technology that store or process
+  confidential data and are not tagged with has-automated-backup.
+risk_assessment: >
+  High when the database is the authoritative source for business-critical data.
+  Medium for read replicas or caches with upstream recovery paths.
+false_positives: >
+  Read replicas or non-authoritative caches where all data can be replayed from
+  an upstream source. Tag has-automated-backup after confirming the recovery
+  path is documented and tested.
+
+controls:
+  nist_800_53: [CP-9, CP-10]
+  iso_27001: [A.12.3.1, A.17.2.1]
+  soc2_cc: [A1.2, A1.3]
+  pci_dss_4: ["12.3.4"]
+  hipaa: ["164.308(a)(7)(ii)(A)"]
+  nis2: ["Art. 21(2)(c)"]
+  cmmc: [RE.L2-3.8.9]
+  asvs_4: [V8.1]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>No DB Backup</b>: managed database <b>{tech_asset.title}</b> lacks automated backup for confidential data"
+    severity: "calculate_severity(unlikely, high)"
+    exploitation_likelihood: unlikely
+    exploitation_impact: high
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.managed_database}"
+            - not:
+                contains:
+                  item: has-automated-backup
+                  in: "{tech_asset.tags}"
+            - any:
+                in: "{tech_asset.data_assets_stored}"
+                item: data_id
+                true: "{$model.data_assets.{data_id}.has_pii}"
+          then:
+            return: true

@@ -1,0 +1,80 @@
+id: trike-actor-no-trust-level
+title: Trike - Actor Without Defined Trust Level
+function: architecture
+stride: elevation-of-privilege
+cwe: 284
+description: >
+  Trike's rights-based threat model requires every actor to have an explicitly defined
+  trust level as the foundation for constructing the action matrix. A technical asset
+  tagged as trike-actor that lacks the trike-trust-level-defined tag has no documented
+  trust classification, making it impossible to determine what actions the actor is
+  authorised to perform on system assets. Unclassified actors may be granted excessive
+  permissions by default or may be overlooked in risk assessment entirely.
+impact: >
+  Without a defined trust level, the actor cannot be properly placed in the Trike
+  action matrix. Rights may be over-granted by default, enabling unauthorised read,
+  write, or delete operations on sensitive assets. Unclassified actors are a common
+  source of privilege escalation and access control bypass findings.
+asvs: V4 - Access Control Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html
+action: Define and document a trust level for every actor in the system model
+mitigation: >
+  Classify each actor asset with one of the Trike trust levels (untrusted, low, medium,
+  high, admin) and document the classification in the threat model. Add the appropriate
+  trike-trust-level-* tag and the trike-trust-level-defined tag to formalise the
+  classification. Update the action matrix to reflect the actor's permitted operations.
+check: >
+  Does every actor asset in the Trike model have a documented and reviewed trust level?
+  Is the trust level reflected in the action matrix?
+detection_logic: >
+  In-scope technical assets tagged with trike-actor that are not tagged with
+  trike-trust-level-defined.
+risk_assessment: >
+  Medium baseline. Elevated to high when the unclassified actor has communication
+  links to high-value datastores or high-confidentiality assets.
+false_positives: >
+  Placeholder actor assets that are marked out-of-scope pending modelling completion.
+  Ensure out_of_scope is set to true for such assets to suppress the finding.
+
+controls:
+  nist_800_53: [AC-2, AC-3, AC-6]
+  iso_27001: [A.9.1.1, A.9.2.1]
+  soc2_cc: [CC6.1, CC6.3]
+  pci_dss_4: ["7.1.1"]
+  hipaa: ["164.312(a)(1)"]
+  nis2: ["Art. 21(2)(i)"]
+  cmmc: [AC.L1-3.1.1, AC.L1-3.1.2]
+  owasp_top10_2021: [A01, A05]
+  asvs_4: [V4.1, V4.2]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>No Trust Level Defined</b>: Trike actor <b>{tech_asset.title}</b> has no documented trust level classification"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - contains:
+                item: trike-actor
+                in: "{tech_asset.tags}"
+            - not:
+                contains:
+                  item: trike-trust-level-defined
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

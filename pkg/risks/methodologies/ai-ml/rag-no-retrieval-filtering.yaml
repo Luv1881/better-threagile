@@ -1,0 +1,85 @@
+id: ai-ml-rag-no-retrieval-filtering
+title: AI/ML - RAG Pipeline Without Retrieval Filtering
+function: architecture
+stride: information-disclosure
+cwe: 200
+description: >
+  RAG pipelines that inject all retrieved documents into the LLM context without
+  filtering based on the caller's access level can expose documents the user is not
+  authorized to read. When the vector store contains documents from multiple security
+  domains or sensitivity levels, absence of retrieval filtering means a low-privileged
+  user's query can surface confidential documents in the LLM's answer.
+  This is analogous to a broken access control at the search layer.
+impact: >
+  Sensitive documents — including HR records, legal contracts, financial projections,
+  and technical specifications — may be summarized and returned to users who should
+  not have access to the source material. Confidential information disclosed via LLM
+  paraphrasing is still a reportable breach under GDPR and HIPAA even though the
+  original document is not directly returned.
+asvs: V4 - Access Control Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html
+action: Enforce caller-identity-based document filtering before injecting retrieved content into LLM context
+mitigation: >
+  Apply pre-retrieval and post-retrieval access-control filters that match documents
+  to the authenticated caller's entitlements. Store document-level ACL metadata in
+  the vector store and enforce it server-side on every query. Alternatively, segment
+  the vector store by access tier and route queries to the appropriate segment based
+  on identity. Tag the asset has-retrieval-filtering once access filtering is verified.
+check: >
+  Is every retrieved document filtered against the caller's access entitlements before
+  it is injected into the LLM context?
+  Is retrieval filtering enforced server-side rather than relying on post-hoc output filtering?
+detection_logic: >
+  In-scope technical assets with rag_pipeline technology that are not tagged with
+  has-retrieval-filtering.
+risk_assessment: >
+  High for RAG pipelines that index documents from multiple security domains or
+  user groups. Medium for single-tenant pipelines where all users have equivalent access.
+false_positives: >
+  RAG pipelines where every indexed document is intentionally accessible to all
+  possible callers (e.g. a public documentation assistant). Tag has-retrieval-filtering
+  after confirming that no confidential content is indexed and all users have equivalent
+  access rights.
+
+controls:
+  nist_800_53: [AC-3, AC-4, SI-10]
+  iso_27001: [A.9.4.1, A.14.2.5]
+  soc2_cc: [CC6.1, CC6.3]
+  pci_dss_4: ["7.2.1"]
+  hipaa: ["164.312(a)(1)"]
+  nis2: ["Art. 21(2)(e)"]
+  owasp_top10_2021: [A01, A03]
+  asvs_4: [V4.1, V4.3]
+  owasp_llm_top10: [LLM06, LLM08]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>RAG No Retrieval Filtering</b>: RAG pipeline <b>{tech_asset.title}</b> injects retrieved documents without access-level filtering, enabling unauthorized disclosure"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.rag_pipeline}"
+            - not:
+                contains:
+                  item: has-retrieval-filtering
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

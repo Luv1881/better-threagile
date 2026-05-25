@@ -1,0 +1,84 @@
+id: octave-no-backup
+title: OCTAVE Allegro - High-Criticality Information Asset Container Without Automated Backup
+function: operations
+stride: information-disclosure
+cwe: 654
+description: >
+  OCTAVE Allegro identifies availability as a core security concern for high-criticality
+  information assets. A technical asset tagged as both an information-asset-container
+  and criticality-high that does not have automated backup lacks the resilience needed
+  to recover from accidental deletion, ransomware, corruption, or hardware failure.
+  Loss of data with no backup results in permanent destruction of organisational
+  information assets.
+impact: >
+  Permanent loss of high-criticality information assets causes operational disruption,
+  financial harm, and potential regulatory penalties. Recovery without backups may be
+  impossible, leading to extended downtime and loss of business continuity.
+asvs: V9 - Communication Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+action: Implement automated, tested backup procedures for all high-criticality information asset containers
+mitigation: >
+  Configure automated scheduled backups with a retention policy aligned to the
+  organisation's recovery point objective (RPO). Store backups in a separate failure
+  domain (different availability zone or offsite). Verify backup integrity with
+  periodic restore tests. Document the backup schedule and recovery procedure.
+  Tag the asset has-automated-backup once the procedure is verified and tested.
+check: >
+  Is an automated backup procedure in place for this high-criticality information asset container?
+  Have restore tests been conducted to verify backup integrity?
+detection_logic: >
+  In-scope technical assets tagged with information-asset-container and criticality-high
+  that are not tagged with has-automated-backup.
+risk_assessment: >
+  High baseline for criticality-high information asset containers without backup.
+  Elevated when the asset has no alternative data source and recovery is impossible.
+false_positives: >
+  Assets where all data is continuously replicated to another system that itself has
+  verified backup. Tag has-automated-backup after documenting the replication strategy
+  and confirming it meets the RPO requirements.
+
+controls:
+  nist_800_53: [CP-9, CP-10, SI-12]
+  iso_27001: [A.12.3.1, A.17.1.2]
+  soc2_cc: [CC7.5, A1.2]
+  pci_dss_4: ["12.3.4"]
+  hipaa: ["164.308(a)(7)(ii)(A)"]
+  nis2: ["Art. 21(2)(c)"]
+  cmmc: [RE.L2-3.8.9]
+  owasp_top10_2021: [A05, A09]
+  asvs_4: [V9.1, V1.9]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>No Automated Backup</b>: high-criticality information asset container <b>{tech_asset.title}</b> lacks automated backup"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - contains:
+                item: information-asset-container
+                in: "{tech_asset.tags}"
+            - contains:
+                item: criticality-high
+                in: "{tech_asset.tags}"
+            - not:
+                contains:
+                  item: has-automated-backup
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

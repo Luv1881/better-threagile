@@ -1,0 +1,87 @@
+id: ai-ml-ml-pipeline-unpinned-dependencies
+title: AI/ML - ML Training Pipeline With Custom Code and Unpinned Base Images
+function: development
+stride: tampering
+cwe: 1104
+description: >
+  ML training pipelines with custom-developed components that run container images
+  without digest-pinned base images are vulnerable to silent supply-chain substitution.
+  ML training images commonly depend on specific framework versions (PyTorch, TensorFlow,
+  CUDA) that are referenced by mutable tags. If an upstream image publisher is
+  compromised or changes the tag to point to a different layer, all subsequent training
+  runs silently use the substituted image. This can result in backdoored models,
+  exfiltrated training data, or training divergence due to dependency version drift.
+impact: >
+  A compromised or substituted base image for an ML training pipeline can exfiltrate
+  training data (including PII), inject backdoors into trained model weights, or
+  alter model behaviour through gradient manipulation during training. Unlike web
+  application supply-chain attacks, ML training compromises may be undetectable
+  for months because model quality metrics may not reflect subtle backdoors.
+asvs: V14 - Configuration Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+action: Pin all container base image references for ML training pipelines to immutable digest hashes
+mitigation: >
+  Replace all mutable tag references (FROM pytorch/pytorch:latest, FROM
+  nvcr.io/nvidia/cuda:latest) with digest-pinned references in Dockerfiles and
+  training job specifications. Use Renovate or Dependabot to automate digest
+  update PRs. Verify image signatures (Cosign/Sigstore) at build and launch time.
+  Apply SBOM generation for the training container to track all included dependencies.
+  Tag the asset has-pinned-base-images once all base images are pinned.
+check: >
+  Are all container base images for ML training jobs pinned to specific digest hashes?
+  Is an automated tool managing digest updates and opening review PRs?
+detection_logic: >
+  In-scope technical assets with ml_training_pipeline technology that have
+  custom_developed_parts set to true and are not tagged with has-pinned-base-images.
+risk_assessment: >
+  Medium baseline. Elevated to High when the training pipeline processes confidential
+  or PII-containing training data, or when the resulting models are deployed in
+  safety-critical or regulated systems.
+false_positives: >
+  Training pipelines that build entirely from source without using pre-built container
+  images, or pipelines using an internal registry where images are immutable once
+  tagged. Tag has-pinned-base-images after documenting the immutability guarantee.
+
+controls:
+  nist_800_53: [SA-10, SI-7, CM-14, SR-3]
+  iso_27001: [A.14.2.2, A.14.2.5]
+  soc2_cc: [CC8.1]
+  pci_dss_4: ["6.4.4"]
+  nis2: ["Art. 21(2)(e)"]
+  cmmc: [SR.L2-3.17.3, SI.L2-3.14.6]
+  owasp_top10_2021: [A06, A08]
+  asvs_4: [V14.2, V14.3]
+  owasp_llm_top10: [LLM03]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>ML Pipeline Unpinned Dependencies</b>: ML training pipeline <b>{tech_asset.title}</b> uses custom code with unpinned base images, enabling silent supply-chain substitution"
+    severity: "calculate_severity(unlikely, high)"
+    exploitation_likelihood: unlikely
+    exploitation_impact: high
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.ml_training_pipeline}"
+            - true: "{tech_asset.custom_developed_parts}"
+            - not:
+                contains:
+                  item: has-pinned-base-images
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

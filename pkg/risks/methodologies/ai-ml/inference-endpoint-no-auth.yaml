@@ -1,0 +1,83 @@
+id: ai-ml-inference-endpoint-no-auth
+title: AI/ML - LLM Inference Endpoint Internet-Accessible Without Authentication
+function: architecture
+stride: elevation-of-privilege
+cwe: 306
+description: >
+  LLM inference endpoints that are accessible from the internet without authentication
+  allow any actor to query the model without restrictions. This exposes the organization
+  to unauthorized inference costs, model misuse, content policy violations, and potential
+  exfiltration of system prompts or fine-tuning data through adversarial querying.
+  Unauthenticated LLM endpoints are frequently discovered and abused within hours of exposure.
+impact: >
+  Unauthenticated callers can issue arbitrary prompts, exhausting inference budgets,
+  extracting system-prompt content through jailbreaks, and generating policy-violating
+  content at scale. Fine-tuned or retrieval-augmented models may leak proprietary
+  knowledge embedded in context. Downstream applications trusting LLM output may be
+  manipulated via malicious public prompts.
+asvs: V2 - Authentication Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+action: Require API-key, OAuth 2.0, or mTLS authentication on all LLM inference endpoints
+mitigation: >
+  Place the inference endpoint behind an API gateway with mandatory authentication
+  (API key, OAuth 2.0 bearer token, or mTLS). Enforce authentication at the network
+  layer so unauthenticated requests are rejected before reaching the model runtime.
+  Implement per-caller rate limiting and quota enforcement alongside authentication.
+  Tag the asset has-authentication once authentication controls are verified.
+check: >
+  Is authentication required on every path to the LLM inference endpoint?
+  Are API keys rotated regularly and scoped to least-privilege?
+detection_logic: >
+  In-scope technical assets with llm_inference_endpoint technology that are
+  internet-accessible and not tagged with has-authentication.
+risk_assessment: >
+  High for all internet-exposed LLM endpoints. Critical when the model has access
+  to proprietary data or is integrated into automated decision-making pipelines.
+false_positives: >
+  Demo or sandbox environments intentionally operating without authentication for
+  proof-of-concept purposes. Tag has-authentication after documenting the justification
+  and ensuring no sensitive data flows through the endpoint.
+
+controls:
+  nist_800_53: [IA-2, AC-3, AC-14]
+  iso_27001: [A.9.4.1, A.9.4.2]
+  soc2_cc: [CC6.1, CC6.3]
+  pci_dss_4: ["8.2.1", "8.3.1"]
+  hipaa: ["164.312(a)(1)", "164.312(d)"]
+  nis2: ["Art. 21(2)(j)"]
+  owasp_top10_2021: [A01, A07]
+  asvs_4: [V2.1, V4.1]
+  owasp_llm_top10: [LLM04]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Inference Endpoint No Auth</b>: LLM inference endpoint <b>{tech_asset.title}</b> is internet-accessible without authentication"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.internet}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.llm_inference_endpoint}"
+            - not:
+                contains:
+                  item: has-authentication
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

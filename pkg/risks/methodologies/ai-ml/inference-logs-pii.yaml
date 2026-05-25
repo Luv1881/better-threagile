@@ -1,0 +1,91 @@
+id: ai-ml-inference-logs-pii
+title: AI/ML - LLM Inference Endpoint Logging PII Without Sanitization
+function: operations
+stride: information-disclosure
+cwe: 532
+description: >
+  LLM inference endpoints that process data assets containing PII and lack log
+  sanitization controls will capture personally identifiable information in inference
+  request and response logs. Inference logs routinely contain full prompt text including
+  user messages, retrieved document snippets, and model responses — all of which may
+  contain PII. Without sanitization, these logs become an uncontrolled copy of
+  sensitive data stored in logging infrastructure with often broader access than the
+  primary data store.
+impact: >
+  PII persisted in inference logs is exposed to every engineer with logging access,
+  log aggregation services, and any attacker who gains read access to the logging
+  pipeline. Log retention policies typically keep this data for months or years,
+  creating a long-lived secondary breach surface. Under GDPR, logging PII without
+  a legal basis for the retention period constitutes a violation even if the primary
+  processing is lawful.
+asvs: V7 - Error Handling and Logging Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+action: Implement PII masking or redaction in all inference request and response log pipelines
+mitigation: >
+  Apply a log sanitization layer that masks or redacts PII fields before they reach
+  the log aggregation system. Use a PII detection library (Presidio, AWS Comprehend,
+  Google DLP) to identify and redact personal data in prompt and response text.
+  Configure inference logging to capture only metadata (latency, token counts,
+  error codes) without full prompt content in production. Tag the asset
+  has-log-sanitization once redaction controls are verified.
+check: >
+  Are all inference request and response logs scanned for PII before storage?
+  Is PII masked or redacted in all log outputs accessible to engineering staff?
+detection_logic: >
+  In-scope technical assets with llm_inference_endpoint technology that process
+  data assets containing PII and are not tagged with has-log-sanitization.
+risk_assessment: >
+  High for inference endpoints that process health, financial, or sensitive-category
+  personal data. Medium for endpoints processing general PII such as names or email addresses.
+false_positives: >
+  Inference endpoints that have been verified to log only metadata (token counts,
+  latency) with full prompt content excluded from all logging pipelines. Tag
+  has-log-sanitization after confirming that no prompt or response content is persisted.
+
+controls:
+  nist_800_53: [AU-3, AU-9, SC-28]
+  iso_27001: [A.12.4.1, A.18.1.3]
+  soc2_cc: [CC7.2, CC6.1]
+  pci_dss_4: ["10.3.1", "3.3.1"]
+  hipaa: ["164.312(b)", "164.514(b)"]
+  gdpr: ["Art. 5(1)(e)", "Art. 32"]
+  nis2: ["Art. 21(2)(g)"]
+  owasp_top10_2021: [A02, A09]
+  asvs_4: [V7.1, V7.2]
+  owasp_llm_top10: [LLM06]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Inference Logs PII</b>: LLM endpoint <b>{tech_asset.title}</b> processes PII without log sanitization, creating uncontrolled PII copies in logs"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.llm_inference_endpoint}"
+            - any:
+                in: "{tech_asset.data_assets_processed}"
+                item: data_id
+                true: "{$model.data_assets.{data_id}.has_pii}"
+            - not:
+                contains:
+                  item: has-log-sanitization
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

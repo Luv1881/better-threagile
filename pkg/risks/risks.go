@@ -56,6 +56,10 @@ func GetBuiltInRiskRules() types.RiskRules {
 		builtin.NewWrongCommunicationLinkContentRule(),
 		builtin.NewWrongTrustBoundaryContentRule(),
 		builtin.NewXmlExternalEntityRule(),
+		builtin.NewLateralMovementSharedRuntimeRule(),
+		builtin.NewLateralMovementCredentialReuseRule(),
+		builtin.NewLateralMovementServiceAccountScopeCreepRule(),
+		builtin.NewLateralMovementTransitiveAccessRule(),
 	} {
 		rules[rule.Category().ID] = rule
 	}

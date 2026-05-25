@@ -32,6 +32,7 @@ func (what *Threagile) Init(buildTimestamp string) *Threagile {
 	what.buildTimestamp = buildTimestamp
 	return what.initRoot().
 		initImport().
+		initImportData().
 		initAnalyze().
 		initCreate().
 		initExecute().
@@ -50,6 +51,13 @@ func (what *Threagile) Init(buildTimestamp string) *Threagile {
 		initFmt().
 		initRulePack().
 		initTestRules().
+		initCoverage().
+		initIntel().
+		initCalibrate().
+		initSeverityProfile().
+		initDrift().
+		initSync().
+		initLLM().
 		initCompletion().
 		initLSP().
 		processSystemArgs(what.rootCmd)

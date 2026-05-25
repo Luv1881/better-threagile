@@ -37,6 +37,14 @@ false_positives: >
   exclusively uses HttpOnly cookies for session management and no JS-accessible
   token storage is used.
 
+controls:
+  nist_800_53: [SC-8, SC-44, SI-3]
+  iso_27001: [A.14.1.2]
+  soc2_cc: [CC6.6]
+  pci_dss_4: ["6.4.3"]
+  owasp_top10_2021: [A03, A05]
+  asvs_4: [V14.4, V14.5]
+
 risk:
   id:
     parameter: tech_asset

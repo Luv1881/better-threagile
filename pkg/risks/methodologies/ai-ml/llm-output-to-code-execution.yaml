@@ -1,0 +1,88 @@
+id: ai-ml-llm-output-to-code-execution
+title: AI/ML - LLM Output Consumed by Custom Code Without Sandboxed Execution
+function: architecture
+stride: elevation-of-privilege
+cwe: 94
+description: >
+  Custom-developed components that receive output from an LLM inference endpoint
+  and execute that output as code, shell commands, or tool invocations without a
+  sandboxed execution environment allow adversarially crafted LLM responses to
+  achieve arbitrary code execution on the host. This pattern is common in agentic
+  systems where the LLM drives a code interpreter, shell executor, or function-calling
+  framework. Prompt injection into the LLM can translate directly into remote code
+  execution if output is executed without sandboxing.
+impact: >
+  An attacker who successfully injects a prompt that causes the LLM to generate
+  malicious code or shell commands can achieve arbitrary code execution in the
+  execution environment hosting the custom component. This enables host compromise,
+  lateral movement, data exfiltration, and persistence. The attack surface is
+  particularly broad in agentic frameworks where the LLM autonomously selects and
+  invokes tools.
+asvs: V5 - Validation, Sanitization and Encoding Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html
+action: Execute all LLM-generated code in a sandboxed environment with restricted permissions and resource limits
+mitigation: >
+  Execute LLM-generated code in a sandboxed environment with restricted system calls
+  (seccomp, gVisor, Firecracker microVM, Docker with drop-all capabilities), network
+  egress restrictions, resource limits, and no access to host filesystem or credentials.
+  Apply an allow-list of permitted operations rather than a block-list of prohibited ones.
+  Log all executed code and alert on policy violations. Tag the asset has-sandboxed-execution
+  once sandbox controls are verified.
+check: >
+  Is LLM-generated code executed only inside a sandboxed environment with restricted
+  system calls and no access to host credentials or filesystem?
+  Are resource limits and network egress restrictions applied to the execution sandbox?
+detection_logic: >
+  In-scope technical assets with custom_developed_parts that receive data flows
+  from an LLM inference endpoint and are not tagged with has-sandboxed-execution.
+risk_assessment: >
+  Critical for components that execute LLM output as code or shell commands.
+  High for agentic systems where the LLM drives tool invocations with external side effects.
+false_positives: >
+  Components that receive LLM output only as structured data (JSON, plain text) for
+  display or storage, with no code execution path. Tag has-sandboxed-execution after
+  confirming that no execution of LLM-generated code or commands occurs.
+
+controls:
+  nist_800_53: [SI-10, CM-7, SC-39]
+  iso_27001: [A.14.2.5, A.12.6.1]
+  soc2_cc: [CC6.1, CC8.1]
+  pci_dss_4: ["6.2.4", "6.4.2"]
+  nis2: ["Art. 21(2)(e)"]
+  owasp_top10_2021: [A03, A08]
+  asvs_4: [V5.3, V5.4]
+  owasp_llm_top10: [LLM01, LLM05]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>LLM Output to Code Execution</b>: custom component <b>{tech_asset.title}</b> executes LLM output without sandboxing, enabling prompt-injection-driven code execution"
+    severity: "calculate_severity(likely, critical)"
+    exploitation_likelihood: likely
+    exploitation_impact: critical
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.custom_developed_parts}"
+            - any:
+                in: "{tech_asset.data_assets_processed}"
+                item: data_id
+                true: "{$model.data_assets.{data_id}.origin_llm_inference}"
+            - not:
+                contains:
+                  item: has-sandboxed-execution
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

@@ -1,0 +1,80 @@
+id: supply-chain-no-dependency-scanning
+title: Supply Chain - Build Pipeline Without Dependency Vulnerability Scanning
+function: development
+stride: tampering
+cwe: 1395
+description: >
+  Build pipelines that do not run automated dependency scanning (SCA) during CI/CD
+  will ship known-vulnerable third-party libraries into production. Dependency
+  scanning tools (Dependabot, Snyk, OWASP Dependency-Check, Grype) compare the
+  dependency manifest against CVE databases and block merges that introduce or
+  retain high-severity vulnerabilities.
+impact: >
+  Known-vulnerable dependencies are the delivery mechanism for the most impactful
+  supply-chain attacks (Log4Shell, Struts RCE, Heartbleed). Without automated
+  scanning, developers are not alerted when a dependency they already use receives
+  a new CVE, and the window of exposure extends until manual discovery.
+asvs: V14 - Configuration Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Software_Supply_Chain_Security_Cheat_Sheet.html
+action: Add SCA scanning to CI/CD and block builds with critical/high CVEs
+mitigation: >
+  Integrate OWASP Dependency-Check, Grype, Snyk, or language-native equivalents
+  (pip-audit, npm audit, gradle dependencyCheckAnalyze) into every CI pipeline.
+  Set the pipeline to fail on CVSS >= 7.0 (high) findings. Configure Dependabot
+  or Renovate for automated dependency update PRs.
+  Tag the asset has-dependency-scanning once scanning is enforced.
+check: >
+  Is dependency vulnerability scanning integrated into the CI/CD pipeline?
+  Are builds blocked when high-severity CVEs are detected in dependencies?
+detection_logic: >
+  In-scope technical assets with build-pipeline technology not tagged with
+  has-dependency-scanning.
+risk_assessment: >
+  High when the build pipeline produces externally distributed or internet-facing
+  software. Medium for internal tools.
+false_positives: >
+  Build pipelines that produce only configuration/IaC with no application dependencies.
+  Tag has-dependency-scanning after documenting why SCA does not apply.
+
+controls:
+  nist_800_53: [SA-10, RA-5, SI-2]
+  iso_27001: [A.12.6.1, A.14.2.2]
+  soc2_cc: [CC7.1]
+  pci_dss_4: ["6.3.3"]
+  hipaa: ["164.308(a)(1)(ii)(A)"]
+  nis2: ["Art. 21(2)(e)"]
+  cmmc: [SI.L1-3.14.1, SR.L2-3.17.3]
+  owasp_top10_2021: [A06]
+  asvs_4: [V14.2]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>No Dependency Scanning</b>: build pipeline <b>{tech_asset.title}</b> lacks automated dependency vulnerability scanning"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.build-pipeline}"
+            - not:
+                contains:
+                  item: has-dependency-scanning
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

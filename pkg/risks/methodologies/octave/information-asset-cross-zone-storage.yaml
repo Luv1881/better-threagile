@@ -1,0 +1,83 @@
+id: octave-cross-zone-storage
+title: OCTAVE Allegro - Internet-Accessible Information Asset Container Without Encryption at Rest
+function: architecture
+stride: information-disclosure
+cwe: 312
+description: >
+  OCTAVE Allegro requires assessment of information assets that cross organisational
+  or network zone boundaries. A technical asset tagged as information-asset-container
+  that is directly accessible from the internet without encryption at rest combines
+  two high-risk attributes: internet exposure and plaintext storage. If the asset is
+  compromised via a misconfiguration, credential theft, or vulnerability, all stored
+  data is immediately readable without any additional decryption step.
+impact: >
+  An attacker who gains access to an internet-accessible, unencrypted information
+  asset container can extract all stored data instantly. There is no encryption barrier
+  to slow exfiltration or limit the blast radius. This is a critical-severity finding
+  for any asset storing confidential or personal data.
+asvs: V6 - Stored Cryptography Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+action: Enable encryption at rest on all internet-accessible information asset containers
+mitigation: >
+  Enable transparent data encryption (TDE), full-disk encryption, or object-level
+  encryption on the information asset container. Prefer customer-managed KMS keys
+  for internet-accessible assets with confidential data. Remove direct internet
+  accessibility where not strictly necessary by placing the asset behind an application
+  tier or private endpoint. Tag the asset has-encryption-at-rest once verified.
+check: >
+  Is encryption at rest enabled on this internet-accessible information asset container?
+  Are customer-managed keys used for assets holding confidential or higher data?
+detection_logic: >
+  In-scope technical assets tagged with information-asset-container that are
+  internet-accessible and not tagged with has-encryption-at-rest.
+risk_assessment: >
+  Critical for all internet-accessible information asset containers without encryption
+  at rest. No severity reduction applies when both attributes are present simultaneously.
+false_positives: >
+  Assets serving only public, non-sensitive cached content (e.g., CDN origin buckets
+  holding only public static assets). Verify data classification is public and lower
+  the confidentiality field accordingly before tagging has-encryption-at-rest.
+
+controls:
+  nist_800_53: [SC-28, SC-28(1), AC-3]
+  iso_27001: [A.10.1.1, A.13.1.1]
+  soc2_cc: [CC6.1, CC6.7]
+  pci_dss_4: ["3.5.1", "4.2.1"]
+  hipaa: ["164.312(a)(2)(iv)", "164.312(e)(2)(ii)"]
+  nis2: ["Art. 21(2)(g)"]
+  cmmc: [SC.L2-3.13.16, AC.L1-3.1.1]
+  owasp_top10_2021: [A02, A05]
+  asvs_4: [V6.2, V6.3]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Cross-Zone Storage Risk</b>: internet-accessible information asset container <b>{tech_asset.title}</b> lacks encryption at rest"
+    severity: "calculate_severity(likely, critical)"
+    exploitation_likelihood: likely
+    exploitation_impact: critical
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - contains:
+                item: information-asset-container
+                in: "{tech_asset.tags}"
+            - true: "{tech_asset.internet}"
+            - not:
+                contains:
+                  item: has-encryption-at-rest
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

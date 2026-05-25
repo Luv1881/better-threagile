@@ -1,0 +1,80 @@
+id: octave-no-access-control
+title: OCTAVE Allegro - Information Asset Container Without Access Control
+function: architecture
+stride: information-disclosure
+cwe: 284
+description: >
+  OCTAVE Allegro focuses on information assets and the containers that hold them.
+  A technical asset tagged as an information-asset-container that has no access
+  control mechanisms allows any principal with network reachability to read or
+  modify the stored information. This violates the core OCTAVE Allegro protection
+  requirement of restricting access to information assets to only authorised parties.
+impact: >
+  Unrestricted access to the information asset container enables data exfiltration,
+  unauthorised modification, and destruction of organisational information assets.
+  Depending on the criticality of the asset, this may result in operational disruption,
+  regulatory breach notifications, and significant reputational harm.
+asvs: V4 - Access Control Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html
+action: Implement and enforce access controls on the information asset container
+mitigation: >
+  Apply role-based or attribute-based access control to restrict read, write, and
+  administrative access to only authorised identities. Enforce the principle of
+  least privilege. Integrate with a centralised identity provider and audit all
+  access attempts. Once controls are verified, tag the asset has-access-control.
+check: >
+  Is access to this information asset container restricted to authorised principals only?
+  Are access control policies documented and enforced at the platform or application level?
+detection_logic: >
+  In-scope technical assets tagged with information-asset-container that are not
+  tagged with has-access-control.
+risk_assessment: >
+  High baseline for all information asset containers. Elevated to critical when the
+  asset holds strictly-confidential or mission-critical data.
+false_positives: >
+  Intentionally public read-only data repositories where no access control is required
+  by design. Tag has-access-control after documenting the intentional exposure and
+  confirming no sensitive data is stored.
+
+controls:
+  nist_800_53: [AC-3, AC-6, IA-2]
+  iso_27001: [A.9.1.1, A.9.2.3, A.9.4.1]
+  soc2_cc: [CC6.1, CC6.3]
+  pci_dss_4: ["7.1.1", "7.2.1"]
+  hipaa: ["164.312(a)(1)"]
+  nis2: ["Art. 21(2)(i)"]
+  cmmc: [AC.L1-3.1.1, AC.L1-3.1.2]
+  owasp_top10_2021: [A01, A05]
+  asvs_4: [V4.1, V4.2]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>No Access Control</b>: information asset container <b>{tech_asset.title}</b> lacks access control mechanisms"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - contains:
+                item: information-asset-container
+                in: "{tech_asset.tags}"
+            - not:
+                contains:
+                  item: has-access-control
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

@@ -1,0 +1,86 @@
+id: trike-privilege-accumulation
+title: Trike - Multi-Tenant Actor With Accumulated Privileges Across Datastores Without Privilege Review
+function: architecture
+stride: elevation-of-privilege
+cwe: 272
+description: >
+  Trike's rights-based model requires that actor privileges be explicitly scoped and
+  reviewed. A multi-tenant technical asset tagged with trike-actor that lacks the
+  trike-privilege-review tag has never had its cumulative access rights audited.
+  Multi-tenant actors that accumulate access to multiple high-value datastores without
+  a privilege review may hold more permissions than necessary, violating the principle
+  of least privilege and creating a high-impact pivot point if the actor is compromised.
+impact: >
+  A compromised multi-tenant actor with accumulated and unreviewed privileges can
+  access, modify, or delete data across all reachable datastores in a single breach.
+  Privilege accumulation is a primary enabler of lateral movement: a single credential
+  compromise becomes a full data-plane compromise if the actor's rights span multiple
+  data stores without segmentation.
+asvs: V4 - Access Control Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html
+action: Review and reduce actor privileges to the minimum required per datastore
+mitigation: >
+  Implement per-datastore access grants with separate credentials or roles rather
+  than a single shared multi-datastore credential. Enumerate all datastores this
+  actor can reach and evaluate whether each access grant is still necessary. Remove
+  or scope down any privileges that exceed the minimum required. Once reviewed and
+  reduced, tag the asset trike-privilege-review to indicate the review is complete.
+check: >
+  Have all privileges for this multi-tenant actor been reviewed and scoped to the
+  minimum required for each datastore?
+  Are separate credentials used per datastore where feasible?
+detection_logic: >
+  In-scope multi-tenant technical assets tagged trike-actor that are not tagged
+  with trike-privilege-review.
+risk_assessment: >
+  High when the actor has access to datastores containing confidential or critical
+  data. Elevated to critical when the actor is also internet-facing.
+false_positives: >
+  Dedicated single-purpose service accounts with intentionally broad scope (e.g.,
+  backup agents, DBA accounts) where the breadth is architecturally justified.
+  Tag trike-privilege-review after documenting the scope, obtaining security approval,
+  and confirming the least-privilege principle has been applied within the constraint.
+
+controls:
+  nist_800_53: [AC-6, AC-6(1), CM-5, AC-2]
+  iso_27001: [A.9.1.2, A.9.2.3, A.9.2.6]
+  soc2_cc: [CC6.1, CC6.3]
+  pci_dss_4: ["7.2.1", "8.6.1"]
+  hipaa: ["164.312(a)(1)", "164.308(a)(3)"]
+  nis2: ["Art. 21(2)(i)"]
+  cmmc: [AC.L2-3.1.5, AC.L2-3.1.6]
+  owasp_top10_2021: [A01, A04]
+  asvs_4: [V4.1, V4.2]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Privilege Accumulation</b>: multi-tenant actor <b>{tech_asset.title}</b> has accumulated privileges without a privilege review"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.multi_tenant}"
+            - contains:
+                item: trike-actor
+                in: "{tech_asset.tags}"
+            - not:
+                contains:
+                  item: trike-privilege-review
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

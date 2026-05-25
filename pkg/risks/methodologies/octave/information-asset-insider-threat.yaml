@@ -1,0 +1,86 @@
+id: octave-insider-threat
+title: OCTAVE Allegro - High-Criticality Multi-Tenant Information Asset Container Without Privileged Access Management
+function: architecture
+stride: elevation-of-privilege
+cwe: 269
+description: >
+  OCTAVE Allegro specifically addresses insider threats as a primary area of concern
+  for information asset security. A multi-tenant technical asset tagged as
+  information-asset-container and criticality-high gives multiple tenants access
+  to the same underlying infrastructure. Without Privileged Access Management (PAM)
+  — evidenced by the absence of the has-privileged-access-management tag — privileged
+  operators and service accounts can access all tenant data without individual
+  accountability or just-in-time approval workflows.
+impact: >
+  A malicious or compromised insider with privileged access to a multi-tenant
+  high-criticality asset can exfiltrate data belonging to all tenants simultaneously.
+  Without PAM, such access cannot be audited, time-limited, or revoked promptly.
+  This represents one of the highest-impact insider threat scenarios in OCTAVE Allegro.
+asvs: V4 - Access Control Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html
+action: Implement Privileged Access Management for all high-criticality multi-tenant information asset containers
+mitigation: >
+  Deploy a PAM solution (CyberArk, HashiCorp Vault, AWS Secrets Manager with session
+  management) for all privileged access to high-criticality multi-tenant assets.
+  Enforce just-in-time access, dual approval for production access, and full session
+  recording. Eliminate standing privileged access and rotate all privileged credentials.
+  Tag the asset has-privileged-access-management once the PAM controls are verified.
+check: >
+  Is privileged access to this high-criticality multi-tenant asset gated by a PAM solution?
+  Are all privileged sessions recorded and time-limited?
+detection_logic: >
+  In-scope technical assets tagged with information-asset-container and criticality-high
+  that have multi_tenant set to true and are not tagged with has-privileged-access-management.
+risk_assessment: >
+  High baseline for all qualifying assets. Elevated to critical when the asset holds
+  personally identifiable, financial, or regulated data across tenants.
+false_positives: >
+  Single-tenant high-criticality assets where multi_tenant is incorrectly set to true.
+  Verify tenant model and correct the attribute if the asset is genuinely single-tenant.
+
+controls:
+  nist_800_53: [AC-2, AC-6, AC-17, AU-2]
+  iso_27001: [A.9.2.3, A.9.4.2, A.12.4.1]
+  soc2_cc: [CC6.1, CC6.3, CC7.2]
+  pci_dss_4: ["8.2.1", "8.6.1"]
+  hipaa: ["164.312(a)(1)", "164.308(a)(3)"]
+  nis2: ["Art. 21(2)(i)"]
+  cmmc: [AC.L2-3.1.6, AC.L2-3.1.5]
+  owasp_top10_2021: [A01, A05]
+  asvs_4: [V4.1, V4.3]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Insider Threat</b>: high-criticality multi-tenant information asset container <b>{tech_asset.title}</b> lacks Privileged Access Management"
+    severity: "calculate_severity(likely, critical)"
+    exploitation_likelihood: likely
+    exploitation_impact: critical
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - contains:
+                item: information-asset-container
+                in: "{tech_asset.tags}"
+            - contains:
+                item: criticality-high
+                in: "{tech_asset.tags}"
+            - true: "{tech_asset.multi_tenant}"
+            - not:
+                contains:
+                  item: has-privileged-access-management
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

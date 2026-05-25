@@ -1,0 +1,82 @@
+id: cloud-api-gateway-no-waf
+title: Cloud Network - Internet-Facing API Gateway Without WAF Protection
+function: architecture
+stride: tampering
+cloud-native: network
+cwe: 693
+description: >
+  Cloud API gateways that serve internet traffic without a Web Application Firewall
+  (WAF) have no automated protection against common web exploits including SQL
+  injection, XSS, path traversal, and HTTP floods. A WAF inspects request payloads
+  and headers before they reach backend services, providing a defense-in-depth
+  layer that can block known attack patterns in real-time.
+impact: >
+  Without WAF protection, a single successful injection or exploitation of an
+  unpatched vulnerability in a backend service can lead to data exfiltration,
+  authentication bypass, or denial of service. WAF absence also means no
+  geo-blocking or rate-limiting at the edge for volumetric attacks.
+asvs: V14 - Configuration Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Web_Application_Firewall_Cheat_Sheet.html
+action: Attach a WAF (AWS WAF, Azure Front Door WAF, GCP Cloud Armor) to all internet-facing API gateways
+mitigation: >
+  Attach a managed WAF to the API gateway with at minimum the OWASP Core Rule Set
+  enabled. Enable rate-limiting rules to throttle credential stuffing and scraping.
+  Enable logging of all blocked requests. Tag the asset has-waf once the WAF
+  is attached and the rule set is verified in enforcement (not detection-only) mode.
+check: >
+  Is a WAF attached to this API gateway in enforcement mode?
+  Are OWASP CRS rules enabled and actively blocking requests?
+detection_logic: >
+  In-scope technical assets with cloud-api-gateway technology that are internet-accessible
+  and not tagged with has-waf.
+risk_assessment: >
+  High when the API processes confidential data or authentication tokens.
+  Medium for public APIs serving only non-sensitive data.
+false_positives: >
+  API gateways fronted by a separate WAF or CDN layer that is modeled as a distinct
+  technical asset. Add has-waf to the API gateway asset after confirming the upstream
+  WAF covers this endpoint.
+
+controls:
+  nist_800_53: [SC-5, SI-3, SI-4]
+  iso_27001: [A.13.1.1, A.14.1.2]
+  soc2_cc: [CC6.6, CC7.2]
+  pci_dss_4: ["6.4.1", "6.4.2"]
+  hipaa: ["164.312(e)(1)"]
+  nis2: ["Art. 21(2)(e)"]
+  cmmc: [SC.L2-3.13.1, SI.L1-3.14.2]
+  owasp_top10_2021: [A03, A05]
+  asvs_4: [V5.1, V14.4]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>API Gateway No WAF</b>: internet-facing API gateway <b>{tech_asset.title}</b> lacks WAF protection"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.internet}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.cloud_api_gateway}"
+            - not:
+                contains:
+                  item: has-waf
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

@@ -1,0 +1,80 @@
+id: supply-chain-no-sast
+title: Supply Chain - Custom-Developed Application Without Static Analysis (SAST)
+function: development
+stride: tampering
+cwe: 1076
+description: >
+  Applications with custom-developed code that do not run Static Application Security
+  Testing (SAST) during CI/CD miss a class of security vulnerabilities that are
+  detectable by automated analysis: SQL injection, XSS, path traversal, hardcoded
+  secrets, use of deprecated cryptographic functions, and many OWASP Top 10 patterns.
+  SAST tools (Semgrep, CodeQL, SonarQube, Bandit, ESLint security plugins) provide
+  continuous vulnerability detection at the lowest cost point — before code ships.
+impact: >
+  Undetected injection flaws, insecure deserialization, and cryptographic weaknesses
+  in custom code can lead to full application compromise, data breach, or privilege
+  escalation. The cost to fix vulnerabilities discovered in production is 10–100x
+  higher than fixing them at code-review time.
+asvs: V14 - Configuration Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Secure_SDLC_Cheat_Sheet.html
+action: Integrate SAST tooling into CI/CD and block merges on high-severity findings
+mitigation: >
+  Integrate a SAST tool appropriate for the tech stack: Semgrep (polyglot),
+  CodeQL (GitHub), SonarQube, Bandit (Python), SpotBugs (Java), ESLint (JavaScript).
+  Run on every pull request and block merge on high or critical findings.
+  Track findings in a dedicated triage workflow to prevent false-positive fatigue.
+  Tag the asset has-sast once scanning is enforced in CI.
+check: >
+  Is a SAST tool running on every pull request for custom-developed code?
+  Are high-severity findings blocking merge?
+detection_logic: >
+  In-scope technical assets with custom_developed_parts set to true that do not
+  have the has-sast tag.
+risk_assessment: >
+  High for externally-accessible applications processing authentication or sensitive data.
+  Medium for internal tools.
+false_positives: >
+  Applications where SAST is performed by a third-party security team on a scheduled
+  basis rather than in CI/CD. Tag has-sast after confirming the alternative process
+  provides equivalent coverage frequency.
+
+controls:
+  nist_800_53: [SA-10, SA-11, RA-5]
+  iso_27001: [A.14.2.1, A.14.2.3]
+  soc2_cc: [CC7.1, CC8.1]
+  pci_dss_4: ["6.2.4", "6.3.1"]
+  hipaa: ["164.308(a)(1)(ii)(A)"]
+  nis2: ["Art. 21(2)(e)"]
+  cmmc: [SA.L2-3.12.4, SI.L1-3.14.1]
+  owasp_top10_2021: [A03, A06]
+  asvs_4: [V14.2, V14.3]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>No SAST</b>: custom-developed application <b>{tech_asset.title}</b> lacks static analysis security testing in CI/CD"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.custom_developed_parts}"
+            - not:
+                contains:
+                  item: has-sast
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

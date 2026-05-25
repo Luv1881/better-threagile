@@ -20,16 +20,18 @@ type RiskCategory struct {
 	DetectionLogic             string       `json:"detection_logic,omitempty" yaml:"detection_logic,omitempty"`
 	RiskAssessment             string       `json:"risk_assessment,omitempty" yaml:"risk_assessment,omitempty"`
 	FalsePositives             string       `json:"false_positives,omitempty" yaml:"false_positives,omitempty"`
-	ModelFailurePossibleReason bool         `json:"model_failure_possible_reason,omitempty" yaml:"model_failure_possible_reason,omitempty"`
-	CWE                        int          `json:"cwe,omitempty" yaml:"cwe,omitempty"`
+	ModelFailurePossibleReason bool            `json:"model_failure_possible_reason,omitempty" yaml:"model_failure_possible_reason,omitempty"`
+	CWE                        int             `json:"cwe,omitempty" yaml:"cwe,omitempty"`
+	Controls                   *ControlMapping `json:"controls,omitempty" yaml:"controls,omitempty"`
 }
 
 // HasClassification returns true if the category carries a classification for the given methodology.
 // STRIDE is always present (zero value is valid); LINDDUN/PASTA/VAST use pointer fields.
+// Cloud-Native, Octave, and Trike run all loaded rules (pack-filtered externally via --rule-pack).
 func (what *RiskCategory) HasClassification(m Methodology) bool {
 	switch m {
-	case StrideMethodology:
-		return true // every rule has an implicit STRIDE value
+	case StrideMethodology, CloudNativeMethodology, OctaveMethodology, TrikeMethodology:
+		return true
 	case LinddunMethodology:
 		return what.LINDDUN != nil
 	case PastaMethodology:

@@ -1,0 +1,84 @@
+id: iam-internet-identity-no-mfa
+title: Cloud IAM - Internet-Exposed Identity Provider Without MFA
+function: architecture
+stride: spoofing
+cloud-native: iam
+cwe: 308
+description: >
+  Identity providers and identity stores that are accessible from the internet without
+  multi-factor authentication (MFA) are exposed to credential stuffing, phishing, and
+  brute-force attacks. In cloud architectures, compromising the identity plane gives
+  attackers access to every service the principal can reach, including storage,
+  compute, databases, and cross-account resources.
+impact: >
+  A compromised cloud identity can give attackers full control over all resources
+  that principal governs. Cloud IAM compromises are often the entry point for
+  large-scale data breaches and ransomware deployments against cloud environments.
+asvs: V2 - Authentication Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet.html
+action: Enable MFA on all internet-accessible identity provider and identity store assets
+mitigation: >
+  Require MFA for all identity providers and identity stores accessible from the internet.
+  Use phishing-resistant MFA (WebAuthn / FIDO2 hardware tokens) for privileged identities.
+  Apply Conditional Access or adaptive authentication policies to flag anomalous logins.
+  Tag the asset has-mfa once MFA is verified to suppress this finding.
+check: >
+  Are all internet-exposed identity providers and identity stores protected by MFA?
+  Is the MFA policy enforced at the platform level (not bypassable by users)?
+detection_logic: >
+  In-scope technical assets whose technology is identity-provider or identity-store-database
+  that are internet-accessible and not tagged with has-mfa.
+risk_assessment: >
+  High baseline. Critical when the identity provider manages cross-account or
+  administrative access. Elevated for any identity store processing confidential data.
+false_positives: >
+  Machine-to-machine identity endpoints (service accounts, OIDC federation) that do not
+  accept human credentials and rely on certificate-based or token-based authentication
+  rather than passwords. Tag has-mfa to suppress after review.
+
+controls:
+  nist_800_53: [IA-2, IA-2(1), IA-2(2)]
+  iso_27001: [A.9.4.2, A.9.4.3]
+  soc2_cc: [CC6.1, CC6.3]
+  pci_dss_4: ["8.3.2", "8.4.1"]
+  hipaa: ["164.312(d)"]
+  nis2: ["Art. 21(2)(j)"]
+  cmmc: [IA.L2-3.5.3]
+  owasp_top10_2021: [A07]
+  asvs_4: [V2.1, V2.8]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Cloud IAM - No MFA</b>: internet-exposed identity asset <b>{tech_asset.title}</b> lacks multi-factor authentication"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.internet}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.identity-provider}"
+                  - true: "{.attributes.identity-store-database}"
+                  - true: "{.attributes.identity-store-ldap}"
+            - not:
+                contains:
+                  item: has-mfa
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

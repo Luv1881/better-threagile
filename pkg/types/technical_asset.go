@@ -23,7 +23,7 @@ type TechnicalAsset struct {
 	CustomDevelopedParts    bool                  `json:"custom_developed_parts,omitempty" yaml:"custom_developed_parts,omitempty"`
 	OutOfScope              bool                  `json:"out_of_scope,omitempty" yaml:"out_of_scope,omitempty"`
 	UsedAsClientByHuman     bool                  `json:"used_as_client_by_human,omitempty" yaml:"used_as_client_by_human,omitempty"`
-	Encryption              EncryptionStyle       `json:"encryption,omitempty" yaml:"encryption,omitempty"`
+	Encryption              EncryptionStyle       `json:"encryption,omitempty" yaml:"encryption"`
 	JustificationOutOfScope string                `json:"justification_out_of_scope,omitempty" yaml:"justification_out_of_scope,omitempty"`
 	Owner                   string                `json:"owner,omitempty" yaml:"owner,omitempty"`
 	Confidentiality         Confidentiality       `json:"confidentiality,omitempty" yaml:"confidentiality,omitempty"`
@@ -47,6 +47,10 @@ type TechnicalAsset struct {
 	RequiresAuthenticationStrength string   `json:"requires_authentication_strength,omitempty" yaml:"requires_authentication_strength,omitempty"`
 	// VAST business-process fields (all optional)
 	SupportedBusinessProcesses []string `json:"supported_business_processes,omitempty" yaml:"supported_business_processes,omitempty"`
+	// AI/ML fields (all optional, Phase B.5)
+	IsLLMInference      bool     `json:"is_llm_inference,omitempty"      yaml:"is_llm_inference,omitempty"`
+	IsVectorStore       bool     `json:"is_vector_store,omitempty"       yaml:"is_vector_store,omitempty"`
+	RAGContextSources   []string `json:"rag_context_sources,omitempty"   yaml:"rag_context_sources,omitempty"`
 }
 
 func (what TechnicalAsset) IsTaggedWithAny(tags ...string) bool {

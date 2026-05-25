@@ -45,6 +45,46 @@ var DefaultRegistry = []RulePackEntry{
 		Embedded:    true,
 		Source:      "github.com/threagile/threagile/pkg/risks/methodologies/vast",
 	},
+	{
+		Name:        "cloud-native",
+		Description: "Cloud-Native Security — 17 rules covering IAM, object storage, managed databases, serverless, containers, and API gateways in cloud-hosted architectures",
+		URL:         "embedded://cloud-native.tar.gz",
+		Methodology: "cloud-native",
+		Embedded:    true,
+		Source:      "github.com/threagile/threagile/pkg/risks/methodologies/cloud-native",
+	},
+	{
+		Name:        "supply-chain",
+		Description: "Software Supply Chain Security — 10 rules covering SBOM, dependency scanning, build provenance, image signing, branch protection, and SAST (SLSA/CRA aligned)",
+		URL:         "embedded://supply-chain.tar.gz",
+		Methodology: "stride",
+		Embedded:    true,
+		Source:      "github.com/threagile/threagile/pkg/risks/methodologies/supply-chain",
+	},
+	{
+		Name:        "ai-ml",
+		Description: "AI/ML Security (MITRE ATLAS aligned) — 18 rules covering LLM inference, RAG pipelines, vector stores, training data, model weights, prompt injection, and multi-tenant inference isolation",
+		URL:         "embedded://ai-ml.tar.gz",
+		Methodology: "stride",
+		Embedded:    true,
+		Source:      "github.com/threagile/threagile/pkg/risks/methodologies/ai-ml",
+	},
+	{
+		Name:        "octave",
+		Description: "OCTAVE Allegro — 8 rules covering information asset containers: access control, backup, logging, transport encryption, third-party exposure, insider threat, recovery, and cross-zone storage",
+		URL:         "embedded://octave.tar.gz",
+		Methodology: "octave",
+		Embedded:    true,
+		Source:      "github.com/threagile/threagile/pkg/risks/methodologies/octave",
+	},
+	{
+		Name:        "trike",
+		Description: "Trike rights-based threat modeling — 8 rules covering actor trust levels, action matrix coverage, unauthorised read/write, high-trust actor monitoring, privilege accumulation, and residual risk acceptance",
+		URL:         "embedded://trike.tar.gz",
+		Methodology: "trike",
+		Embedded:    true,
+		Source:      "github.com/threagile/threagile/pkg/risks/methodologies/trike",
+	},
 }
 
 // LookupRulePack returns the registry entry for a given pack name, or nil if not found.

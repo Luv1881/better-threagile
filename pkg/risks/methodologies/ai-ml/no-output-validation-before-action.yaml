@@ -1,0 +1,86 @@
+id: ai-ml-no-output-validation-before-action
+title: AI/ML - LLM Output Used in Custom Code Without Output Validation
+function: architecture
+stride: tampering
+cwe: 20
+description: >
+  Custom-developed components that receive output from an LLM inference endpoint
+  and act on it without validating the output structure, content, or safety properties
+  allow adversarially crafted LLM outputs to drive unintended downstream actions.
+  In agentic workflows where LLM output is parsed as commands, JSON, code, or tool
+  invocations, missing output validation is a primary enabler of indirect prompt
+  injection, jailbreak-driven privilege escalation, and unintended automation actions.
+impact: >
+  An attacker who manipulates LLM output — via prompt injection, adversarial inputs,
+  or model compromise — can cause the downstream custom component to execute
+  unintended actions including arbitrary code execution, unauthorized data modifications,
+  external API calls, or system command invocations. Agentic systems with
+  unvalidated LLM output have caused real-world incidents including unauthorized
+  financial transactions and data exfiltration.
+asvs: V5 - Validation, Sanitization and Encoding Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+action: Validate all LLM output against a strict schema and safety policy before using it to drive downstream actions
+mitigation: >
+  Define a strict output schema (JSON Schema, Pydantic, grammar-constrained generation)
+  and validate every LLM response before it is consumed by the downstream component.
+  Apply an output safety classifier or guardrail that rejects responses containing
+  injection patterns, unsafe commands, or policy violations. Implement a human-in-the-loop
+  confirmation step for high-impact actions. Tag the asset has-output-validation once
+  validation controls are verified.
+check: >
+  Is every LLM response validated against a strict schema before it drives downstream actions?
+  Is a safety classifier applied to LLM output before it is executed or acted upon?
+detection_logic: >
+  In-scope technical assets with custom_developed_parts that receive data flows
+  from an LLM inference endpoint and are not tagged with has-output-validation.
+risk_assessment: >
+  High for custom components that parse LLM output as commands, code, or structured
+  action plans. Critical in fully agentic workflows with external side effects.
+false_positives: >
+  Read-only display components that render LLM output to a human user without any
+  programmatic action being taken. Tag has-output-validation after confirming that
+  no machine-readable action is derived from the LLM response.
+
+controls:
+  nist_800_53: [SI-10, SI-15, CM-7]
+  iso_27001: [A.14.2.5, A.12.6.1]
+  soc2_cc: [CC6.1, CC8.1]
+  pci_dss_4: ["6.2.4"]
+  nis2: ["Art. 21(2)(e)"]
+  owasp_top10_2021: [A03, A08]
+  asvs_4: [V5.1, V5.4]
+  owasp_llm_top10: [LLM01, LLM05]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>No Output Validation Before Action</b>: custom component <b>{tech_asset.title}</b> acts on LLM output without output validation, enabling adversarial action injection"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.custom_developed_parts}"
+            - any:
+                in: "{tech_asset.data_assets_processed}"
+                item: data_id
+                true: "{$model.data_assets.{data_id}.origin_llm_inference}"
+            - not:
+                contains:
+                  item: has-output-validation
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

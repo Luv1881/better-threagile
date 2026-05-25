@@ -1,0 +1,84 @@
+id: cloud-object-storage-no-encryption
+title: Cloud Storage - Object Storage Without Encryption at Rest
+function: architecture
+stride: information-disclosure
+cloud-native: data
+cwe: 312
+description: >
+  Cloud object storage buckets that store sensitive or personal data without
+  server-side encryption at rest allow any actor with storage-level access (via
+  cloud-provider support channels, storage engineer, or leaked keys) to read the
+  raw data. GDPR Article 32 and most compliance frameworks require encryption at
+  rest as a baseline technical safeguard for personal and sensitive data.
+impact: >
+  Unencrypted data in cloud storage can be read by anyone with low-level storage
+  access, including support staff, exfiltrated via cloud-provider vulnerabilities,
+  or copied via signed URL leaks. In a breach scenario, unencrypted data requires
+  mandatory notification under GDPR, HIPAA, and PCI-DSS.
+asvs: V6 - Stored Cryptography Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+action: Enable server-side encryption (SSE) on all object storage buckets holding sensitive data
+mitigation: >
+  Enable server-side encryption on the bucket using either provider-managed keys
+  (SSE-S3 / Google-managed / Azure SSE) or customer-managed keys (SSE-KMS / CMEK).
+  For highest assurance, use customer-managed KMS keys with key usage logging.
+  Set the asset's encryption field to transparent or higher to reflect this state.
+check: >
+  Is server-side encryption enabled on the bucket?
+  Are customer-managed KMS keys used for confidential or sensitive workloads?
+detection_logic: >
+  In-scope technical assets with object-storage technology, encryption set to none,
+  that store or process at least one confidential or higher data asset.
+risk_assessment: >
+  High when the bucket stores confidential or strictly-confidential data.
+  Medium for internal-use-only data without external exposure.
+false_positives: >
+  Buckets holding only public, non-sensitive content (e.g., public static assets)
+  where encryption provides no security benefit. Set encryption to transparent or
+  change the data asset confidentiality to public to suppress.
+
+controls:
+  nist_800_53: [SC-28, SC-28(1)]
+  iso_27001: [A.10.1.1, A.18.1.5]
+  soc2_cc: [CC6.1, CC6.7]
+  pci_dss_4: ["3.5.1"]
+  hipaa: ["164.312(a)(2)(iv)", "164.312(e)(2)(ii)"]
+  nis2: ["Art. 21(2)(g)"]
+  cmmc: [SC.L2-3.13.16]
+  owasp_top10_2021: [A02]
+  asvs_4: [V6.2, V6.3]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Unencrypted Object Storage</b>: bucket <b>{tech_asset.title}</b> stores sensitive data without encryption at rest"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.object_storage}"
+            - equal:
+                first: "{tech_asset.encryption}"
+                second: none
+            - any:
+                in: "{tech_asset.data_assets_stored}"
+                item: data_id
+                true: "{$model.data_assets.{data_id}.has_pii}"
+          then:
+            return: true

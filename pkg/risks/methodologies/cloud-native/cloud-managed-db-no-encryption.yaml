@@ -1,0 +1,78 @@
+id: cloud-managed-db-no-encryption
+title: Cloud Data - Managed Database Without Encryption at Rest
+function: architecture
+stride: information-disclosure
+cloud-native: data
+cwe: 312
+description: >
+  Managed cloud databases (RDS, Aurora, Cloud SQL, CosmosDB) without transparent
+  data encryption (TDE) store table data, indexes, and backups in plaintext on
+  the underlying storage tier. A provider-side breach, a misconfigured snapshot,
+  or a storage engineer with direct volume access can expose all records.
+  Most compliance regimes (PCI-DSS, HIPAA, GDPR) require encryption at rest
+  for sensitive and personal data.
+impact: >
+  Unencrypted database files and their automated snapshots can be mounted and
+  read outside the database engine. Snapshot sharing misconfigurations (a common
+  accidental exposure) bypass all access controls when the data is unencrypted.
+asvs: V6 - Stored Cryptography Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+action: Enable transparent data encryption on all managed databases storing sensitive data
+mitigation: >
+  Enable encryption at rest on the managed database: RDS/Aurora encrypt-at-rest,
+  GCP Cloud SQL Disk Encryption, Azure SQL Transparent Data Encryption.
+  Prefer customer-managed KMS keys for databases storing strictly-confidential data.
+  Set the asset's encryption field to transparent (or higher) to reflect this state.
+check: >
+  Is encryption at rest enabled on the database instance and its automated snapshots?
+  Are customer-managed keys used for databases with strictly-confidential data?
+detection_logic: >
+  In-scope technical assets with managed-database technology and encryption set to none.
+risk_assessment: >
+  High when the database holds confidential or strictly-confidential data.
+  Medium for internal data where external exposure risk is low.
+false_positives: >
+  Development databases holding only synthetic or public test data. Lower the data
+  asset confidentiality to public or set encryption to transparent to suppress.
+
+controls:
+  nist_800_53: [SC-28, SC-28(1)]
+  iso_27001: [A.10.1.1]
+  soc2_cc: [CC6.1, CC6.7]
+  pci_dss_4: ["3.5.1"]
+  hipaa: ["164.312(a)(2)(iv)", "164.312(e)(2)(ii)"]
+  nis2: ["Art. 21(2)(g)"]
+  cmmc: [SC.L2-3.13.16]
+  owasp_top10_2021: [A02]
+  asvs_4: [V6.2]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Managed DB No Encryption</b>: database <b>{tech_asset.title}</b> lacks encryption at rest"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.managed_database}"
+            - equal:
+                first: "{tech_asset.encryption}"
+                second: none
+          then:
+            return: true

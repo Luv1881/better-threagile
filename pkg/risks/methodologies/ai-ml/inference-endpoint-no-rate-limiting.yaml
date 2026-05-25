@@ -1,0 +1,81 @@
+id: ai-ml-inference-endpoint-no-rate-limiting
+title: AI/ML - LLM Inference Endpoint Without Rate Limiting
+function: operations
+stride: denial-of-service
+cwe: 770
+description: >
+  LLM inference endpoints without rate limiting are vulnerable to prompt flooding
+  attacks that exhaust token budgets, trigger runaway inference costs, and degrade
+  or deny service to legitimate users. Because LLM inference is significantly more
+  expensive per request than typical API calls, the absence of rate limiting creates
+  disproportionate cost amplification risk compared to traditional services.
+impact: >
+  An attacker or misconfigured client can issue thousands of high-token prompts per
+  minute, exhausting per-period inference quotas, triggering cloud cost spikes in the
+  thousands of dollars per hour, and starving legitimate traffic. Inference-budget
+  exhaustion can also cascade to dependent applications that rely on the model for
+  real-time decision-making.
+asvs: V13 - API and Web Service Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html
+action: Configure per-caller token-per-minute and request-per-minute rate limits on all LLM endpoints
+mitigation: >
+  Implement request-per-minute and tokens-per-minute rate limits at the API gateway
+  layer in front of the inference endpoint. Apply per-caller quotas using API keys
+  or authenticated identity. Set hard monthly budget caps at the inference provider
+  level. Alert on anomalous usage patterns. Tag the asset has-rate-limiting once
+  throttling policies are verified.
+check: >
+  Are per-caller request-per-minute and token-per-minute limits configured?
+  Are hard monthly spend caps enforced at the provider or gateway level?
+detection_logic: >
+  In-scope technical assets with llm_inference_endpoint technology that are not
+  tagged with has-rate-limiting.
+risk_assessment: >
+  Medium baseline. Elevated to High when the inference endpoint is internet-accessible
+  or when inference costs are billed at usage-based rates without a spend cap.
+false_positives: >
+  Internal-only inference endpoints in air-gapped environments where network-layer
+  controls prevent external traffic. Tag has-rate-limiting after documenting the
+  compensating network control.
+
+controls:
+  nist_800_53: [SC-5, SI-4, AU-12]
+  iso_27001: [A.13.1.1, A.17.2.1]
+  soc2_cc: [A1.1, CC6.6]
+  pci_dss_4: ["6.4.1"]
+  nis2: ["Art. 21(2)(b)"]
+  owasp_top10_2021: [A04, A05]
+  asvs_4: [V13.1, V13.2]
+  owasp_llm_top10: [LLM04, LLM10]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Inference Endpoint No Rate Limiting</b>: LLM endpoint <b>{tech_asset.title}</b> has no rate limiting, enabling prompt flooding and cost amplification"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.llm_inference_endpoint}"
+            - not:
+                contains:
+                  item: has-rate-limiting
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

@@ -74,6 +74,9 @@ func (what *ContainsExpression) EvalBool(scope *common.Scope) (*common.BoolValue
 }
 
 func (what *ContainsExpression) evalBool(scope *common.Scope, item common.Value, inValue common.Value) (*common.BoolValue, string, error) {
+	if inValue == nil {
+		return common.SomeBoolValue(false, nil), "", nil
+	}
 	switch castValue := inValue.Value().(type) {
 	case []any:
 		for index, value := range castValue {

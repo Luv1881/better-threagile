@@ -1,0 +1,82 @@
+id: cloud-serverless-no-dlq
+title: Cloud Serverless - Function Without Dead Letter Queue for PII Processing
+function: operations
+stride: denial-of-service
+cloud-native: serverless
+cwe: 390
+description: >
+  Serverless functions that process personal data without a dead letter queue (DLQ)
+  silently drop failed events after the maximum retry count is exhausted. Silent
+  failure means PII events are permanently lost with no audit trail, violating
+  GDPR data integrity requirements and making forensic investigation after an
+  incident impossible. A DLQ captures failed payloads for investigation and
+  replay, maintaining data integrity and enabling incident response.
+impact: >
+  Failed PII processing events are permanently lost without a DLQ. This can result
+  in undetected data loss, compliance violations (incomplete data processing records),
+  and inability to audit what data was received and what was processed during an incident.
+asvs: V8 - Data Protection Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+action: Configure a dead letter queue on all serverless functions processing personal data
+mitigation: >
+  Configure an SQS DLQ (or Azure Service Bus / GCP Pub/Sub dead-letter topic) on the
+  event source mapping for all functions that process PII. Set the maximum retry count
+  to a low value (2-3) to limit duplicate processing. Monitor DLQ depth and alert when
+  messages are delivered to it. Tag the asset has-dlq once configured.
+check: >
+  Is a DLQ configured on the event source that triggers this function?
+  Are DLQ depth alarms set up to notify the operations team?
+detection_logic: >
+  In-scope serverless function technical assets processing PII data assets without
+  the has-dlq tag.
+risk_assessment: >
+  Medium baseline. Elevated when the function is the only processor for PII
+  with no alternative audit path.
+false_positives: >
+  Synchronous (HTTP-invoked) functions where the caller handles retries directly
+  and failures are surfaced to the end user immediately. Add has-dlq after
+  confirming the caller has adequate error handling and audit logging.
+
+controls:
+  nist_800_53: [AU-2, AU-9, SI-2]
+  iso_27001: [A.12.4.1, A.16.1.7]
+  soc2_cc: [CC7.2]
+  hipaa: ["164.312(b)"]
+  nis2: ["Art. 21(2)(b)"]
+  asvs_4: [V7.1]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Serverless No DLQ</b>: function <b>{tech_asset.title}</b> processes personal data without a dead letter queue"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.serverless_function}"
+            - not:
+                contains:
+                  item: has-dlq
+                  in: "{tech_asset.tags}"
+            - any:
+                in: "{tech_asset.data_assets_processed}"
+                item: data_id
+                true: "{$model.data_assets.{data_id}.has_pii}"
+          then:
+            return: true

@@ -1,0 +1,90 @@
+id: ai-ml-model-weights-public-access
+title: AI/ML - Model Weights Stored in Internet-Accessible Object Storage
+function: architecture
+stride: information-disclosure
+cwe: 284
+description: >
+  Object storage buckets that are accessible from the internet and contain model
+  weight files represent a direct intellectual property exfiltration risk. Model
+  weights encode the organization's training investment and may memorize sensitive
+  data from training corpora. Publicly accessible weights also enable adversaries
+  to perform offline white-box attacks, including weight extraction, membership
+  inference, and the construction of adversarial examples that bypass production
+  safety guardrails.
+impact: >
+  Exfiltrated model weights allow competitors and adversaries to replicate or
+  fine-tune the model without authorization, bypassing alignment and safety measures.
+  White-box adversarial attacks derived from stolen weights may then be used to
+  reliably evade production content filters. Training data reconstruction attacks
+  on downloaded weights may expose PII memorized during training.
+asvs: V8 - Data Protection Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Securing_Cascading_Style_Sheets_Cheat_Sheet.html
+action: Restrict model-weight storage buckets to private access with authenticated-principal-only policies
+mitigation: >
+  Block all public access on object storage buckets that hold model weight data assets.
+  Enforce bucket policies that allow access only to authorized service accounts and
+  CI/CD pipelines. Use signed URLs with short expiry for any legitimate external
+  distribution. Enable access logging and alert on anomalous download volumes.
+  Tag the asset has-private-acl once private access is enforced.
+check: >
+  Is public access fully blocked on all buckets storing model weight files?
+  Are bucket access logs monitored for large unexpected downloads?
+detection_logic: >
+  In-scope technical assets with object_storage technology that are internet-accessible
+  and receive data flows from assets tagged is_model_weights, and are not tagged
+  with has-private-acl.
+risk_assessment: >
+  High for proprietary fine-tuned models. Critical when training data contained
+  confidential or personally identifiable information.
+false_positives: >
+  Intentionally published open-source model weights released under an open licence.
+  Tag has-private-acl after confirming the publication is deliberate and the weights
+  contain no sensitive memorized content.
+
+controls:
+  nist_800_53: [AC-3, AC-17, SC-28]
+  iso_27001: [A.9.1.2, A.13.1.3, A.18.1.3]
+  soc2_cc: [CC6.1, CC6.6]
+  pci_dss_4: ["7.2.1"]
+  hipaa: ["164.312(a)(1)"]
+  nis2: ["Art. 21(2)(e)"]
+  owasp_top10_2021: [A01, A05]
+  asvs_4: [V4.1, V8.3]
+  owasp_llm_top10: [LLM10]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Model Weights Public Access</b>: object storage <b>{tech_asset.title}</b> is internet-accessible and stores model weight files"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.internet}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.object_storage}"
+            - any:
+                in: "{tech_asset.data_assets_stored}"
+                item: data_id
+                true: "{$model.data_assets.{data_id}.is_model_weights}"
+            - not:
+                contains:
+                  item: has-private-acl
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

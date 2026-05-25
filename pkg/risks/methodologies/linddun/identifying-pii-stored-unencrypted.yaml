@@ -29,6 +29,16 @@ false_positives: >
   Datastores on a host protected by full-disk encryption with a documented configuration;
   document and accept with justification.
 
+controls:
+  nist_800_53: [SC-28, SC-28(1)]
+  iso_27001: [A.10.1.1, A.18.1.5]
+  soc2_cc: [CC6.1, CC6.7]
+  pci_dss_4: ["3.5.1"]
+  hipaa: ["164.312(a)(2)(iv)", "164.312(e)(2)(ii)"]
+  nis2: ["Art. 21(2)(g)"]
+  owasp_top10_2021: [A02]
+  asvs_4: [V6.2, V6.3]
+
 risk:
   id:
     parameter: tech_asset

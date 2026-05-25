@@ -1,0 +1,81 @@
+id: supply-chain-artifact-registry-unauthenticated
+title: Supply Chain - Artifact Registry Publicly Accessible Without Authentication
+function: operations
+stride: tampering
+cwe: 284
+description: >
+  Artifact registries (npm, Maven Central mirrors, PyPI proxies, Nexus, Artifactory)
+  that allow unauthenticated write access or that proxy public package repositories
+  without validation are vulnerable to dependency confusion attacks. An attacker can
+  publish a malicious package with a name matching an internal private package, and
+  the build tool will pull the attacker's version from the public registry if it has
+  a higher version number than the internal one.
+impact: >
+  Dependency confusion attacks (CVE-2021-22118 class) allow arbitrary code execution
+  during the build process, resulting in build environment compromise, secret exfiltration,
+  and potential backdooring of all artifacts built while the malicious dependency is active.
+asvs: V14 - Configuration Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Software_Supply_Chain_Security_Cheat_Sheet.html
+action: Require authentication for all registry operations and use scoped/namespaced package names
+mitigation: >
+  Require authentication for all artifact registry reads and writes. Configure the
+  registry to prefer internal packages over public ones (upstream priority order).
+  Use scoped package names (e.g. @myorg/) to reduce confusion attack surface.
+  Enable artifact signing and checksum verification.
+  Tag the asset has-private-registry once access controls are verified.
+check: >
+  Is the artifact registry restricted to authenticated principals only?
+  Are internal package names scoped to prevent confusion with public packages?
+detection_logic: >
+  In-scope technical assets with artifact-registry technology that are internet-accessible
+  and not tagged with has-private-registry.
+risk_assessment: >
+  High when the registry is used in production build pipelines.
+  Medium for development-only registries.
+false_positives: >
+  Intentionally public open-source artifact mirrors (Maven Central, PyPI official).
+  Tag has-private-registry after confirming there are no internal private packages
+  that could be confused with public ones.
+
+controls:
+  nist_800_53: [SA-10, SR-3, AC-3]
+  iso_27001: [A.9.1.2, A.14.2.2]
+  soc2_cc: [CC6.1]
+  pci_dss_4: ["6.3.2"]
+  nis2: ["Art. 21(2)(e)"]
+  cmmc: [SR.L2-3.17.3, AC.L1-3.1.1]
+  owasp_top10_2021: [A08]
+  asvs_4: [V14.2]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Artifact Registry Unauthenticated</b>: registry <b>{tech_asset.title}</b> allows unauthenticated access enabling dependency confusion attacks"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.internet}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.artifact-registry}"
+            - not:
+                contains:
+                  item: has-private-registry
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

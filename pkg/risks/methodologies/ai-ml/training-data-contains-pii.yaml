@@ -1,0 +1,89 @@
+id: ai-ml-training-data-contains-pii
+title: AI/ML - ML Training Pipeline Processing PII Training Data
+function: architecture
+stride: information-disclosure
+cwe: 359
+description: >
+  ML training pipelines that ingest data assets classified as training data and
+  containing personally identifiable information create significant legal and
+  technical risk. Models trained on PII can memorize and reproduce personal data
+  in outputs (training data extraction attacks). GDPR Article 5(1)(b) purpose
+  limitation and Article 22 requirements for automated decision-making may be
+  violated if PII is used for training without an explicit legal basis. The EU
+  AI Act requires transparency about training data containing personal data.
+impact: >
+  Trained models may reproduce verbatim PII in outputs, enabling training data
+  extraction attacks that exfiltrate names, addresses, medical records, or financial
+  details. Data subjects cannot exercise their GDPR right to erasure (Article 17)
+  once their data is encoded in model weights. Regulatory fines and mandatory
+  breach notifications may result from improper use of PII in training.
+asvs: V8 - Data Protection Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
+action: Apply PII anonymization or pseudonymization to all training data before use in ML pipelines
+mitigation: >
+  Apply k-anonymity, differential privacy, or synthetic data generation to remove
+  or mask PII before training. Conduct a GDPR legitimate-interest or consent
+  assessment for any PII used in training. Implement membership inference attack
+  testing to verify the trained model does not memorize PII. Apply differential
+  privacy during training (DP-SGD) to bound memorization. Tag the asset
+  has-pii-anonymization once anonymization controls are verified.
+check: >
+  Is all PII anonymized or pseudonymized before it is used in the training pipeline?
+  Has a legal basis assessment been completed for PII used in model training?
+detection_logic: >
+  In-scope technical assets with ml_training_pipeline technology that process
+  data assets marked as training data and containing PII.
+risk_assessment: >
+  High for all ML pipelines that use PII-containing training data. Critical when
+  the training data includes health, financial, or sensitive-category personal data
+  under GDPR Article 9.
+false_positives: >
+  Training pipelines that have already applied verified PII anonymization upstream
+  and the data assets have been reclassified to reflect the anonymized state.
+  Tag has-pii-anonymization after confirming anonymization is applied and verified.
+
+controls:
+  nist_800_53: [SC-28, SI-12, PT-2]
+  iso_27001: [A.18.1.3, A.18.1.4]
+  soc2_cc: [CC6.1, CC6.7]
+  pci_dss_4: ["3.3.1"]
+  hipaa: ["164.514(b)", "164.312(a)(2)(iv)"]
+  gdpr: ["Art. 5(1)(b)", "Art. 17", "Art. 22"]
+  nis2: ["Art. 21(2)(g)"]
+  owasp_top10_2021: [A02, A04]
+  asvs_4: [V8.2, V8.3]
+  owasp_llm_top10: [LLM06]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Training Data Contains PII</b>: ML training pipeline <b>{tech_asset.title}</b> processes PII-bearing training data that may be memorized in model weights"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.ml_training_pipeline}"
+            - any:
+                in: "{tech_asset.data_assets_processed}"
+                item: data_id
+                and:
+                  - true: "{$model.data_assets.{data_id}.is_training_data}"
+                  - true: "{$model.data_assets.{data_id}.has_pii}"
+          then:
+            return: true

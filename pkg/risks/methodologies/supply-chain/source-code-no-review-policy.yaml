@@ -1,0 +1,80 @@
+id: supply-chain-no-code-review
+title: Supply Chain - Source Code Merged Without Mandatory Peer Review
+function: development
+stride: tampering
+cwe: 284
+description: >
+  Source code repositories that allow code to be merged to the main branch without
+  a mandatory peer review process have no human check against the introduction of
+  vulnerabilities, backdoors, or malicious code. Peer review is a fundamental
+  defense-in-depth control that detects both intentional and accidental security
+  issues before they reach production.
+impact: >
+  Code that bypasses review can introduce vulnerabilities directly to the production
+  path. In multi-developer teams, unreviewed commits are also a vector for insider
+  threats and compromised-account attacks where an attacker uses a stolen token to
+  merge malicious code directly.
+asvs: V14 - Configuration Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Software_Supply_Chain_Security_Cheat_Sheet.html
+action: Require at least one peer code review approval before merging to the default branch
+mitigation: >
+  Configure the repository to require at least one approving review from a code owner
+  before a pull request can be merged. Enable CODEOWNERS file enforcement.
+  Set the review count based on code criticality (1 for standard changes, 2 for
+  security-sensitive paths). Ensure reviewers cannot self-approve.
+  Tag the asset has-required-review once the policy is enforced.
+check: >
+  Is at least one peer review approval required before merging to the default branch?
+  Can the author approve their own pull request?
+detection_logic: >
+  In-scope technical assets with sourcecode-repository technology not tagged with
+  has-required-review.
+risk_assessment: >
+  High for repositories containing production application code.
+  Medium for infrastructure-as-code repositories.
+false_positives: >
+  Single-developer repositories or automation-only repositories where pull requests
+  are generated and merged by bots with no human-authored commits. Tag has-required-review
+  after documenting the alternative review control.
+
+controls:
+  nist_800_53: [SA-10, CM-3(2)]
+  iso_27001: [A.14.2.2, A.6.1.2]
+  soc2_cc: [CC8.1]
+  pci_dss_4: ["6.4.4"]
+  nis2: ["Art. 21(2)(e)"]
+  cmmc: [CM.L2-3.4.3]
+  owasp_top10_2021: [A08]
+  asvs_4: [V14.3]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>No Code Review Policy</b>: repository <b>{tech_asset.title}</b> does not require mandatory peer review before merge"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.sourcecode-repository}"
+            - not:
+                contains:
+                  item: has-required-review
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

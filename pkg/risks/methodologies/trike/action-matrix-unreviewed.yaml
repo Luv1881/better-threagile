@@ -1,0 +1,88 @@
+id: trike-matrix-unreviewed
+title: Trike - High-Confidentiality Datastore Without Reviewed Action Matrix
+function: architecture
+stride: elevation-of-privilege
+cwe: 284
+description: >
+  The Trike action matrix is the core control artifact of the methodology: it
+  defines which actors are allowed to perform create, read, update, delete, and
+  execute (CRUDE) operations on each asset. A technical asset of type datastore
+  with high or stricter confidentiality that lacks the trike-action-matrix-reviewed
+  tag has never had its access rights formally reviewed. Without this review, the
+  implemented controls cannot be validated against the intended access model, and
+  undeclared access paths remain undetected.
+impact: >
+  Without a reviewed action matrix, there is no documented control boundary for the
+  datastore. Actors — including low-trust or untrusted ones — may have implicit access
+  that was never explicitly denied. Gaps between intended and implemented access are
+  the primary source of data exfiltration and privilege escalation in Trike-modelled
+  systems.
+asvs: V4 - Access Control Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
+action: Complete and review the Trike action matrix for all high-confidentiality datastores
+mitigation: >
+  For each qualifying datastore, enumerate all actors and declare whether their
+  create, read, update, delete, and execute actions are acceptable. Validate the
+  matrix against the implemented access controls. Explicitly deny operations not
+  listed in the approved matrix. Obtain security review sign-off and tag the asset
+  trike-action-matrix-reviewed once the review is approved and documented.
+check: >
+  Has the Trike action matrix been completed and reviewed for this high-confidentiality datastore?
+  Have all actor-to-asset CRUDE operation rights been explicitly documented and approved?
+detection_logic: >
+  In-scope technical assets of type datastore with high or stricter confidentiality
+  that are not tagged with trike-action-matrix-reviewed.
+risk_assessment: >
+  High for datastores with strictly-confidential data. Medium for confidential data.
+  Elevated when the datastore is accessed by untrusted or externally-facing actors.
+false_positives: >
+  New datastores pending their first security review cycle and containing only
+  synthetic or non-confidential test data. Tag trike-action-matrix-reviewed after
+  the review is complete and the matrix is formally approved.
+
+controls:
+  nist_800_53: [AC-3, AC-6, AC-24, RA-3]
+  iso_27001: [A.9.1.1, A.9.4.1, A.6.1.2]
+  soc2_cc: [CC6.1, CC6.3]
+  pci_dss_4: ["7.2.1", "7.3.1"]
+  hipaa: ["164.312(a)(1)"]
+  nis2: ["Art. 21(2)(i)"]
+  cmmc: [AC.L1-3.1.1, AC.L2-3.1.3]
+  owasp_top10_2021: [A01]
+  asvs_4: [V4.1, V4.2]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Action Matrix Unreviewed</b>: high-confidentiality datastore <b>{tech_asset.title}</b> has no reviewed Trike action matrix"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - equal:
+                first: "{tech_asset.type}"
+                second: datastore
+            - equal-or-greater:
+                first: "{tech_asset.confidentiality}"
+                second: confidential
+                as: confidentiality
+            - not:
+                contains:
+                  item: trike-action-matrix-reviewed
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

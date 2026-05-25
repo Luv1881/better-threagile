@@ -1,0 +1,93 @@
+id: ai-ml-embedding-service-pii-exposure
+title: AI/ML - Embedding Service Processing PII Internet-Accessible Without Access Control
+function: architecture
+stride: information-disclosure
+cwe: 284
+description: >
+  Embedding services that generate vector representations of text or other data
+  and are both internet-accessible and process PII-containing data assets, without
+  access control, expose personally identifiable information to any actor who can
+  call the embedding API. Embedding APIs receive the raw input text to be embedded,
+  meaning every request contains the source content before it is converted to a
+  vector. An unauthenticated or improperly authorized embedding endpoint is
+  effectively an unauthenticated API for querying raw PII.
+impact: >
+  Unauthenticated access to an embedding service that processes PII allows any
+  internet actor to submit arbitrary text for embedding and, in some deployments,
+  to retrieve raw stored text associated with embeddings. Embeddings can also be
+  inverted to recover approximate source text, leaking the content of all documents
+  embedded through the service. Data breach notification obligations under GDPR,
+  HIPAA, and similar regulations apply.
+asvs: V4 - Access Control Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html
+action: Restrict internet-accessible embedding services processing PII to authenticated and authorized callers only
+mitigation: >
+  Require authentication on the embedding service API using API keys, OAuth 2.0,
+  or mTLS. Apply IP allowlisting or private endpoint configuration to restrict
+  network-level access. Ensure that the embedding service does not store or log
+  raw input text beyond the duration needed for vector generation. Apply per-caller
+  rate limiting and audit logging. Tag the asset has-access-control once access
+  controls are verified.
+check: >
+  Is authentication required on all paths to the embedding service?
+  Is the embedding service restricted from internet access when processing PII-containing data?
+detection_logic: >
+  In-scope technical assets with embedding_service technology that process data
+  assets containing PII, are internet-accessible, and are not tagged with
+  has-access-control.
+risk_assessment: >
+  High for all internet-accessible embedding services processing PII. Critical when
+  the service processes health, financial, or sensitive-category personal data.
+false_positives: >
+  Embedding services that process only non-PII public content (e.g. embeddings of
+  product descriptions or public web pages). Verify that data assets processed by
+  the service do not contain PII and tag has-access-control after confirming.
+
+controls:
+  nist_800_53: [AC-3, AC-17, IA-2]
+  iso_27001: [A.9.1.2, A.9.4.1, A.13.1.3]
+  soc2_cc: [CC6.1, CC6.6]
+  pci_dss_4: ["7.2.1", "8.2.1"]
+  hipaa: ["164.312(a)(1)", "164.312(d)"]
+  gdpr: ["Art. 32", "Art. 5(1)(f)"]
+  nis2: ["Art. 21(2)(e)"]
+  owasp_top10_2021: [A01, A07]
+  asvs_4: [V4.1, V2.1]
+  owasp_llm_top10: [LLM06]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Embedding Service PII Exposure</b>: embedding service <b>{tech_asset.title}</b> processes PII and is internet-accessible without access control"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.internet}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.embedding_service}"
+            - any:
+                in: "{tech_asset.data_assets_processed}"
+                item: data_id
+                true: "{$model.data_assets.{data_id}.has_pii}"
+            - not:
+                contains:
+                  item: has-access-control
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

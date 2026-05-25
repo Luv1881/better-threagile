@@ -1,0 +1,88 @@
+id: ai-ml-shared-inference-multi-tenant
+title: AI/ML - Multi-Tenant LLM Inference Endpoint Without Tenant Isolation
+function: architecture
+stride: information-disclosure
+cwe: 284
+description: >
+  LLM inference endpoints that serve multiple tenants from a shared model instance
+  without tenant isolation controls are vulnerable to cross-tenant context leakage.
+  Shared system prompts, shared in-context caching, and shared conversation state
+  can allow one tenant's confidential data or system instructions to leak into
+  another tenant's responses. Prompt injection attacks that manipulate the system
+  prompt are particularly dangerous in multi-tenant deployments because they can
+  affect all tenants sharing the instance.
+impact: >
+  A successful cross-tenant context attack allows one customer to read confidential
+  system prompts, conversation history, or retrieved context belonging to another
+  customer. In SaaS LLM deployments, this constitutes a critical cross-tenant data
+  breach affecting all co-tenants of the shared instance. Regulatory notifications
+  under GDPR, HIPAA, and SOC 2 are likely required.
+asvs: V4 - Access Control Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html
+action: Implement per-tenant context isolation using separate model instances, namespace isolation, or context flushing
+mitigation: >
+  Implement strict per-tenant context isolation: use separate model deployment
+  instances per tenant tier, enforce tenant-specific system prompt injection that
+  cannot be overridden by user input, clear all context between tenant sessions,
+  and apply row-level security in any shared caching layer. Monitor for cross-tenant
+  pattern anomalies. Tag the asset has-tenant-isolation once isolation is verified.
+check: >
+  Is per-tenant context isolation enforced such that no tenant's data can appear in
+  another tenant's inference context?
+  Are separate model instances or strict namespace isolation used for high-sensitivity tenants?
+detection_logic: >
+  In-scope technical assets with llm_inference_endpoint technology that have
+  multi_tenant set to true and are not tagged with has-tenant-isolation.
+risk_assessment: >
+  High for all multi-tenant LLM inference endpoints. Critical when tenants include
+  different organizations or when the system prompt contains confidential tenant-specific
+  instructions.
+false_positives: >
+  Multi-tenant inference endpoints where all tenants are departments within the same
+  organization with equivalent data access rights and no confidentiality boundary
+  between them. Tag has-tenant-isolation after documenting the single organizational
+  trust boundary.
+
+controls:
+  nist_800_53: [AC-3, AC-4, SC-2]
+  iso_27001: [A.9.1.2, A.9.4.1, A.13.2.1]
+  soc2_cc: [CC6.1, CC6.3, CC6.6]
+  pci_dss_4: ["7.2.1", "7.3.1"]
+  hipaa: ["164.312(a)(1)"]
+  nis2: ["Art. 21(2)(e)"]
+  owasp_top10_2021: [A01, A05]
+  asvs_4: [V4.1, V4.2]
+  owasp_llm_top10: [LLM06, LLM08]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Shared Inference Multi-Tenant</b>: LLM endpoint <b>{tech_asset.title}</b> serves multiple tenants without isolation, enabling cross-tenant context leakage"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.llm_inference_endpoint}"
+            - true: "{tech_asset.multi_tenant}"
+            - not:
+                contains:
+                  item: has-tenant-isolation
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

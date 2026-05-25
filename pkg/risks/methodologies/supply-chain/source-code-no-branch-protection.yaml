@@ -1,0 +1,80 @@
+id: supply-chain-no-branch-protection
+title: Supply Chain - Source Code Repository Without Branch Protection
+function: development
+stride: tampering
+cwe: 284
+description: >
+  Source code repositories without branch protection rules allow any contributor
+  with write access to push directly to the main/default branch, bypassing code
+  review, CI/CD status checks, and signed commit requirements. This is a direct
+  supply-chain attack vector: a compromised developer account or a malicious insider
+  can inject backdoor code into the main branch without triggering any review gate.
+impact: >
+  Unprotected branches allow direct pushes that bypass security controls. A
+  compromised credential can introduce vulnerabilities directly into the production
+  code path without review. History rewrites (force-push) can erase evidence of
+  malicious commits.
+asvs: V14 - Configuration Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Software_Supply_Chain_Security_Cheat_Sheet.html
+action: Enable branch protection rules on the default branch of all source repositories
+mitigation: >
+  Enable branch protection on the default (main/master) branch: require pull request
+  reviews (minimum 1 reviewer), require CI/CD status checks to pass, require signed
+  commits (GPG or SSH), prevent force pushes, and prevent deletion.
+  On GitHub, enable "Require approvals" and "Require status checks to pass before merging".
+  Tag the asset has-branch-protection once rules are verified.
+check: >
+  Is the default branch protected from direct pushes?
+  Are pull request approvals and CI status checks required before merging?
+detection_logic: >
+  In-scope technical assets with sourcecode-repository technology not tagged with
+  has-branch-protection.
+risk_assessment: >
+  High for repositories containing production code or secrets.
+  Medium for documentation or configuration repositories.
+false_positives: >
+  Single-developer personal repositories or scratch repositories not connected to
+  production pipelines. Tag has-branch-protection after confirming the repo's
+  isolation from production delivery.
+
+controls:
+  nist_800_53: [SA-10, CM-3, CM-4]
+  iso_27001: [A.14.2.2, A.12.1.2]
+  soc2_cc: [CC8.1]
+  pci_dss_4: ["6.4.4", "6.2.4"]
+  nis2: ["Art. 21(2)(e)"]
+  cmmc: [CM.L2-3.4.3, SR.L2-3.17.3]
+  owasp_top10_2021: [A08]
+  asvs_4: [V14.3]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>No Branch Protection</b>: source repository <b>{tech_asset.title}</b> lacks branch protection on the default branch"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.sourcecode-repository}"
+            - not:
+                contains:
+                  item: has-branch-protection
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

@@ -1,0 +1,79 @@
+id: cloud-api-gateway-no-rate-limiting
+title: Cloud Network - API Gateway Without Rate Limiting
+function: operations
+stride: denial-of-service
+cloud-native: network
+cwe: 770
+description: >
+  API gateways without rate limiting expose backend services to unbounded request
+  floods that can exhaust serverless invocation quotas, trigger compute autoscaling
+  cost amplification, and overwhelm downstream databases. Rate limiting at the API
+  gateway layer also prevents credential stuffing by throttling high-frequency
+  authentication attempts from individual IP addresses or API keys.
+impact: >
+  Without rate limiting, a determined attacker or misconfigured client can trigger
+  denial of service through cost amplification (serverless per-invocation billing),
+  exhaust backend connection pools, or perform credential stuffing attacks at
+  thousands of attempts per second with no automated blocking.
+asvs: V13 - API and Web Service Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html
+action: Configure per-client rate limiting on all API gateway routes
+mitigation: >
+  Configure usage plans or throttling policies on the API gateway. Apply
+  per-route and per-API-key rate limits matching the expected legitimate peak load.
+  Add IP-based throttling via WAF for unauthenticated endpoints. Set burst limits
+  to prevent sudden quota exhaustion. Tag the asset has-rate-limiting once configured.
+check: >
+  Are rate limits configured per route and per client on this API gateway?
+  Are authentication endpoints subject to tighter per-IP throttling?
+detection_logic: >
+  In-scope cloud-api-gateway technical assets not tagged with has-rate-limiting.
+risk_assessment: >
+  Medium baseline. Elevated when the gateway fronts serverless functions billed
+  per-invocation, or when it handles authentication endpoints.
+false_positives: >
+  Internal-only API gateways not accessible from the internet where the network
+  perimeter controls traffic volume. Tag has-rate-limiting after confirming
+  a compensating network-level control is in place.
+
+controls:
+  nist_800_53: [SC-5, SI-4]
+  iso_27001: [A.13.1.1, A.17.2.1]
+  soc2_cc: [A1.1, CC6.6]
+  pci_dss_4: ["6.4.1"]
+  nis2: ["Art. 21(2)(b)"]
+  cmmc: [SC.L2-3.13.1]
+  owasp_top10_2021: [A04]
+  asvs_4: [V13.1, V13.2]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>API Gateway No Rate Limiting</b>: API gateway <b>{tech_asset.title}</b> has no rate limiting configured"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.cloud_api_gateway}"
+            - not:
+                contains:
+                  item: has-rate-limiting
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

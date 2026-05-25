@@ -21,6 +21,7 @@ const (
 	InformationDisclosure
 	DenialOfService
 	ElevationOfPrivilege
+	LateralMovement
 )
 
 func STRIDEValues() []TypeEnum {
@@ -31,6 +32,7 @@ func STRIDEValues() []TypeEnum {
 		InformationDisclosure,
 		DenialOfService,
 		ElevationOfPrivilege,
+		LateralMovement,
 	}
 }
 
@@ -41,6 +43,7 @@ var StrideTypeDescription = [...]TypeDescription{
 	{"information-disclosure", "Information disclosure - Confidentiality"},
 	{"denial-of-service", "Denial of service - Availability"},
 	{"elevation-of-privilege", "Elevation of privilege - Authorization"},
+	{"lateral-movement", "Lateral Movement - Adversary traversal between trust zones"},
 }
 
 func ParseSTRIDE(value string) (stride STRIDE, err error) {
@@ -63,7 +66,7 @@ func (what STRIDE) Explain() string {
 }
 
 func (what STRIDE) Title() string {
-	return [...]string{"Spoofing", "Tampering", "Repudiation", "Information Disclosure", "Denial of Service", "Elevation of Privilege"}[what]
+	return [...]string{"Spoofing", "Tampering", "Repudiation", "Information Disclosure", "Denial of Service", "Elevation of Privilege", "Lateral Movement"}[what]
 }
 
 func (what STRIDE) MarshalJSON() ([]byte, error) {

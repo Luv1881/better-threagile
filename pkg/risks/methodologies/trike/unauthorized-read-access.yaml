@@ -1,0 +1,98 @@
+id: trike-unauthorized-read
+title: Trike - Untrusted Actor With Incoming Communication Links Without Authorised Read
+function: architecture
+stride: elevation-of-privilege
+cwe: 284
+description: >
+  In Trike's rights-based model, every actor must have explicitly authorised read
+  access to the assets it accesses. A technical asset tagged with trike-actor-untrusted
+  that receives incoming communication links but lacks the trike-read-authorized tag
+  has not had its read rights formally approved. Untrusted actors with uninspected
+  read paths can harvest data from assets they should not be permitted to access,
+  representing a failure of the intended action matrix.
+impact: >
+  An untrusted actor with unapproved read access can exfiltrate data from any asset
+  it can reach via communication links. This is the canonical Trike rights violation
+  for the read action and may allow confidential or personal data to be accessed
+  by an adversarial or compromised external party.
+asvs: V4 - Access Control Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
+action: Review and formally authorise or deny read access for all untrusted actors
+mitigation: >
+  Review all incoming communication links to this untrusted actor and determine
+  whether each read operation is intentional and necessary. If read access is
+  legitimately required, document it in the Trike action matrix and apply the
+  trike-read-authorized tag. If not, remove the communication link or implement
+  access control enforcement to block the read path.
+check: >
+  Have all read operations by this untrusted actor been reviewed and explicitly
+  authorised in the Trike action matrix?
+detection_logic: >
+  In-scope technical assets tagged with trike-actor-untrusted that have at least
+  one incoming communication link and are not tagged with trike-read-authorized.
+risk_assessment: >
+  High baseline. Critical when incoming links carry confidential or personally
+  identifiable data that the untrusted actor should not access.
+false_positives: >
+  Untrusted actors that only receive operational metadata or public non-sensitive data
+  via incoming links. Verify the data classification on the communication links and
+  tag trike-read-authorized after confirming no confidential data is exposed.
+
+controls:
+  nist_800_53: [AC-3, AC-6, IA-2]
+  iso_27001: [A.9.1.1, A.9.4.1]
+  soc2_cc: [CC6.1, CC6.3]
+  pci_dss_4: ["7.2.1"]
+  hipaa: ["164.312(a)(1)"]
+  nis2: ["Art. 21(2)(i)"]
+  cmmc: [AC.L1-3.1.1, AC.L1-3.1.2]
+  owasp_top10_2021: [A01, A05]
+  asvs_4: [V4.1, V4.2]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Unauthorized Read Access</b>: untrusted actor <b>{tech_asset.title}</b> has incoming communication links without authorised read rights"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - contains:
+                item: trike-actor-untrusted
+                in: "{tech_asset.tags}"
+            - not:
+                contains:
+                  item: trike-read-authorized
+                  in: "{tech_asset.tags}"
+          then:
+            - assign:
+                has_incoming: false
+            - loop:
+                in: "{$model.communication_links}"
+                item: link
+                do:
+                  - if:
+                      equal:
+                        first: "{link.target_id}"
+                        second: "{tech_asset.id}"
+                      then:
+                        - assign:
+                            has_incoming: true
+            - if:
+                true: "{has_incoming}"
+                then:
+                  return: true

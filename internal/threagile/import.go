@@ -10,9 +10,8 @@ import (
 
 func (what *Threagile) initImport() *Threagile {
 	analyze := &cobra.Command{
-		Use:     ImportModelCommand,
-		Short:   "Import model (convert to internal representation)",
-		Aliases: []string{"import"},
+		Use:   ImportModelCommand,
+		Short: "Import model (convert to internal representation)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			what.processArgs(cmd, args)
 			commands := what.readCommands()

@@ -17,6 +17,7 @@ const (
 	VastMethodology
 	OctaveMethodology
 	TrikeMethodology
+	CloudNativeMethodology
 )
 
 func MethodologyValues() []TypeEnum {
@@ -27,6 +28,7 @@ func MethodologyValues() []TypeEnum {
 		VastMethodology,
 		OctaveMethodology,
 		TrikeMethodology,
+		CloudNativeMethodology,
 	}
 }
 
@@ -37,6 +39,7 @@ var MethodologyDescription = [...]TypeDescription{
 	{"vast", "VAST - Visual, Agile and Simple Threat modeling"},
 	{"octave", "OCTAVE - Operationally Critical Threat, Asset, and Vulnerability Evaluation"},
 	{"trike", "Trike - Risk-based security auditing framework"},
+	{"cloud-native", "Cloud-Native Security - IAM, network, data, container and serverless risk rules for cloud-hosted architectures"},
 }
 
 func ParseMethodology(value string) (Methodology, error) {
@@ -46,7 +49,7 @@ func ParseMethodology(value string) (Methodology, error) {
 			return candidate.(Methodology), nil
 		}
 	}
-	return StrideMethodology, fmt.Errorf("unable to parse methodology %q (valid values: stride, linddun, pasta, vast, octave, trike)", value)
+	return StrideMethodology, fmt.Errorf("unable to parse methodology %q (valid values: stride, linddun, pasta, vast, octave, trike, cloud-native)", value)
 }
 
 func (what Methodology) String() string {
@@ -58,7 +61,7 @@ func (what Methodology) Explain() string {
 }
 
 func (what Methodology) Title() string {
-	return [...]string{"STRIDE", "LINDDUN", "PASTA", "VAST", "OCTAVE", "Trike"}[what]
+	return [...]string{"STRIDE", "LINDDUN", "PASTA", "VAST", "OCTAVE", "Trike", "Cloud-Native"}[what]
 }
 
 func (what Methodology) MarshalJSON() ([]byte, error) {

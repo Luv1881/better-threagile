@@ -1,0 +1,83 @@
+id: ai-ml-training-data-no-versioning
+title: AI/ML - ML Training Pipeline Without Data Versioning
+function: development
+stride: tampering
+cwe: 693
+description: >
+  ML training pipelines that do not version training datasets make it impossible to
+  reproduce model training runs, audit what data was used to train a deployed model,
+  or roll back to a known-good dataset after data poisoning is discovered. Without
+  immutable, versioned dataset snapshots, an attacker who modifies training data
+  can silently degrade model behaviour across all future training runs.
+impact: >
+  Data poisoning attacks — including backdoor injection and label flipping — require
+  only write access to an unversioned training dataset. Without versioning, the
+  organization cannot determine when poisoning occurred, which model versions were
+  affected, or reconstruct a clean dataset for retraining. Regulatory model-card
+  and audit requirements (EU AI Act Article 13) also cannot be satisfied without
+  dataset provenance records.
+asvs: V8 - Data Protection Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
+action: Implement immutable, versioned dataset snapshots with cryptographic hashes for all training data
+mitigation: >
+  Use a data versioning tool (DVC, Delta Lake, LakeFS, ML Metadata) to create
+  immutable dataset snapshots before each training run. Record dataset version
+  identifiers in model cards and experiment tracking systems (MLflow, W&B).
+  Enforce write-once policies on training data storage. Verify dataset integrity
+  hashes before launching training jobs. Tag the asset has-data-versioning once
+  dataset versioning is verified.
+check: >
+  Is every training dataset version stored as an immutable, content-addressed snapshot?
+  Is the dataset version recorded in model cards and experiment tracking logs?
+detection_logic: >
+  In-scope technical assets with ml_training_pipeline technology that are not
+  tagged with has-data-versioning.
+risk_assessment: >
+  Medium baseline. Elevated when the training pipeline processes confidential data
+  or when the trained model is deployed in a regulated or safety-critical context.
+false_positives: >
+  Experimental or prototype pipelines using only synthetic or fully public datasets
+  with no compliance or auditability requirements. Tag has-data-versioning after
+  documenting the justification and ensuring the pipeline does not advance to production.
+
+controls:
+  nist_800_53: [SA-10, CM-3, SI-12]
+  iso_27001: [A.12.1.2, A.14.2.2]
+  soc2_cc: [CC8.1, CC9.1]
+  pci_dss_4: ["6.3.2"]
+  nis2: ["Art. 21(2)(e)"]
+  owasp_top10_2021: [A08, A09]
+  asvs_4: [V8.1, V14.2]
+  owasp_llm_top10: [LLM03]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Training Data No Versioning</b>: ML training pipeline <b>{tech_asset.title}</b> lacks dataset versioning, enabling silent data poisoning"
+    severity: "calculate_severity(unlikely, medium)"
+    exploitation_likelihood: unlikely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.ml_training_pipeline}"
+            - not:
+                contains:
+                  item: has-data-versioning
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

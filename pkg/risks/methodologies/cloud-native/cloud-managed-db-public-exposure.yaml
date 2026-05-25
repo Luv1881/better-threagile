@@ -1,0 +1,76 @@
+id: cloud-managed-db-public-exposure
+title: Cloud Data - Managed Database Directly Internet-Exposed
+function: architecture
+stride: information-disclosure
+cloud-native: data
+cwe: 668
+description: >
+  Managed cloud databases should never be accessible directly from the internet.
+  When a managed database (RDS, Cloud SQL, CosmosDB) is assigned a public IP or
+  is not confined to a private VPC, SQL and NoSQL attack surfaces are exposed
+  directly to the internet, enabling brute-force of credentials, exploitation
+  of unpatched engine vulnerabilities, and direct exfiltration of data.
+impact: >
+  Direct internet access to a database eliminates the defense-in-depth layer
+  provided by VPC isolation. A single unpatched engine CVE or weak credential
+  is sufficient for full database compromise without any lateral movement requirement.
+asvs: V1 - Architecture, Design and Threat Modeling Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Database_Security_Cheat_Sheet.html
+action: Place managed databases in private subnets with no public IP and restrict access via VPC
+mitigation: >
+  Disable public IP assignment on all managed database instances. Place databases
+  in private VPC subnets. Access should be via VPN, bastion host, or private
+  service connection only. Revoke any security group or firewall rules allowing
+  inbound traffic on database ports from 0.0.0.0/0 or ::/0.
+check: >
+  Does the managed database have a public IP address assigned?
+  Are inbound rules on the database security group restricted to known private CIDRs?
+detection_logic: >
+  In-scope technical assets with managed-database technology and internet: true.
+risk_assessment: >
+  Critical for any managed database regardless of data sensitivity, because
+  direct internet exposure eliminates the VPC isolation layer.
+false_positives: >
+  There are virtually no legitimate reasons to expose a managed database directly
+  to the internet. Review and confirm before accepting. If intentional, document
+  the compensating controls and set out_of_scope or remove the internet: true flag.
+
+controls:
+  nist_800_53: [SC-7, SC-7(5), AC-17]
+  iso_27001: [A.13.1.1, A.13.1.3]
+  soc2_cc: [CC6.6]
+  pci_dss_4: ["1.3.1", "1.3.2"]
+  hipaa: ["164.312(e)(1)"]
+  nis2: ["Art. 21(2)(e)"]
+  cmmc: [SC.L2-3.13.1, SC.L2-3.13.5]
+  owasp_top10_2021: [A05]
+  asvs_4: [V1.1, V4.1]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>DB Internet Exposed</b>: managed database <b>{tech_asset.title}</b> is directly accessible from the internet"
+    severity: "calculate_severity(likely, very-high)"
+    exploitation_likelihood: likely
+    exploitation_impact: very-high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.internet}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.managed_database}"
+          then:
+            return: true

@@ -1,0 +1,81 @@
+id: supply-chain-no-build-provenance
+title: Supply Chain - Build Pipeline Without SLSA Provenance Attestation
+function: development
+stride: tampering
+cwe: 345
+description: >
+  Build pipelines that do not generate SLSA (Supply-chain Levels for Software
+  Artifacts) provenance attestations allow build artifacts to be tampered with
+  between build and deployment with no way to detect or prove the tampering.
+  SLSA L2+ provenance provides a cryptographically signed record of who built
+  what, when, from which source commit, using which build tool.
+impact: >
+  Without provenance, an attacker who compromises the CI/CD system, artifact
+  registry, or deployment pipeline can silently replace build artifacts with
+  malicious versions. The XZ Utils backdoor and SolarWinds attack demonstrated
+  that CI/CD compromise is a primary supply-chain vector.
+asvs: V14 - Configuration Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Software_Supply_Chain_Security_Cheat_Sheet.html
+action: Generate SLSA L2 provenance attestations and verify them at deployment
+mitigation: >
+  Use SLSA GitHub Actions Generator or equivalent (slsa-framework/slsa-github-generator,
+  Tekton Chains, GUAC) to generate and sign provenance attestations. Store attestations
+  in a transparency log (Sigstore Rekor). Enforce provenance verification at deployment
+  using cosign or in-toto verification policies.
+  Tag the asset has-slsa-provenance once L2+ provenance is verified.
+check: >
+  Are build provenance attestations generated and signed for all released artifacts?
+  Is provenance verified at deployment time?
+detection_logic: >
+  In-scope technical assets with build-pipeline technology that produce custom-developed
+  artifacts and are not tagged with has-slsa-provenance.
+risk_assessment: >
+  High for externally distributed software and CI/CD pipelines deploying to production.
+  Medium for internal tooling.
+false_positives: >
+  Early-stage prototypes or pure configuration pipelines with no software artifacts.
+  Add has-slsa-provenance once the pipeline produces artifacts that are deployed to
+  production environments.
+
+controls:
+  nist_800_53: [SA-10, SI-7, CM-3]
+  iso_27001: [A.14.2.2, A.14.2.8]
+  soc2_cc: [CC8.1]
+  pci_dss_4: ["6.4.4"]
+  nis2: ["Art. 21(2)(e)"]
+  cmmc: [SR.L2-3.17.3, CM.L2-3.4.3]
+  owasp_top10_2021: [A08]
+  asvs_4: [V14.3]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>No Build Provenance</b>: build pipeline <b>{tech_asset.title}</b> does not generate SLSA provenance attestations"
+    severity: "calculate_severity(unlikely, high)"
+    exploitation_likelihood: unlikely
+    exploitation_impact: high
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.build-pipeline}"
+            - true: "{tech_asset.custom_developed_parts}"
+            - not:
+                contains:
+                  item: has-slsa-provenance
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

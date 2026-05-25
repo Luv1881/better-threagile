@@ -1,0 +1,84 @@
+id: cloud-object-storage-no-versioning
+title: Cloud Storage - Object Storage Without Versioning for Strictly-Confidential Data
+function: operations
+stride: tampering
+cloud-native: data
+cwe: 693
+description: >
+  Cloud object storage that holds strictly-confidential data without versioning enabled
+  is vulnerable to irreversible data loss and ransomware. An attacker who gains write
+  access can overwrite or delete objects with no recovery path. Versioning combined
+  with object lock (WORM) prevents deletion of authoritative copies and enables
+  recovery from accidental or malicious overwrites.
+impact: >
+  Without versioning, a single authorized or unauthorized write or delete permanently
+  destroys the only copy of critical data. Ransomware actors specifically target
+  unversioned buckets to maximize recovery leverage.
+asvs: V8 - Data Protection Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
+action: Enable versioning (and optionally object lock) on buckets holding strictly-confidential data
+mitigation: >
+  Enable S3 Versioning / GCS Object Versioning / Azure Blob versioning on all
+  buckets storing strictly-confidential data. Consider enabling S3 Object Lock
+  in compliance mode for regulatory records. Configure lifecycle rules to expire
+  old versions after a retention window. Tag the asset has-versioning once deployed.
+check: >
+  Is bucket versioning enabled for all strictly-confidential data stores?
+  Is object lock configured for data subject to regulatory retention requirements?
+detection_logic: >
+  In-scope technical assets with object-storage technology storing at least one
+  strictly-confidential data asset and not tagged with has-versioning.
+risk_assessment: >
+  Medium baseline. Elevated to High when the data has no other backup mechanism
+  and availability is rated critical.
+false_positives: >
+  Temporary or scratch buckets not intended for durable storage of critical data.
+  Ensure data assets stored in such buckets are not classified as strictly-confidential,
+  or add has-versioning after documenting the mitigating backup strategy.
+
+controls:
+  nist_800_53: [CP-9, CP-10, SI-12]
+  iso_27001: [A.12.3.1, A.17.1.2]
+  soc2_cc: [CC9.1, A1.2]
+  pci_dss_4: ["12.3.4"]
+  hipaa: ["164.308(a)(7)(ii)(A)"]
+  nis2: ["Art. 21(2)(c)"]
+  cmmc: [RE.L2-3.8.9]
+  owasp_top10_2021: [A08]
+  asvs_4: [V8.1]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>No Versioning</b>: object storage <b>{tech_asset.title}</b> stores strictly-confidential data without versioning enabled"
+    severity: "calculate_severity(unlikely, medium)"
+    exploitation_likelihood: unlikely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.object_storage}"
+            - not:
+                contains:
+                  item: has-versioning
+                  in: "{tech_asset.tags}"
+            - any:
+                in: "{tech_asset.data_assets_stored}"
+                item: data_id
+                true: "{$model.data_assets.{data_id}.has_pii}"
+          then:
+            return: true

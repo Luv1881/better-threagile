@@ -1,0 +1,91 @@
+id: cloud-serverless-public-no-auth
+title: Cloud Serverless - Publicly Accessible Function Without Authentication
+function: architecture
+stride: elevation-of-privilege
+cloud-native: serverless
+cwe: 306
+description: >
+  Serverless functions (Lambda, Cloud Functions, Azure Functions) with public URLs
+  or API Gateway triggers that require no authentication expose the function's
+  full capability to unauthenticated internet actors. An unauthenticated function
+  that processes business logic, stores data, or calls downstream services represents
+  a direct path for unauthorized access and data manipulation.
+impact: >
+  Unauthenticated callers can invoke the function at will, consuming compute budget,
+  triggering downstream mutations, and potentially enumerating or exfiltrating data
+  returned by the function. DoS via cost amplification is also a concern for
+  serverless functions with unbounded invocation.
+asvs: V2 - Authentication Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+action: Add an authorizer (Lambda authorizer, IAM auth, Cognito) to all public serverless endpoints
+mitigation: >
+  Attach an authentication authorizer to every publicly accessible function URL or
+  API Gateway route. Use IAM authorization for service-to-service calls and
+  JWT/Cognito for user-facing endpoints. Declare requires_authentication_strength
+  as at least password on the technical asset. For high-value functions, require mfa.
+check: >
+  Do all internet-accessible serverless functions have an authorizer configured?
+  Is unauthenticated access to any function that modifies data blocked?
+detection_logic: >
+  In-scope technical assets with serverless-function technology that are internet-accessible,
+  have an entry_point_type set, and do not have requires_authentication_strength set
+  to password, mfa, or hardware.
+risk_assessment: >
+  High when the function processes or returns confidential data.
+  Medium when the function has limited capability but could be abused for DoS.
+false_positives: >
+  Intentionally public serverless endpoints serving static configuration or health
+  checks that contain no sensitive data. Clear the entry_point_type field or
+  lower the confidentiality of processed data assets to public.
+
+controls:
+  nist_800_53: [IA-2, AC-3, AC-14]
+  iso_27001: [A.9.4.1, A.9.4.2]
+  soc2_cc: [CC6.1, CC6.3]
+  pci_dss_4: ["8.2.1", "8.3.1"]
+  hipaa: ["164.312(a)(1)", "164.312(d)"]
+  nis2: ["Art. 21(2)(j)"]
+  cmmc: [IA.L1-3.5.1, IA.L1-3.5.2]
+  owasp_top10_2021: [A01, A07]
+  asvs_4: [V2.1, V4.1]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Serverless No Auth</b>: public serverless function <b>{tech_asset.title}</b> lacks authentication"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.internet}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.serverless_function}"
+            - not-equal:
+                first: "{tech_asset.entry_point_type}"
+                second: ""
+            - not-equal:
+                first: "{tech_asset.requires_authentication_strength}"
+                second: password
+            - not-equal:
+                first: "{tech_asset.requires_authentication_strength}"
+                second: mfa
+            - not-equal:
+                first: "{tech_asset.requires_authentication_strength}"
+                second: hardware
+          then:
+            return: true

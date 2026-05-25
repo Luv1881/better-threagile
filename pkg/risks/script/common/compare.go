@@ -78,6 +78,12 @@ func compare(firstValue Value, secondValue Value) (*Event, error) {
 		if firstValue.Value() == nil {
 			return compare(nil, secondValue)
 		}
+		// Unwrap custom named types (e.g. EncryptionStyle, Confidentiality) that implement
+		// fmt.Stringer so that DSL equality checks like `equal: second: none` work correctly.
+		if stringer, ok := first.Value().(fmt.Stringer); ok {
+			return compare(SomeStringValue(stringer.String(), first.Event()), secondValue)
+		}
+		return compare(SomeValue(first.PlainValue(), first.Event()), secondValue)
 
 	case nil:
 		switch second := secondValue.(type) {

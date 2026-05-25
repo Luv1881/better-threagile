@@ -1,0 +1,80 @@
+id: cloud-object-storage-public-access
+title: Cloud Storage - Object Storage Bucket with Public Internet Access
+function: architecture
+stride: information-disclosure
+cloud-native: data
+cwe: 284
+description: >
+  Cloud object storage buckets (S3, GCS, Azure Blob) that are accessible from the
+  internet without access controls are a primary cause of large-scale cloud data
+  breaches. Default bucket policies vary by provider but misconfigurations that
+  enable public ListBucket or GetObject permissions expose all stored content
+  to unauthenticated retrieval by any internet actor.
+impact: >
+  All data stored in the bucket is exposed to unauthenticated download, potentially
+  including PII, credentials, application code, backups, and intellectual property.
+  Publicly writable buckets can also be weaponized to host malware or phishing content.
+asvs: V8 - Data Protection Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Securing_Cascading_Style_Sheets_Cheat_Sheet.html
+action: Enforce private ACL and block public access on all object storage buckets
+mitigation: >
+  Enable Block Public Access settings at the account and bucket level. Remove all
+  bucket policies that grant s3:GetObject or similar permissions to "*" (unauthenticated
+  principals). Use pre-signed URLs for any legitimate time-limited public access.
+  Tag the asset has-private-acl to suppress this finding once verified.
+check: >
+  Is public access blocked at both the account level and the bucket level?
+  Do any bucket policies or ACLs grant access to unauthenticated (anonymous) principals?
+detection_logic: >
+  In-scope technical assets with object-storage technology that are internet-exposed
+  (internet: true) and not tagged with has-private-acl.
+risk_assessment: >
+  Critical when the bucket stores confidential or strictly-confidential data.
+  High for all other publicly accessible buckets due to data enumeration risk.
+false_positives: >
+  Intentionally public static-website hosting buckets serving only non-sensitive,
+  publicly published content. Tag has-private-acl after documenting the justification,
+  or lower the asset's confidentiality to public.
+
+controls:
+  nist_800_53: [AC-3, AC-17, SC-28]
+  iso_27001: [A.9.1.2, A.13.1.3]
+  soc2_cc: [CC6.1, CC6.6]
+  pci_dss_4: ["7.2.1", "7.3.1"]
+  hipaa: ["164.312(a)(1)", "164.312(e)(2)(ii)"]
+  nis2: ["Art. 21(2)(e)"]
+  owasp_top10_2021: [A01, A05]
+  asvs_4: [V4.1, V8.3]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Public Object Storage</b>: bucket <b>{tech_asset.title}</b> is internet-accessible without private-access enforcement"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.internet}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.object_storage}"
+            - not:
+                contains:
+                  item: has-private-acl
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

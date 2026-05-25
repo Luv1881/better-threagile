@@ -1,0 +1,79 @@
+id: octave-unencrypted-transport
+title: OCTAVE Allegro - Information Asset Container Transmits Data Without Encryption
+function: architecture
+stride: information-disclosure
+cwe: 319
+description: >
+  OCTAVE Allegro requires evaluation of how information assets are transported
+  between systems. A technical asset tagged as an information-asset-container
+  whose encryption field is set to none may transmit or expose data over
+  unencrypted channels. Network observers, rogue infrastructure, or man-in-the-middle
+  positions can intercept and read organisational information assets in transit.
+impact: >
+  Interception of unencrypted traffic carrying organisational information assets
+  enables data exfiltration without any access-control bypass. Sensitive business
+  data, credentials, and personal records can be captured passively from the network.
+  This constitutes a reportable breach under GDPR and other privacy regulations.
+asvs: V9 - Communication Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html
+action: Enforce encryption in transit for all information asset containers
+mitigation: >
+  Set the encryption field to tls (TLS 1.2+) or higher for all information asset
+  containers. For internal service-to-service communication, implement mutual TLS
+  (mTLS). Retire all plaintext protocols (HTTP, unencrypted SQL, FTP) carrying
+  organisational data. Verify protocol configuration with TLS scanning tools.
+check: >
+  Is all data transmitted to or from this information asset container encrypted with TLS 1.2 or higher?
+  Have plaintext protocol channels been eliminated?
+detection_logic: >
+  In-scope technical assets tagged with information-asset-container whose encryption
+  field is set to none.
+risk_assessment: >
+  High baseline for all information asset containers with unencrypted transport.
+  Critical when the asset stores strictly-confidential or personally identifiable data.
+false_positives: >
+  Assets communicating exclusively over physically isolated private networks where
+  eavesdropping is demonstrably impossible. Document the network isolation justification
+  and set encryption to none only after architecture review sign-off.
+
+controls:
+  nist_800_53: [SC-8, SC-8(1)]
+  iso_27001: [A.10.1.1, A.13.2.3]
+  soc2_cc: [CC6.7]
+  pci_dss_4: ["4.2.1"]
+  hipaa: ["164.312(e)(2)(ii)"]
+  nis2: ["Art. 21(2)(g)"]
+  cmmc: [SC.L2-3.13.8]
+  owasp_top10_2021: [A02, A05]
+  asvs_4: [V9.1, V9.2]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Unencrypted Transport</b>: information asset container <b>{tech_asset.title}</b> has encryption set to none"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - contains:
+                item: information-asset-container
+                in: "{tech_asset.tags}"
+            - equal:
+                first: "{tech_asset.encryption}"
+                second: none
+          then:
+            return: true

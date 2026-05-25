@@ -499,6 +499,88 @@ web-service-soap:
         processing_end_user_requests: true
         propagate_identity_to_outgoing_targets: true
         web_service: true
+serverless-function:
+    aliases:
+        - lambda
+        - cloud-function
+        - azure-function
+        - faas
+        - function-as-a-service
+    description: A serverless compute function (AWS Lambda, GCP Cloud Functions, Azure Functions)
+    attributes:
+        serverless-function: true
+        serverless_function: true
+        backend_related: true
+        less_protected_type: true
+        processing_end_user_requests: true
+        propagate_identity_to_outgoing_targets: true
+        cloud_service: true
+managed-database:
+    aliases:
+        - rds
+        - cloud-sql
+        - aurora
+        - dynamodb
+        - cosmosdb
+        - cloud-database
+        - managed-db
+    description: A fully managed cloud database service (AWS RDS, Aurora, GCP Cloud SQL, Azure CosmosDB)
+    attributes:
+        managed-database: true
+        managed_database: true
+        backend_related: true
+        storing_end_user_data: true
+        vulnerable_to_query_injection: true
+        high_value_target: true
+        cloud_service: true
+object-storage:
+    aliases:
+        - s3
+        - gcs
+        - azure-blob
+        - blob-storage
+        - cloud-storage
+        - object-store
+    description: Cloud object/blob storage (AWS S3, GCP GCS, Azure Blob Storage)
+    attributes:
+        object-storage: true
+        object_storage: true
+        backend_related: true
+        file_storage: true
+        storing_end_user_data: true
+        high_value_target: true
+        cloud_service: true
+cloud-api-gateway:
+    aliases:
+        - api-management
+        - apim
+        - cloud-endpoints
+    description: A managed cloud API gateway (AWS API Gateway, Azure APIM, GCP Cloud Endpoints)
+    attributes:
+        cloud-api-gateway: true
+        cloud_api_gateway: true
+        frontend_related: true
+        http_internet_access_ok: true
+        no_authentication_required: true
+        no_storage_at_rest: true
+        propagate_identity_to_outgoing_targets: true
+        traffic_forwarding: true
+        cloud_service: true
+container-registry:
+    aliases:
+        - ecr
+        - gcr
+        - acr
+        - docker-registry
+        - image-registry
+    description: A cloud container image registry (AWS ECR, GCP GCR, Azure ACR)
+    attributes:
+        container-registry: true
+        container_registry: true
+        backend_related: true
+        development_relevant: true
+        may_contain_secrets: true
+        cloud_service: true
 consent-manager:
     aliases:
         - consent-platform
@@ -532,3 +614,51 @@ pii-processor:
         backend_related: true
         storing_end_user_data: true
         high_value_target: true
+llm-inference-endpoint:
+    aliases:
+        - llm-endpoint, llm-api, openai-compatible, inference-server, vllm, ollama, triton
+    description: An LLM inference endpoint — exposes a language model via API for text generation
+    attributes:
+        llm-inference-endpoint: true
+        llm_inference_endpoint: true
+        backend_related: true
+        cloud_service: true
+        may_contain_secrets: true
+vector-store:
+    aliases:
+        - vector-database, embedding-store, pinecone, weaviate, qdrant, chroma, milvus
+    description: A vector database storing embedding vectors (used in RAG pipelines)
+    attributes:
+        vector-store: true
+        vector_store: true
+        backend_related: true
+        high_value_target: true
+        storing_end_user_data: true
+rag-pipeline:
+    aliases:
+        - retrieval-augmented-generation, langchain, llamaindex, haystack
+    description: A Retrieval-Augmented Generation pipeline that retrieves documents and feeds them to an LLM
+    attributes:
+        rag-pipeline: true
+        rag_pipeline: true
+        backend_related: true
+        cloud_service: true
+ml-training-pipeline:
+    aliases:
+        - training-pipeline, ml-pipeline, mlflow, kubeflow, sagemaker-training
+    description: An ML model training pipeline — orchestrates data loading, training, evaluation, and artifact storage
+    attributes:
+        ml-training-pipeline: true
+        ml_training_pipeline: true
+        backend_related: true
+        high_value_target: true
+        may_contain_secrets: true
+embedding-service:
+    aliases:
+        - text-embedding, sentence-transformer, embedding-api
+    description: A service that produces vector embeddings from text or other inputs
+    attributes:
+        embedding-service: true
+        embedding_service: true
+        backend_related: true
+        cloud_service: true

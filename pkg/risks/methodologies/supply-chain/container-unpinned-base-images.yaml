@@ -1,0 +1,81 @@
+id: supply-chain-unpinned-base-images
+title: Supply Chain - Container Platform Running Unpinned Base Images
+function: development
+stride: tampering
+cwe: 1104
+description: >
+  Container platforms that run images referenced by mutable tags (e.g. :latest,
+  :stable, :production) without digest pinning are vulnerable to silent base image
+  substitution. If a base image tag is updated by the upstream publisher to include
+  a vulnerability or a supply-chain backdoor, the next pull silently uses the
+  compromised version. Digest pinning (sha256: prefix) ensures the exact image
+  content is always used, regardless of tag changes.
+impact: >
+  An upstream publisher compromise or a registry-level tag substitution silently
+  delivers a different image. In Kubernetes, re-scheduling a pod without image pull
+  policy Always can use a cached malicious image that bypasses admission controls.
+  Unpinned base images also make builds non-reproducible, hiding regression sources.
+asvs: V14 - Configuration Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+action: Pin all container image references to specific digest hashes (sha256:) in Dockerfiles and Kubernetes manifests
+mitigation: >
+  Replace all image references that use mutable tags with pinned digest references
+  (e.g. FROM ubuntu@sha256:...). Use Renovate or Dependabot to automatically open
+  PRs when new digests are published for pinned images.
+  In Kubernetes, set imagePullPolicy to IfNotPresent and pin images in manifests.
+  Tag the asset has-pinned-base-images once all images are pinned.
+check: >
+  Are all container image references pinned to immutable digest hashes?
+  Is an automated tool (Renovate/Dependabot) managing digest updates?
+detection_logic: >
+  In-scope technical assets with container-platform technology not tagged with
+  has-pinned-base-images.
+risk_assessment: >
+  Medium baseline. Elevated when the container platform pulls from external
+  public registries that are not under the organization's control.
+false_positives: >
+  Container platforms pulling exclusively from an internal registry where images
+  are immutable once tagged. Add has-pinned-base-images after confirming immutability
+  is enforced at the registry level.
+
+controls:
+  nist_800_53: [SA-10, SI-7, CM-14]
+  iso_27001: [A.14.2.2, A.14.2.5]
+  soc2_cc: [CC8.1]
+  pci_dss_4: ["6.4.4"]
+  nis2: ["Art. 21(2)(e)"]
+  cmmc: [SR.L2-3.17.3, SI.L2-3.14.6]
+  owasp_top10_2021: [A08]
+  asvs_4: [V14.2]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Unpinned Base Images</b>: container platform <b>{tech_asset.title}</b> may run images without digest pinning"
+    severity: "calculate_severity(unlikely, medium)"
+    exploitation_likelihood: unlikely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.container_platform}"
+            - not:
+                contains:
+                  item: has-pinned-base-images
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

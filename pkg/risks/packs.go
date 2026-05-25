@@ -15,7 +15,7 @@ import (
 var embeddedPacks embed.FS
 
 // AvailableBuiltinPacks lists the methodology pack names shipped with the binary.
-var AvailableBuiltinPacks = []string{"linddun", "pasta", "vast"}
+var AvailableBuiltinPacks = []string{"linddun", "pasta", "vast", "cloud-native", "supply-chain", "ai-ml", "octave", "trike"}
 
 // LoadRulePack loads a named built-in methodology rule pack by name (e.g., "linddun").
 // It extracts the embedded tar.gz into a temporary directory, loads the YAML risk rules,

@@ -1,0 +1,80 @@
+id: cloud-container-privileged-workloads
+title: Cloud Container - Privileged Containers Running on Platform
+function: architecture
+stride: elevation-of-privilege
+cloud-native: container
+cwe: 250
+description: >
+  Containers launched with the privileged flag have the same capabilities as the
+  host kernel's root process. A privileged container can mount the host filesystem,
+  load kernel modules, modify network namespaces, and escape the container boundary
+  entirely. Running privileged containers breaks the isolation guarantee that
+  containers are supposed to provide.
+impact: >
+  A compromised privileged container gives the attacker full root on the host node.
+  From the host the attacker can read secrets from other containers, access the
+  Kubernetes API server, exfiltrate data from co-located workloads, and pivot to
+  other nodes in the cluster.
+asvs: V1 - Architecture, Design and Threat Modeling Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+action: Remove the privileged flag from all containers; use specific Linux capabilities instead
+mitigation: >
+  Remove securityContext.privileged: true from all container specifications.
+  Replace broad privileged access with the minimum Linux capabilities required
+  (e.g., NET_ADMIN for network management). Apply PodSecurityAdmission or OPA
+  Gatekeeper policies to prevent privileged containers cluster-wide. Remove the
+  has-privileged-containers tag once all privileged containers have been eliminated.
+check: >
+  Are any containers in this platform running with securityContext.privileged: true?
+  Is a PodSecurityAdmission policy enforcing restricted or baseline security standards?
+detection_logic: >
+  In-scope container-platform technical assets tagged with has-privileged-containers.
+risk_assessment: >
+  High baseline. Critical when the container platform is multi-tenant or runs
+  workloads processing strictly-confidential data.
+false_positives: >
+  System-level DaemonSets (logging agents, node monitoring, CNI plugins) that
+  legitimately require host-level access. These should be isolated to a separate
+  technical asset tagged with their security review justification.
+
+controls:
+  nist_800_53: [AC-6, CM-7, SI-7]
+  iso_27001: [A.9.4.4, A.12.5.1]
+  soc2_cc: [CC6.1]
+  pci_dss_4: ["7.2.2"]
+  hipaa: ["164.312(a)(1)"]
+  nis2: ["Art. 21(2)(e)"]
+  cmmc: [AC.L2-3.1.5, CM.L2-3.4.6]
+  owasp_top10_2021: [A01, A05]
+  asvs_4: [V4.1]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Privileged Containers</b>: container platform <b>{tech_asset.title}</b> runs privileged containers that can escape to the host"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.container_platform}"
+            - contains:
+                item: has-privileged-containers
+                in: "{tech_asset.tags}"
+          then:
+            return: true

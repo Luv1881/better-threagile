@@ -1,0 +1,83 @@
+id: trike-high-trust-unmonitored
+title: Trike - High-Trust Actor Without Audit Logging
+function: architecture
+stride: elevation-of-privilege
+cwe: 778
+description: >
+  Trike assigns high trust levels to actors with broad permissions over system assets.
+  A technical asset tagged with trike-trust-level-admin that lacks the has-audit-logging
+  tag has no audit trail for the operations it performs. High-trust actors are the
+  highest-risk principals in any system: their actions are by definition authorised,
+  making detection of abuse entirely dependent on after-the-fact log analysis. Without
+  logging, insider misuse and compromised admin accounts cannot be detected or investigated.
+impact: >
+  High-trust actors acting without audit trails enable insider threat, privilege abuse,
+  and make forensic investigation impossible after security incidents. Regulatory
+  frameworks (SOC 2, PCI-DSS, HIPAA) require demonstrable audit trails for privileged
+  operations on systems processing sensitive data. Absence of logging constitutes a
+  compliance failure in most regulated environments.
+asvs: V7 - Error Handling and Logging Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+action: Enable and centralise audit logging for all high-trust and admin actor operations
+mitigation: >
+  Ensure all actions by admin or high-trust actors are logged to an immutable,
+  centralised audit log. Enable session recording for interactive admin sessions.
+  Ship logs to a SIEM with alerting on anomalous privileged operations. Retain
+  privileged access logs in accordance with applicable compliance requirements.
+  Tag the asset has-audit-logging when logging is confirmed, centralised, and reviewed.
+check: >
+  Are all operations by high-trust and admin actors logged to an immutable audit trail?
+  Are logs forwarded to a centralised SIEM with anomaly alerting?
+detection_logic: >
+  In-scope technical assets tagged with trike-trust-level-admin that are not
+  tagged with has-audit-logging.
+risk_assessment: >
+  High baseline for all unmonitored admin-trust actors. Critical when the actor has
+  access to datastores containing strictly-confidential or regulated data.
+false_positives: >
+  Development-only environments with no sensitive data where admin logging is
+  not yet provisioned. Tag has-audit-logging after confirming the logging
+  infrastructure is in place and verified to capture all privileged operations.
+
+controls:
+  nist_800_53: [AU-2, AU-3, AU-9, AU-12, AC-6]
+  iso_27001: [A.12.4.1, A.12.4.3, A.9.2.3]
+  soc2_cc: [CC7.2, CC7.3, CC6.3]
+  pci_dss_4: ["10.2.1", "10.3.1", "8.2.1"]
+  hipaa: ["164.312(b)", "164.308(a)(1)(ii)(D)"]
+  nis2: ["Art. 21(2)(b)"]
+  cmmc: [AU.L2-3.3.1, AU.L2-3.3.2, AC.L2-3.1.6]
+  owasp_top10_2021: [A09]
+  asvs_4: [V7.1, V7.2]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>High-Trust Actor Unmonitored</b>: admin-trust actor <b>{tech_asset.title}</b> operates without audit logging"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - contains:
+                item: trike-trust-level-admin
+                in: "{tech_asset.tags}"
+            - not:
+                contains:
+                  item: has-audit-logging
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

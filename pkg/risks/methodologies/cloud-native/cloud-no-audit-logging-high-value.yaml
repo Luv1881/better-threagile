@@ -1,0 +1,92 @@
+id: cloud-no-audit-logging-high-value
+title: Cloud Audit - High-Value Cloud Service Without Audit Logging
+function: operations
+stride: repudiation
+cloud-native: logging
+cwe: 778
+description: >
+  High-value cloud services (managed databases, object storage, serverless functions,
+  API gateways) that do not have audit logging enabled make it impossible to detect
+  unauthorized access, investigate breaches, or meet compliance requirements.
+  Cloud audit logs (CloudTrail, GCP Cloud Audit Logs, Azure Monitor) capture who
+  accessed what resource, when, and from where, providing the forensic foundation
+  for incident response.
+impact: >
+  Without audit logging, unauthorized access and data exfiltration can go completely
+  undetected. Post-incident forensic investigation is severely hampered. Compliance
+  with GDPR, HIPAA, SOC2, and PCI-DSS typically requires demonstrable audit trails
+  for access to systems processing sensitive or personal data.
+asvs: V7 - Error Handling and Logging Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+action: Enable audit logging on all high-value cloud services and route logs to a tamper-resistant sink
+mitigation: >
+  Enable data plane logging for all high-value cloud services: S3 server access
+  logging, RDS audit log, Lambda invocation logging, API Gateway access logging.
+  Route all logs to a centralized, immutable log sink (CloudWatch Logs with log
+  protection, GCS bucket with object lock). Set up anomaly alerts on admin actions.
+  Tag the asset has-audit-logging once logging is verified.
+check: >
+  Is audit logging enabled for all access (read and write) to this high-value service?
+  Are logs shipped to a tamper-resistant centralized log store?
+detection_logic: >
+  In-scope technical assets with managed-database, object-storage, serverless-function,
+  or cloud-api-gateway technology that process confidential data and are not tagged
+  with has-audit-logging.
+risk_assessment: >
+  High when the service handles strictly-confidential data. Medium for confidential
+  data without direct regulatory exposure.
+false_positives: >
+  Services where audit logging is enforced at the infrastructure level (e.g., via
+  AWS Organizations Service Control Policies) rather than per-service configuration.
+  Tag has-audit-logging after confirming coverage via the centralized policy.
+
+controls:
+  nist_800_53: [AU-2, AU-3, AU-9, AU-12]
+  iso_27001: [A.12.4.1, A.12.4.3]
+  soc2_cc: [CC7.2, CC7.3]
+  pci_dss_4: ["10.2.1", "10.3.1"]
+  hipaa: ["164.312(b)"]
+  nis2: ["Art. 21(2)(b)"]
+  cmmc: [AU.L2-3.3.1, AU.L2-3.3.2]
+  owasp_top10_2021: [A09]
+  asvs_4: [V7.1, V7.2]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>No Audit Logging</b>: high-value cloud asset <b>{tech_asset.title}</b> lacks audit logging for confidential data access"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.managed_database}"
+                  - true: "{.attributes.object_storage}"
+                  - true: "{.attributes.serverless_function}"
+                  - true: "{.attributes.cloud_api_gateway}"
+            - not:
+                contains:
+                  item: has-audit-logging
+                  in: "{tech_asset.tags}"
+            - any:
+                in: "{tech_asset.data_assets_processed}"
+                item: data_id
+                true: "{$model.data_assets.{data_id}.has_pii}"
+          then:
+            return: true

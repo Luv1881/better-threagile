@@ -1,0 +1,81 @@
+id: cloud-container-no-image-scanning
+title: Cloud Container - Container Platform Without Image Vulnerability Scanning
+function: operations
+stride: tampering
+cloud-native: container
+cwe: 1104
+description: >
+  Container platforms running images that are not scanned for known CVEs regularly
+  ship vulnerable base images and application dependencies into production.
+  Container image scanning (Trivy, Snyk, AWS ECR scanning, GCP Artifact Registry
+  scanning) identifies publicly disclosed vulnerabilities in OS packages and language
+  libraries before they are deployed, providing a critical defense-in-depth layer
+  against known exploits.
+impact: >
+  Unscanned container images may contain critical or high CVEs with public exploits.
+  An attacker can exploit these vulnerabilities to achieve container escape, privilege
+  escalation inside the container, or lateral movement across the cluster.
+asvs: V14 - Configuration Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+action: Enable image scanning in the container registry and gate deployments on scan results
+mitigation: >
+  Enable automatic vulnerability scanning in the container registry (ECR enhanced
+  scanning, GCR Container Analysis, ACR Defender). Integrate scan results into the
+  CI/CD pipeline and block deployment of images with critical or high CVEs without
+  an accepted exception. Run Trivy or Grype in the CI pipeline as an additional gate.
+  Tag the asset has-image-scanning once scanning is enabled and enforced.
+check: >
+  Is vulnerability scanning enabled in the container registry used by this platform?
+  Are deployments blocked when the scan finds critical or high CVEs?
+detection_logic: >
+  In-scope container-platform technical assets not tagged with has-image-scanning.
+risk_assessment: >
+  Medium baseline. Elevated to High when the container platform runs internet-facing
+  workloads or processes confidential data.
+false_positives: >
+  Container platforms running only pre-hardened, distroless base images from a
+  curated approved list with a separate audit process. Tag has-image-scanning
+  after the alternative scan process is documented.
+
+controls:
+  nist_800_53: [SI-2, RA-5, SA-10]
+  iso_27001: [A.12.6.1, A.14.2.1]
+  soc2_cc: [CC7.1]
+  pci_dss_4: ["6.3.3"]
+  hipaa: ["164.308(a)(1)(ii)(A)"]
+  nis2: ["Art. 21(2)(e)"]
+  cmmc: [SI.L1-3.14.1]
+  owasp_top10_2021: [A06]
+  asvs_4: [V14.2]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>No Image Scanning</b>: container platform <b>{tech_asset.title}</b> does not have image vulnerability scanning configured"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.container_platform}"
+            - not:
+                contains:
+                  item: has-image-scanning
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

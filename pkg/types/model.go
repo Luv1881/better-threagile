@@ -36,6 +36,11 @@ type Model struct {
 	TechnicalAssets                               map[string]*TechnicalAsset    `json:"technical_assets,omitempty" yaml:"technical_assets,omitempty"`
 	TrustBoundaries                               map[string]*TrustBoundary     `json:"trust_boundaries,omitempty" yaml:"trust_boundaries,omitempty"`
 	SharedRuntimes                                map[string]*SharedRuntime     `json:"shared_runtimes,omitempty" yaml:"shared_runtimes,omitempty"`
+	// InformationAssets is an optional OCTAVE Allegro section (Phase B.1)
+	InformationAssets                             map[string]*InformationAsset  `json:"information_assets,omitempty" yaml:"information_assets,omitempty"`
+	// TrikeActors and TrikeMatrix are optional Trike methodology sections (Phase B.2)
+	TrikeActors                                   map[string]*TrikeActor        `json:"trike_actors,omitempty" yaml:"trike_actors,omitempty"`
+	TrikeMatrix                                   []*TrikeMatrixCell            `json:"trike_matrix,omitempty" yaml:"trike_matrix,omitempty"`
 	CustomRiskCategories                          RiskCategories                `json:"custom_risk_categories,omitempty" yaml:"custom_risk_categories,omitempty"`
 	BuiltInRiskCategories                         RiskCategories                `json:"built_in_risk_categories,omitempty" yaml:"built_in_risk_categories,omitempty"`
 	RiskTracking                                  map[string]*RiskTracking      `json:"risk_tracking,omitempty" yaml:"risk_tracking,omitempty"`

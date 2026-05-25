@@ -1,0 +1,86 @@
+id: ai-ml-llm-api-key-hardcoded
+title: AI/ML - LLM Inference Endpoint With Custom Code and No Secrets Manager
+function: development
+stride: information-disclosure
+cwe: 798
+description: >
+  Custom-developed code that calls an LLM inference endpoint often requires an API
+  key or service credential. When the codebase lacks a dedicated secrets manager,
+  developers frequently hard-code these credentials in source files, environment
+  variable defaults, or configuration files checked into version control. A single
+  committed API key can be scraped by automated tools within minutes of repository
+  exposure, resulting in unauthorized LLM usage billed to the organization and
+  potential access to sensitive model outputs.
+impact: >
+  A leaked LLM API key enables unlimited inference billing charges until revoked,
+  potential access to shared fine-tuned model outputs, and exfiltration of
+  organization-specific system prompts if the key grants access to private model
+  deployments. Keys leaked via version control history persist even after deletion
+  from the current codebase and can be recovered from git history.
+asvs: V2 - Authentication Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+action: Store all LLM API credentials in a dedicated secrets manager; never hard-code them in source or config files
+mitigation: >
+  Store LLM API keys in a dedicated secrets manager (HashiCorp Vault, AWS Secrets
+  Manager, GCP Secret Manager, Azure Key Vault). Inject credentials at runtime via
+  environment variable injection from the secrets manager. Enable pre-commit hooks
+  (detect-secrets, gitleaks) to prevent credential commits. Rotate any previously
+  committed keys immediately. Tag the asset has-secrets-manager once key management
+  is verified.
+check: >
+  Are all LLM API keys stored in a dedicated secrets manager rather than source code or env defaults?
+  Are pre-commit secret-scanning hooks active on all repositories that contain LLM client code?
+detection_logic: >
+  In-scope technical assets with llm_inference_endpoint technology that have
+  custom_developed_parts set to true and are not tagged with has-secrets-manager.
+risk_assessment: >
+  High for all LLM endpoints with custom-developed client code. Critical when the
+  API key grants access to fine-tuned or private model deployments.
+false_positives: >
+  Endpoints that use workload identity federation or instance-metadata credentials
+  that require no static API key. Tag has-secrets-manager after documenting the
+  identity-based authentication mechanism.
+
+controls:
+  nist_800_53: [IA-5, SC-12, SC-28]
+  iso_27001: [A.9.4.3, A.10.1.1]
+  soc2_cc: [CC6.1, CC6.7]
+  pci_dss_4: ["8.3.2", "3.5.1"]
+  hipaa: ["164.312(a)(2)(iv)"]
+  nis2: ["Art. 21(2)(g)"]
+  owasp_top10_2021: [A02, A07]
+  asvs_4: [V2.10, V6.4]
+  owasp_llm_top10: [LLM09]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>LLM API Key Hardcoded Risk</b>: LLM endpoint <b>{tech_asset.title}</b> has custom code without a secrets manager, risking hardcoded credentials"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.llm_inference_endpoint}"
+            - true: "{tech_asset.custom_developed_parts}"
+            - not:
+                contains:
+                  item: has-secrets-manager
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

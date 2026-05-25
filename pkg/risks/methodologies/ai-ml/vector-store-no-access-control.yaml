@@ -1,0 +1,83 @@
+id: ai-ml-vector-store-no-access-control
+title: AI/ML - Multi-Tenant Vector Store Without Access Control
+function: architecture
+stride: information-disclosure
+cwe: 284
+description: >
+  Multi-tenant vector stores that serve multiple organizational units, customers, or
+  user groups without tenant-level access controls allow one tenant to retrieve
+  embeddings and documents belonging to another tenant. In RAG deployments, a missing
+  row-level security or namespace-level isolation layer means that a user in Tenant A
+  can craft retrieval queries that return documents indexed from Tenant B's corpus,
+  constituting a cross-tenant data breach.
+impact: >
+  Cross-tenant retrieval exposes confidential documents, source code, medical records,
+  or financial data from co-tenants to unauthorized principals. In SaaS RAG products,
+  this is a critical data breach that may affect thousands of customers simultaneously
+  and trigger mandatory regulatory notifications under GDPR, HIPAA, and SOC 2.
+asvs: V4 - Access Control Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html
+action: Implement namespace-level or row-level tenant isolation on all multi-tenant vector stores
+mitigation: >
+  Implement tenant-scoped collections, namespaces, or metadata filters that are
+  enforced server-side on every query (Qdrant named collections, Weaviate multi-tenancy,
+  Pinecone namespaces). Never rely on client-supplied filters alone — enforce
+  tenant identity from the authenticated session at the query layer. Audit cross-tenant
+  query attempts. Tag the asset has-access-control once isolation is verified.
+check: >
+  Is tenant isolation enforced server-side on every vector query?
+  Are access controls verified at the query layer rather than relying on client filtering?
+detection_logic: >
+  In-scope technical assets with vector_store technology that have multi_tenant set
+  to true and are not tagged with has-access-control.
+risk_assessment: >
+  High for all multi-tenant vector stores. Critical when tenants include different
+  organizations or when the store indexes confidential or regulated data.
+false_positives: >
+  Single-tenant deployments that only serve one organizational unit with no data
+  segregation requirement. The multi_tenant attribute gates this rule, so single-tenant
+  assets are not flagged.
+
+controls:
+  nist_800_53: [AC-3, AC-4, AC-24]
+  iso_27001: [A.9.1.2, A.9.4.1]
+  soc2_cc: [CC6.1, CC6.3]
+  pci_dss_4: ["7.2.1", "7.3.1"]
+  hipaa: ["164.312(a)(1)"]
+  nis2: ["Art. 21(2)(e)"]
+  owasp_top10_2021: [A01, A05]
+  asvs_4: [V4.1, V4.2]
+  owasp_llm_top10: [LLM06]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Vector Store No Access Control</b>: multi-tenant vector store <b>{tech_asset.title}</b> lacks tenant-level access control enabling cross-tenant data leakage"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.vector_store}"
+            - true: "{tech_asset.multi_tenant}"
+            - not:
+                contains:
+                  item: has-access-control
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

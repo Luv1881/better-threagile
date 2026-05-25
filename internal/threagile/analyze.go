@@ -11,6 +11,8 @@ import (
 )
 
 func (what *Threagile) initAnalyze() *Threagile {
+	var outputFormat string
+
 	analyze := &cobra.Command{
 		Use:     AnalyzeModelCommand,
 		Short:   "Analyze model",
@@ -76,6 +78,11 @@ func (what *Threagile) initAnalyze() *Threagile {
 				return fmt.Errorf("failed to read and analyze model: %w", err)
 			}
 
+			if outputFormat == "md" || outputFormat == "markdown" {
+				cmd.Print(report.MarkdownReport(r.ParsedModel))
+				return nil
+			}
+
 			err = report.Generate(what.config, r, commands, builtinRules, progressReporter)
 			if err != nil {
 				return fmt.Errorf("failed to generate reports: %w", err)
@@ -87,6 +94,7 @@ func (what *Threagile) initAnalyze() *Threagile {
 		},
 	}
 
+	analyze.Flags().StringVar(&outputFormat, "output-format", "", "Output format: default (PDF/Excel/JSON) | md (Markdown)")
 	what.rootCmd.AddCommand(analyze)
 
 	return what

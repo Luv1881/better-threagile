@@ -1,0 +1,81 @@
+id: octave-insufficient-logging
+title: OCTAVE Allegro - Information Asset Container Without Audit Logging
+function: operations
+stride: repudiation
+cwe: 778
+description: >
+  OCTAVE Allegro requires organisations to identify and evaluate threats to their
+  information assets. Without audit logging on information asset containers, there
+  is no forensic record of who accessed, modified, or deleted organisational data.
+  This makes it impossible to detect insider threats, investigate breaches, or
+  demonstrate compliance with data governance requirements.
+impact: >
+  Absence of audit logs means unauthorised access and data exfiltration go undetected
+  and uninvestigated. Incident response is severely impaired. Regulatory bodies
+  (GDPR, HIPAA, SOC 2) require demonstrable audit trails for systems storing sensitive
+  or personal data, and their absence can result in fines and sanctions.
+asvs: V7 - Error Handling and Logging Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+action: Enable comprehensive audit logging on all information asset containers
+mitigation: >
+  Enable read, write, and administrative audit logging on the asset. Route logs to a
+  centralised, tamper-resistant log store (e.g., SIEM, immutable object storage).
+  Set up alerting for anomalous access patterns. Retain logs in accordance with
+  the organisation's retention policy and applicable regulations.
+  Tag the asset has-audit-logging once logging is verified and centralised.
+check: >
+  Is audit logging enabled for all access (read, write, admin) on this information asset container?
+  Are logs forwarded to a centralised, tamper-resistant log store?
+detection_logic: >
+  In-scope technical assets tagged with information-asset-container that are not
+  tagged with has-audit-logging.
+risk_assessment: >
+  Medium baseline for all information asset containers. Elevated to high when the
+  asset holds confidential or strictly-confidential data.
+false_positives: >
+  Assets where logging is enforced centrally via an infrastructure-level policy (e.g.,
+  AWS CloudTrail with mandatory service control policy). Tag has-audit-logging after
+  confirming coverage via the centralised policy.
+
+controls:
+  nist_800_53: [AU-2, AU-3, AU-9, AU-12]
+  iso_27001: [A.12.4.1, A.12.4.3]
+  soc2_cc: [CC7.2, CC7.3]
+  pci_dss_4: ["10.2.1", "10.3.1"]
+  hipaa: ["164.312(b)"]
+  nis2: ["Art. 21(2)(b)"]
+  cmmc: [AU.L2-3.3.1, AU.L2-3.3.2]
+  owasp_top10_2021: [A09]
+  asvs_4: [V7.1, V7.2]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Insufficient Logging</b>: information asset container <b>{tech_asset.title}</b> lacks audit logging"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - contains:
+                item: information-asset-container
+                in: "{tech_asset.tags}"
+            - not:
+                contains:
+                  item: has-audit-logging
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

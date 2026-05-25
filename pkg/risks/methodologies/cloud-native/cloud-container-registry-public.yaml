@@ -1,0 +1,82 @@
+id: cloud-container-registry-public
+title: Cloud Container - Container Registry Publicly Accessible
+function: architecture
+stride: information-disclosure
+cloud-native: container
+cwe: 284
+description: >
+  Container image registries (ECR, GCR, ACR) that are publicly accessible allow
+  any internet actor to pull images from the registry. Container images frequently
+  contain embedded application code, configuration files with connection strings,
+  and in some cases hardcoded secrets. Public pull access also enables an attacker
+  to analyze image layers for vulnerabilities and plan targeted exploits against
+  the production workload.
+impact: >
+  Publicly accessible images expose application source code, embedded configuration,
+  and potentially secrets baked into image layers. Attackers can identify unpatched
+  vulnerabilities in the exact versions deployed in production and craft targeted
+  exploits. Images may also contain proprietary business logic.
+asvs: V8 - Data Protection Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+action: Restrict container registry access to authenticated principals within the VPC or organization
+mitigation: >
+  Disable public pull access on the container registry. Require IAM authentication
+  for all registry operations. Use VPC endpoint policies to restrict registry access
+  to known VPC CIDRs. Audit existing images for embedded secrets with tools like
+  Trufflehog or Gitleaks. Tag the asset has-private-registry once access is restricted.
+check: >
+  Is the container registry configured to require IAM authentication for all pulls?
+  Is public access blocked at the registry and account level?
+detection_logic: >
+  In-scope technical assets with container-registry technology that are internet-accessible
+  and not tagged with has-private-registry.
+risk_assessment: >
+  High when images contain proprietary code or application configuration.
+  Medium for base-image-only registries with no application logic.
+false_positives: >
+  Intentionally public open-source project registries serving community images
+  that contain no proprietary code or secrets. Tag has-private-registry after
+  confirming all sensitive images are excluded from the public repository.
+
+controls:
+  nist_800_53: [AC-3, SA-10, CM-14]
+  iso_27001: [A.9.1.2, A.14.2.2]
+  soc2_cc: [CC6.1]
+  pci_dss_4: ["7.2.1"]
+  hipaa: ["164.312(a)(1)"]
+  nis2: ["Art. 21(2)(e)"]
+  owasp_top10_2021: [A05, A08]
+  asvs_4: [V4.1, V14.2]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Public Container Registry</b>: registry <b>{tech_asset.title}</b> allows unauthenticated image pulls from the internet"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.internet}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.container_registry}"
+            - not:
+                contains:
+                  item: has-private-registry
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

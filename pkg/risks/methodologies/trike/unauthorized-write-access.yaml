@@ -1,0 +1,98 @@
+id: trike-unauthorized-write
+title: Trike - Untrusted Actor With Outgoing Links to Datastores Without Authorised Write
+function: architecture
+stride: elevation-of-privilege
+cwe: 284
+description: >
+  Trike's action matrix explicitly models which actors are permitted to perform write
+  (create, update, delete) operations on each asset. A technical asset tagged with
+  trike-actor-untrusted that has outgoing communication links targeting datastores
+  without the trike-write-authorized tag has not had its write rights formally
+  approved. Unauthorised write access allows untrusted actors to corrupt, overwrite,
+  or destroy data in high-value datastores.
+impact: >
+  An untrusted actor with unapproved write access to a datastore can inject malicious
+  records, corrupt existing data, or delete critical information. This undermines data
+  integrity, can cause cascading failures in dependent systems, and may constitute a
+  destructive attack with permanent data loss.
+asvs: V4 - Access Control Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
+action: Review and formally authorise or deny write access for all untrusted actors targeting datastores
+mitigation: >
+  Review all outgoing communication links from this untrusted actor that target
+  datastores. For each link, determine whether write operations are intentional.
+  If write access is legitimately required, document it in the Trike action matrix
+  and apply the trike-write-authorized tag. If not, enforce read-only access at the
+  datastore level and remove write permissions from the actor's credentials.
+check: >
+  Have all write operations by this untrusted actor to datastores been reviewed and
+  explicitly authorised in the Trike action matrix?
+detection_logic: >
+  In-scope technical assets tagged with trike-actor-untrusted that have at least one
+  outgoing communication link to a datastore and are not tagged with trike-write-authorized.
+risk_assessment: >
+  High baseline. Critical when the target datastore holds strictly-confidential,
+  financial, or personally identifiable data where integrity is essential.
+false_positives: >
+  Untrusted actors that only write to isolated staging or logging datastores with
+  no sensitive data. Verify the target datastore classification and tag
+  trike-write-authorized after confirming no integrity risk exists.
+
+controls:
+  nist_800_53: [AC-3, AC-6, SI-10]
+  iso_27001: [A.9.1.1, A.9.4.1, A.12.2.1]
+  soc2_cc: [CC6.1, CC6.3]
+  pci_dss_4: ["7.2.1", "10.3.1"]
+  hipaa: ["164.312(a)(1)"]
+  nis2: ["Art. 21(2)(i)"]
+  cmmc: [AC.L1-3.1.1, AC.L2-3.1.3]
+  owasp_top10_2021: [A01, A03]
+  asvs_4: [V4.1, V5.1]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Unauthorized Write Access</b>: untrusted actor <b>{tech_asset.title}</b> has outgoing links to datastores without authorised write rights"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - contains:
+                item: trike-actor-untrusted
+                in: "{tech_asset.tags}"
+            - not:
+                contains:
+                  item: trike-write-authorized
+                  in: "{tech_asset.tags}"
+          then:
+            - assign:
+                has_datastore_target: false
+            - loop:
+                in: "{tech_asset.communication_links}"
+                item: link
+                do:
+                  - if:
+                      equal:
+                        first: "{$model.technical_assets.{link.target_id}.type}"
+                        second: datastore
+                      then:
+                        - assign:
+                            has_datastore_target: true
+            - if:
+                true: "{has_datastore_target}"
+                then:
+                  return: true

@@ -1,0 +1,84 @@
+id: supply-chain-unsigned-container-image
+title: Supply Chain - Container Images Without Cryptographic Signing
+function: development
+stride: tampering
+cwe: 345
+description: >
+  Container images that are not cryptographically signed (via Cosign/Sigstore,
+  Notary v2, or Docker Content Trust) can be replaced by malicious versions in
+  the container registry without detection. An attacker with registry write access
+  can swap an image tag to point to a backdoored image, and without signature
+  verification in the deployment pipeline, the malicious image will be deployed
+  silently.
+impact: >
+  Unsigned images in an untrusted registry or CDN can be substituted for legitimate
+  images, resulting in remote code execution, data exfiltration, or persistent access.
+  Image tampering is particularly dangerous because it affects all deployments that
+  pull the image after the substitution.
+asvs: V14 - Configuration Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Software_Supply_Chain_Security_Cheat_Sheet.html
+action: Sign all container images with Cosign/Sigstore and enforce signature verification at deployment
+mitigation: >
+  Use Cosign (sigstore.dev) to sign container images as part of the CI/CD pipeline.
+  Store signatures in a Sigstore transparency log (Rekor). Enforce signature
+  verification using an admission controller (Kyverno, OPA Gatekeeper, Ratify)
+  before containers are allowed to run in Kubernetes. For private ECR/GCR/ACR,
+  enable image signing features native to the registry.
+  Tag the asset has-signed-images once signing and verification are enforced.
+check: >
+  Are all container images signed before pushing to the registry?
+  Is signature verification enforced at deployment (admission controller)?
+detection_logic: >
+  In-scope technical assets with container-platform or container-registry technology
+  that do not have the has-signed-images tag.
+risk_assessment: >
+  High for container platforms running internet-facing or production workloads.
+  Medium for development/staging platforms with restricted access.
+false_positives: >
+  Container platforms pulling only from a curated internal registry where all images
+  are verified via other controls (hash pinning, immutable tags). Add has-signed-images
+  after documenting the alternative image integrity control.
+
+controls:
+  nist_800_53: [SA-10, SI-7, SI-7(6)]
+  iso_27001: [A.14.2.2, A.14.2.5]
+  soc2_cc: [CC8.1]
+  pci_dss_4: ["6.4.4"]
+  nis2: ["Art. 21(2)(e)"]
+  cmmc: [SI.L2-3.14.6, SR.L2-3.17.3]
+  owasp_top10_2021: [A08]
+  asvs_4: [V14.2, V14.3]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Unsigned Container Images</b>: asset <b>{tech_asset.title}</b> does not enforce container image signing"
+    severity: "calculate_severity(unlikely, high)"
+    exploitation_likelihood: unlikely
+    exploitation_impact: high
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.container_platform}"
+                  - true: "{.attributes.container_registry}"
+            - not:
+                contains:
+                  item: has-signed-images
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

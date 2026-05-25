@@ -1,0 +1,86 @@
+id: cloud-serverless-overpermissive-role
+title: Cloud Serverless - Function Execution Role Without Least-Privilege Restrictions
+function: architecture
+stride: elevation-of-privilege
+cloud-native: serverless
+cwe: 250
+description: >
+  Serverless functions attached to overly permissive execution roles (e.g., an IAM
+  role with AdministratorAccess or * actions on all resources) violate the principle
+  of least privilege. If the function is compromised via a code injection vulnerability
+  or a supply-chain attack on a dependency, the attacker inherits the full permissions
+  of the execution role, potentially gaining control of the entire cloud account.
+impact: >
+  A compromised function with an overpermissive role allows privilege escalation:
+  the attacker can create backdoor IAM users, exfiltrate data from other services,
+  pivot to other accounts, or destroy infrastructure. The blast radius equals
+  the IAM role's permissions scope.
+asvs: V4 - Access Control Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html
+action: Apply least-privilege IAM policies to all serverless function execution roles
+mitigation: >
+  Create a dedicated execution role per function with only the specific actions
+  and resource ARNs required. Use IAM Access Analyzer to generate least-privilege
+  policies from CloudTrail. Avoid attaching AWS-managed policies like ReadOnlyAccess
+  or PowerUserAccess to function roles. Tag the asset has-restricted-execution-role
+  once the policy is scoped to specific resources.
+check: >
+  Does the function execution role grant only the minimum required permissions?
+  Are all resource ARNs specific (not "*") in the role's inline and attached policies?
+detection_logic: >
+  In-scope serverless function technical assets processing confidential data that
+  are not tagged with has-restricted-execution-role.
+risk_assessment: >
+  High when the function processes confidential data or calls downstream services
+  with broad permissions. Medium for functions processing only public data.
+false_positives: >
+  Functions performing infrastructure management (deployment, auto-scaling) that
+  legitimately require broad permissions. Document the justification and tag
+  has-restricted-execution-role after review by a security architect.
+
+controls:
+  nist_800_53: [AC-6, AC-6(1), AC-6(2)]
+  iso_27001: [A.9.2.3, A.9.4.1]
+  soc2_cc: [CC6.3]
+  pci_dss_4: ["7.2.2", "7.3.2"]
+  hipaa: ["164.312(a)(1)"]
+  nis2: ["Art. 21(2)(e)"]
+  cmmc: [AC.L2-3.1.5]
+  owasp_top10_2021: [A01]
+  asvs_4: [V4.1, V4.2]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Serverless Overpermissive Role</b>: function <b>{tech_asset.title}</b> execution role is not scoped to least privilege"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.serverless_function}"
+            - not:
+                contains:
+                  item: has-restricted-execution-role
+                  in: "{tech_asset.tags}"
+            - any:
+                in: "{tech_asset.data_assets_processed}"
+                item: data_id
+                true: "{$model.data_assets.{data_id}.has_pii}"
+          then:
+            return: true

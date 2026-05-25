@@ -1,0 +1,94 @@
+id: ai-ml-model-inversion-pii-risk
+title: AI/ML - ML Training Pipeline With PII Training Data and No Differential Privacy
+function: architecture
+stride: information-disclosure
+cwe: 359
+description: >
+  ML training pipelines that train on data assets flagged as both training data and
+  PII-containing without applying differential privacy are vulnerable to model
+  inversion and membership inference attacks. An adversary with API access to the
+  deployed model can use gradient-based or output-based techniques to reconstruct
+  training examples and determine whether specific individuals' data was used in
+  training. GDPR's right to erasure (Article 17) and data minimization principle
+  (Article 5) are at risk when PII is memorized in model parameters.
+impact: >
+  Model inversion attacks can reconstruct sensitive training records from model
+  outputs alone. Membership inference attacks allow adversaries to confirm whether
+  a specific individual's data was used in training, which itself may constitute
+  a privacy violation. PII memorized in large language models has been demonstrated
+  to leak in verbatim form in response to targeted queries, including names,
+  addresses, phone numbers, and health information.
+asvs: V8 - Data Protection Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
+action: Apply differential privacy (DP-SGD) during training to bound memorization of individual records
+mitigation: >
+  Apply differentially private stochastic gradient descent (DP-SGD) with a
+  privacy budget (epsilon) appropriate for the sensitivity of the training data.
+  Use tools such as Google's DP Library, Opacus (PyTorch), or TensorFlow Privacy.
+  Conduct membership inference attack tests to empirically bound memorization.
+  Consider synthetic data generation as an alternative to training on raw PII.
+  Tag the asset has-differential-privacy once DP controls are verified.
+check: >
+  Is differential privacy (DP-SGD) applied during training on PII-containing datasets?
+  Has a membership inference test been conducted to empirically verify memorization bounds?
+detection_logic: >
+  In-scope technical assets with ml_training_pipeline technology that process
+  data assets with both is_training_data and has_pii set to true, and are not
+  tagged with has-differential-privacy.
+risk_assessment: >
+  High for all training pipelines processing PII. Critical for health, financial,
+  or biometric data covered by GDPR Article 9 or HIPAA.
+false_positives: >
+  Training pipelines that apply verified anonymization upstream so that no actual
+  PII reaches the training process. Tag has-differential-privacy after confirming
+  that anonymization is formally verified and that the data assets no longer contain
+  true PII.
+
+controls:
+  nist_800_53: [SC-28, PT-2, PT-3]
+  iso_27001: [A.18.1.3, A.18.1.4]
+  soc2_cc: [CC6.1, CC6.7]
+  hipaa: ["164.514(b)", "164.312(a)(2)(iv)"]
+  gdpr: ["Art. 5(1)(c)", "Art. 17", "Art. 25"]
+  nis2: ["Art. 21(2)(g)"]
+  owasp_top10_2021: [A02, A04]
+  asvs_4: [V8.2, V8.3]
+  owasp_llm_top10: [LLM06]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Model Inversion PII Risk</b>: ML training pipeline <b>{tech_asset.title}</b> trains on PII without differential privacy, enabling model inversion and membership inference attacks"
+    severity: "calculate_severity(unlikely, high)"
+    exploitation_likelihood: unlikely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.ml_training_pipeline}"
+            - any:
+                in: "{tech_asset.data_assets_processed}"
+                item: data_id
+                and:
+                  - true: "{$model.data_assets.{data_id}.is_training_data}"
+                  - true: "{$model.data_assets.{data_id}.has_pii}"
+            - not:
+                contains:
+                  item: has-differential-privacy
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

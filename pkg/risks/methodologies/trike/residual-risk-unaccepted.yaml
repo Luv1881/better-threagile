@@ -1,0 +1,90 @@
+id: trike-residual-risk-unaccepted
+title: Trike - Information Asset Container With High Sensitivity Without Formal Residual Risk Acceptance
+function: business-side
+stride: elevation-of-privilege
+cwe: 284
+description: >
+  Trike's risk treatment process requires that after all feasible mitigations have
+  been applied, any remaining residual risk must be formally accepted by the asset
+  owner and documented in the risk register. A technical asset tagged with
+  information-asset-container that also has high or stricter confidentiality but
+  lacks the trike-residual-risk-accepted tag has not completed this final step.
+  An unaccepted residual risk indicates the organisation has not formally acknowledged
+  the remaining exposure, which may leave known threats unaddressed and management
+  without visibility of accepted risk.
+impact: >
+  Unaccepted residual risks indicate incomplete risk treatment. Management and the
+  risk committee may not be aware of ongoing exposure. Regulators may view the absence
+  of formal risk acceptance as evidence of inadequate risk governance, leading to
+  findings during audits and increased liability in the event of a breach.
+asvs: V1 - Architecture, Design and Threat Modeling Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html
+action: Complete residual risk assessment and obtain formal acceptance for all high-sensitivity information asset containers
+mitigation: >
+  Document the residual risk profile for this information asset container after all
+  mitigations are applied. Present the residual risk to the asset owner and risk
+  committee for formal acceptance. Record the acceptance decision — including the
+  rationale and review date — in the organisation's risk register. Tag the asset
+  trike-residual-risk-accepted once the acceptance is formally documented and signed off.
+check: >
+  Has residual risk been formally documented and accepted for this high-sensitivity
+  information asset container?
+  Is the acceptance recorded in the risk register with a named approver and review date?
+detection_logic: >
+  In-scope technical assets tagged with information-asset-container that have high or
+  stricter confidentiality and are not tagged with trike-residual-risk-accepted.
+risk_assessment: >
+  Medium baseline indicating incomplete risk governance. Elevated when the asset
+  holds strictly-confidential or regulated data where governance failures carry
+  direct regulatory consequences.
+false_positives: >
+  Assets in their initial risk assessment phase where formal acceptance has not yet
+  been obtained due to recent modelling. Tag trike-residual-risk-accepted after
+  formal acceptance is documented and approved by the risk committee.
+
+controls:
+  nist_800_53: [RA-3, RA-7, PM-9, CA-5]
+  iso_27001: [A.6.1.1, Clause-6.1.3, Clause-8.3]
+  soc2_cc: [CC9.1, CC3.2]
+  pci_dss_4: ["12.3.1"]
+  hipaa: ["164.308(a)(1)(ii)(A)"]
+  nis2: ["Art. 21(1)"]
+  cmmc: [CA.L2-3.12.1, CA.L2-3.12.2]
+  owasp_top10_2021: [A05]
+  asvs_4: [V1.1, V1.2]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Residual Risk Unaccepted</b>: high-sensitivity information asset container <b>{tech_asset.title}</b> has no formal residual risk acceptance"
+    severity: "calculate_severity(unlikely, medium)"
+    exploitation_likelihood: unlikely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - contains:
+                item: information-asset-container
+                in: "{tech_asset.tags}"
+            - equal-or-greater:
+                first: "{tech_asset.confidentiality}"
+                second: confidential
+                as: confidentiality
+            - not:
+                contains:
+                  item: trike-residual-risk-accepted
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

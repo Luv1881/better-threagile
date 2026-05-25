@@ -1,0 +1,80 @@
+id: supply-chain-no-sbom
+title: Supply Chain - Build Pipeline Without Software Bill of Materials
+function: development
+stride: tampering
+cwe: 1104
+description: >
+  Build pipelines that do not generate a Software Bill of Materials (SBOM) in
+  CycloneDX or SPDX format make it impossible to audit third-party dependencies
+  after a software supply chain incident (e.g. Log4Shell, XZ Utils). Without a
+  machine-readable inventory of all components and their versions, vulnerability
+  scanning tools cannot identify which builds are affected by a newly disclosed CVE.
+impact: >
+  When a critical CVE is disclosed for a widely-used library, security teams
+  without SBOMs must manually inspect every codebase to determine exposure.
+  This dramatically increases mean-time-to-remediate and may miss affected builds.
+  Without SBOMs, legal obligations for software composition disclosure (EU CRA, FDA)
+  cannot be met.
+asvs: V14 - Configuration Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Software_Supply_Chain_Security_Cheat_Sheet.html
+action: Generate a CycloneDX or SPDX SBOM as part of every build
+mitigation: >
+  Integrate SBOM generation into the CI/CD pipeline using Syft, Trivy, or a
+  language-native tool (e.g. gradle-cyclonedx, cyclonedx-maven-plugin, pip-sbom).
+  Publish SBOMs to an artifact store alongside build artifacts. Submit to a
+  dependency-track or GUAC instance for continuous CVE correlation.
+  Tag the asset has-sbom once generation is verified.
+check: >
+  Is a CycloneDX or SPDX SBOM generated for every build artifact?
+  Are SBOMs stored alongside the artifacts they describe?
+detection_logic: >
+  In-scope technical assets with build-pipeline technology that are not tagged
+  with has-sbom.
+risk_assessment: >
+  Medium baseline. Elevated when the build pipeline produces software distributed
+  externally (EU CRA, FDA Pre-Market Cybersecurity) or used in critical infrastructure.
+false_positives: >
+  Build pipelines that produce only infrastructure-as-code or configuration artifacts
+  (no software libraries). Tag has-sbom after documenting why SBOM does not apply.
+
+controls:
+  nist_800_53: [SA-10, SR-3, SR-4]
+  iso_27001: [A.14.2.2, A.15.1.2]
+  soc2_cc: [CC7.1]
+  pci_dss_4: ["6.3.2"]
+  nis2: ["Art. 21(2)(e)"]
+  cmmc: [SR.L2-3.17.3]
+  owasp_top10_2021: [A06, A08]
+  asvs_4: [V14.2, V14.3]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>No SBOM</b>: build pipeline <b>{tech_asset.title}</b> does not generate a Software Bill of Materials"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.build-pipeline}"
+            - not:
+                contains:
+                  item: has-sbom
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

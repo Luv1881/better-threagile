@@ -1,0 +1,84 @@
+id: octave-third-party-exposure
+title: OCTAVE Allegro - Information Asset Shared With Third Party Without Data Processing Agreement
+function: business-side
+stride: information-disclosure
+cwe: 359
+description: >
+  OCTAVE Allegro requires organisations to assess areas of concern around how
+  information assets are accessed and shared. A technical asset tagged as both
+  information-asset-container and third-party-shared indicates that organisational
+  data is shared with an external party. Without a Data Processing Agreement (DPA)
+  in place — evidenced by the has-dpa tag — there are no contractual guarantees
+  over how the third party processes, stores, or protects the data.
+impact: >
+  Without a DPA, the third party is free to process organisational information assets
+  in ways that may violate confidentiality, data protection law (GDPR Art. 28), and
+  the organisation's own security policies. A third-party breach directly exposes
+  organisational data with no contractual recourse or notification obligation.
+asvs: V1 - Architecture, Design and Threat Modeling Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Third_Party_Javascript_Management_Cheat_Sheet.html
+action: Establish a Data Processing Agreement with all third parties that access information assets
+mitigation: >
+  Execute a DPA with each third-party recipient that covers data processing purposes,
+  retention, sub-processors, security requirements, and breach notification timelines.
+  Validate the third party's security posture via questionnaire or certification review
+  (ISO 27001, SOC 2 Type II). Tag the asset has-dpa once the agreement is in force.
+check: >
+  Is a Data Processing Agreement in place with every third party that receives or
+  processes data from this information asset container?
+detection_logic: >
+  In-scope technical assets tagged with information-asset-container and third-party-shared
+  that are not tagged with has-dpa.
+risk_assessment: >
+  High baseline. Elevated to critical when the asset contains personal data subject
+  to GDPR or sector-specific data protection regulations.
+false_positives: >
+  Third-party integrations where no organisational data is transmitted — only
+  telemetry or operational metadata that carries no informational value.
+  Tag has-dpa after confirming data classification and legal review.
+
+controls:
+  nist_800_53: [SA-9, SA-12, PS-7]
+  iso_27001: [A.13.2.4, A.15.1.1, A.15.1.2]
+  soc2_cc: [CC9.2]
+  pci_dss_4: ["12.8.2"]
+  hipaa: ["164.308(b)(1)"]
+  nis2: ["Art. 21(2)(d)"]
+  cmmc: [CA.L2-3.12.1]
+  owasp_top10_2021: [A05, A08]
+  asvs_4: [V1.1, V1.2]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Third-Party Exposure Without DPA</b>: information asset container <b>{tech_asset.title}</b> is shared with a third party without a Data Processing Agreement"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - contains:
+                item: information-asset-container
+                in: "{tech_asset.tags}"
+            - contains:
+                item: third-party-shared
+                in: "{tech_asset.tags}"
+            - not:
+                contains:
+                  item: has-dpa
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

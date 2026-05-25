@@ -1,0 +1,84 @@
+id: ai-ml-adversarial-input-no-shield
+title: AI/ML - LLM Inference Endpoint Without Input Shield Against Adversarial Inputs
+function: architecture
+stride: tampering
+cwe: 693
+description: >
+  LLM inference endpoints that receive user-controlled inputs without an input
+  shielding or guardrail layer are vulnerable to a broad class of adversarial inputs
+  including prompt injection, jailbreak attempts, toxicity bypass, and adversarially
+  crafted token sequences that trigger unexpected model behaviour. An input shield
+  (content safety classifier, guardrail model, or structured parsing layer) provides
+  a first line of defence before potentially dangerous inputs reach the core model.
+impact: >
+  Without input shielding, attackers can use prompt injection to override system
+  instructions, jailbreak content policies to generate prohibited content, or craft
+  adversarial token sequences that cause unexpected model behaviour including context
+  manipulation and data exfiltration through model-driven actions. Publicly accessible
+  endpoints are continuously probed for new jailbreak techniques.
+asvs: V5 - Validation, Sanitization and Encoding Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+action: Deploy an input shield (content safety classifier or guardrail layer) in front of all LLM inference endpoints
+mitigation: >
+  Deploy a dedicated input safety classifier (e.g. Llama Guard, Azure Content Safety,
+  OpenAI Moderation API, Rebuff) that screens all user inputs for prompt injection
+  patterns, toxicity, jailbreak attempts, and policy violations before they reach
+  the core model. Implement a deny-list for known jailbreak patterns and maintain
+  it as a living artefact. Apply structured input parsing where possible to constrain
+  the attack surface. Tag the asset has-input-shield once the shielding layer is verified.
+check: >
+  Is a content safety classifier or guardrail model screening all inputs before they
+  reach the LLM inference endpoint?
+  Are known jailbreak and prompt injection patterns blocked at the input layer?
+detection_logic: >
+  In-scope technical assets with llm_inference_endpoint technology that are not
+  tagged with has-input-shield.
+risk_assessment: >
+  High for all internet-facing LLM endpoints. Medium for internal endpoints where
+  all callers are trusted and authenticated employees.
+false_positives: >
+  LLM inference endpoints used exclusively in research or red-teaming environments
+  where adversarial inputs are intentional. Tag has-input-shield after documenting
+  that production traffic does not flow through the unshielded endpoint.
+
+controls:
+  nist_800_53: [SI-10, SI-15, SC-5]
+  iso_27001: [A.14.2.5, A.12.6.1]
+  soc2_cc: [CC6.1, CC8.1]
+  pci_dss_4: ["6.2.4"]
+  nis2: ["Art. 21(2)(e)"]
+  owasp_top10_2021: [A03, A08]
+  asvs_4: [V5.1, V5.2]
+  owasp_llm_top10: [LLM01, LLM07]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Adversarial Input No Shield</b>: LLM endpoint <b>{tech_asset.title}</b> has no input shielding layer, exposing it to prompt injection and jailbreak attacks"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.llm_inference_endpoint}"
+            - not:
+                contains:
+                  item: has-input-shield
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

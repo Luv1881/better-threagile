@@ -1,0 +1,83 @@
+id: ai-ml-prompt-injection-rag-context
+title: AI/ML - RAG Pipeline Without Input Validation Enabling Prompt Injection
+function: architecture
+stride: tampering
+cwe: 77
+description: >
+  RAG (Retrieval-Augmented Generation) pipelines that pass user-supplied text to
+  the retrieval step and then into the LLM context without sanitizing or validating
+  inputs are susceptible to prompt injection attacks. An adversary can craft inputs
+  that manipulate the retrieval query, poison the retrieved context, or override
+  the system prompt via retrieved documents containing embedded instructions.
+  Indirect prompt injection through poisoned knowledge-base documents is a growing
+  attack vector against enterprise RAG deployments.
+impact: >
+  A successful prompt injection can cause the LLM to ignore safety guardrails,
+  exfiltrate content from the retrieved context to an attacker-controlled endpoint,
+  generate harmful or false outputs that appear authoritative, or escalate privileges
+  in agentic workflows where the LLM drives downstream actions.
+asvs: V5 - Validation, Sanitization and Encoding Verification Requirements
+cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+action: Implement input validation and prompt-injection detection on all RAG pipeline inputs
+mitigation: >
+  Apply input validation at the RAG pipeline ingress to detect and reject prompt
+  injection patterns. Sanitize user inputs before embedding and retrieval steps.
+  Use a dedicated prompt-injection detection model or guardrail layer (e.g. Llama Guard,
+  Rebuff) before injecting retrieved content into the LLM context. Enforce strict
+  output schemas and refuse to process instructions embedded in retrieved documents.
+  Tag the asset has-input-validation once validation controls are verified.
+check: >
+  Is user input sanitized before it is used as a retrieval query?
+  Are retrieved documents scanned for embedded prompt-injection instructions?
+detection_logic: >
+  In-scope technical assets with rag_pipeline technology that are not tagged with
+  has-input-validation.
+risk_assessment: >
+  High for RAG pipelines that operate in agentic or multi-step workflows where LLM
+  output drives downstream actions. Medium for read-only question-answering pipelines.
+false_positives: >
+  RAG pipelines that process only internal, fully trusted documents from an access-controlled
+  knowledge base with no external or user-supplied content. Tag has-input-validation
+  after documenting that all document sources are fully trusted.
+
+controls:
+  nist_800_53: [SI-10, SI-15]
+  iso_27001: [A.14.2.5, A.12.6.1]
+  soc2_cc: [CC6.1, CC8.1]
+  pci_dss_4: ["6.2.4"]
+  nis2: ["Art. 21(2)(e)"]
+  owasp_top10_2021: [A03, A08]
+  asvs_4: [V5.1, V5.2]
+  owasp_llm_top10: [LLM01, LLM02]
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Prompt Injection via RAG</b>: RAG pipeline <b>{tech_asset.title}</b> lacks input validation enabling prompt injection through retrieved context"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.rag_pipeline}"
+            - not:
+                contains:
+                  item: has-input-validation
+                  in: "{tech_asset.tags}"
+          then:
+            return: true

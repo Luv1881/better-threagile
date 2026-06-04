@@ -51,11 +51,14 @@ func (r *SqlNoSqlInjectionRule) GenerateRisks(input *types.Model) ([]*types.Risk
 			potentialDatabaseAccessProtocol := incomingFlow.Protocol.IsPotentialDatabaseAccessProtocol()
 			isVulnerableToQueryInjection := technicalAsset.Technologies.GetAttribute(types.IsVulnerableToQueryInjection)
 			potentialLaxDatabaseAccessProtocol := incomingFlow.Protocol.IsPotentialLaxDatabaseAccessProtocol()
-			// Lax protocol match (HTTP/binary) only applies to REST-based query databases, not file/object stores.
-			// S3-compatible object stores (MinIO, S3) use HTTP but have no query injection surface.
+			// Lax protocol match (HTTP/binary) only applies to REST-based query databases, not file/object stores
+			// or vector stores. S3-compatible object stores (MinIO, S3) use HTTP but have no query injection
+			// surface. Vector stores (Qdrant, Weaviate, Pinecone) accept embedding vectors via HTTP API —
+			// these are not injectable string queries.
 			isFileStorage := technicalAsset.Technologies.GetAttribute(types.IsFileStorage)
+			isVectorStore := technicalAsset.Technologies.GetAttribute(types.IsVectorStore)
 			if (potentialDatabaseAccessProtocol && isVulnerableToQueryInjection) ||
-				(potentialLaxDatabaseAccessProtocol && !isFileStorage) {
+				(potentialLaxDatabaseAccessProtocol && !isFileStorage && !isVectorStore) {
 				risks = append(risks, r.createRisk(input, technicalAsset, incomingFlow))
 			}
 		}

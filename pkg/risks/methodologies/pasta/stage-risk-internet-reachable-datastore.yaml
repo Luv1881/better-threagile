@@ -39,9 +39,9 @@ risk:
   data:
     parameter: tech_asset
     title: "<b>Internet-Reachable Datastore</b>: <b>{tech_asset.title}</b> can be reached from an internet-exposed asset with no application-tier separation"
-    severity: "calculate_severity(likely, critical)"
+    severity: "calculate_severity(likely, very-high)"
     exploitation_likelihood: likely
-    exploitation_impact: critical
+    exploitation_impact: very-high
     data_breach_probability: probable
     data_breach_technical_assets:
       - "{tech_asset.id}"

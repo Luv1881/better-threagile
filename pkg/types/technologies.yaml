@@ -577,6 +577,7 @@ container-registry:
     attributes:
         container-registry: true
         container_registry: true
+        file_storage: true
         backend_related: true
         development_relevant: true
         may_contain_secrets: true

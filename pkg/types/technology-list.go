@@ -11,6 +11,7 @@ const (
 	IsNoNetworkSegmentationRequired                   = "no_network_segmentation_required"
 	IsIdentityRelated                                 = "identity_related"
 	IsFileStorage                                     = "file_storage"
+	IsVectorStore                                     = "vector_store"
 	IsSearchRelated                                   = "search_related"
 	IsVulnerableToQueryInjection                      = "vulnerable_to_query_injection"
 	IsNoStorageAtRest                                 = "no_storage_at_rest"

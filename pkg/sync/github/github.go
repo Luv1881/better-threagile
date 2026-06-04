@@ -13,6 +13,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -20,11 +21,14 @@ import (
 )
 
 const (
-	baseURL        = "https://api.github.com"
-	labelPrefix    = "threagile:"
-	severityLabel  = "threat-severity:"
-	userAgent      = "threagile-sync/1.0"
+	baseURL       = "https://api.github.com"
+	labelPrefix   = "threagile:"
+	severityLabel = "threat-severity:"
+	userAgent     = "threagile-sync/1.0"
 )
+
+// cvePattern matches CVE-YYYY-NNNNN identifiers in free-form text.
+var cvePattern = regexp.MustCompile(`(?i)CVE-\d{4}-\d{4,7}`)
 
 // Config holds GitHub sync configuration.
 type Config struct {
@@ -35,10 +39,65 @@ type Config struct {
 	DryRun  bool   // when true: print actions but don't make API calls
 }
 
+// KEVData holds CISA Known Exploited Vulnerabilities catalog data for a CVE.
+type KEVData struct {
+	VulnerabilityName string
+	Product           string
+	DateAdded         string
+	DueDate           string
+	KnownRansomware   string
+	RequiredAction    string
+}
+
+// EPSSData holds EPSS score data for a CVE.
+type EPSSData struct {
+	Score      float64 // 0.0–1.0 probability of exploitation in next 30 days
+	Percentile float64 // 0.0–1.0 relative rank among all CVEs
+	Date       string
+}
+
+// CVEIntel holds threat-intelligence data for a single CVE referenced in a finding.
+type CVEIntel struct {
+	CVEID string
+	KEV   *KEVData  // nil = not in CISA KEV catalog
+	EPSS  *EPSSData // nil = not in EPSS database
+}
+
+// IntelMap maps risk SyntheticId to the CVE intel collected for that finding.
+// Findings with no referenced CVEs are absent from the map.
+type IntelMap map[string][]CVEIntel
+
+// ExtractCVEs scans the risk's title, explanation, and rating explanation
+// fields for CVE-YYYY-NNNNN patterns and returns a deduplicated, uppercased list.
+func ExtractCVEs(r *types.Risk) []string {
+	seen := map[string]bool{}
+	var result []string
+
+	scan := func(s string) {
+		for _, m := range cvePattern.FindAllString(s, -1) {
+			upper := strings.ToUpper(m)
+			if !seen[upper] {
+				seen[upper] = true
+				result = append(result, upper)
+			}
+		}
+	}
+
+	scan(r.Title)
+	for _, s := range r.RiskExplanation {
+		scan(s)
+	}
+	for _, s := range r.RatingExplanation {
+		scan(s)
+	}
+
+	return result
+}
+
 // Client is a minimal GitHub Issues API client.
 type Client struct {
-	cfg    Config
-	http   *http.Client
+	cfg  Config
+	http *http.Client
 }
 
 // NewClient creates a GitHub sync client. Token is read from cfg.Token falling back to $GITHUB_TOKEN.
@@ -79,7 +138,8 @@ type SyncResult struct {
 
 // SyncFindings creates or updates GitHub Issues for each finding.
 // Findings resolved since the last sync have their issues closed.
-func (c *Client) SyncFindings(model *types.Model, mitigatedIDs []string) ([]SyncResult, error) {
+// intel provides optional KEV/EPSS enrichment keyed by SyntheticId.
+func (c *Client) SyncFindings(model *types.Model, mitigatedIDs []string, intel IntelMap) ([]SyncResult, error) {
 	// Index existing issues by threagile synthetic ID label
 	existingIssues, err := c.listThreagileIssues()
 	if err != nil {
@@ -99,7 +159,7 @@ func (c *Client) SyncFindings(model *types.Model, mitigatedIDs []string) ([]Sync
 		existing, found := existingIssues[label]
 
 		title := fmt.Sprintf("[%s] %s", strings.ToUpper(risk.Severity.String()), stripHTML(risk.Title))
-		body := formatIssueBody(risk, model)
+		body := formatIssueBody(risk, model, intel[risk.SyntheticId])
 
 		if mitigated[risk.SyntheticId] {
 			if found && existing.State == "open" {
@@ -204,7 +264,7 @@ func (c *Client) reopenIssue(number int, syntheticID string) SyncResult {
 	return SyncResult{SyntheticID: syntheticID, Action: "reopened", IssueNumber: number}
 }
 
-func formatIssueBody(r *types.Risk, model *types.Model) string {
+func formatIssueBody(r *types.Risk, model *types.Model, intel []CVEIntel) string {
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf("## Threat Finding: %s\n\n", r.CategoryId))
 	b.WriteString(fmt.Sprintf("**Severity:** %s  \n", r.Severity.String()))
@@ -215,6 +275,34 @@ func formatIssueBody(r *types.Risk, model *types.Model) string {
 	if r.MostRelevantTechnicalAssetId != "" {
 		if asset, ok := model.TechnicalAssets[r.MostRelevantTechnicalAssetId]; ok {
 			b.WriteString(fmt.Sprintf("**Most Relevant Asset:** %s  \n\n", asset.Title))
+		}
+	}
+
+	// KEV / EPSS section
+	b.WriteString("### Threat Intelligence\n\n")
+	if len(intel) == 0 {
+		b.WriteString("_No CVE IDs referenced in this finding (architectural risk pattern)._  \n")
+		b.WriteString("_To associate CVEs, add them to the finding's `risk_explanation` in the model._\n")
+	} else {
+		for _, ci := range intel {
+			b.WriteString(fmt.Sprintf("**%s**\n\n", ci.CVEID))
+
+			if ci.KEV != nil {
+				b.WriteString(fmt.Sprintf("- **KEV (CISA):** YES — %s (%s)\n", ci.KEV.VulnerabilityName, ci.KEV.Product))
+				b.WriteString(fmt.Sprintf("  - Date added: %s | Patch due: %s\n", ci.KEV.DateAdded, ci.KEV.DueDate))
+				b.WriteString(fmt.Sprintf("  - Required action: %s\n", ci.KEV.RequiredAction))
+				b.WriteString(fmt.Sprintf("  - Known ransomware use: %s\n", ci.KEV.KnownRansomware))
+			} else {
+				b.WriteString("- **KEV (CISA):** Not in known-exploited catalog\n")
+			}
+
+			if ci.EPSS != nil {
+				b.WriteString(fmt.Sprintf("- **EPSS:** %.2f%% exploitation probability (%.0fth percentile, %s)\n",
+					ci.EPSS.Score*100, ci.EPSS.Percentile*100, ci.EPSS.Date))
+			} else {
+				b.WriteString("- **EPSS:** Not in EPSS database\n")
+			}
+			b.WriteString("\n")
 		}
 	}
 

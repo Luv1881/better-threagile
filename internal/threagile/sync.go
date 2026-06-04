@@ -8,6 +8,7 @@ import (
 	"github.com/threagile/threagile/pkg/intel/cache"
 	"github.com/threagile/threagile/pkg/intel/epss"
 	"github.com/threagile/threagile/pkg/intel/kev"
+	"github.com/threagile/threagile/pkg/intel/nvd"
 	"github.com/threagile/threagile/pkg/model"
 	"github.com/threagile/threagile/pkg/risks"
 	githubsync "github.com/threagile/threagile/pkg/sync/github"
@@ -171,16 +172,22 @@ func buildIntelMap(risksBySynID map[string]*types.Risk, cacheDir string, cmd *co
 		cmd.Printf("  [intel] KEV cache unavailable: %v (run 'threagile intel refresh --source kev')\n", err)
 	}
 
-	// Batch-fetch EPSS scores for all referenced CVEs.
 	allCVEs := make([]string, 0, len(uniqueCVEs))
 	for c := range uniqueCVEs {
 		allCVEs = append(allCVEs, c)
 	}
+
+	// Batch-fetch EPSS scores.
 	epssScores, err := epss.FetchBatch(allCVEs, "")
 	if err != nil {
 		cmd.Printf("  [intel] EPSS fetch failed: %v\n", err)
 		epssScores = epss.ScoreMap{}
 	}
+
+	// Fetch NVD data (CVSS + exploit refs) — rate-limited, non-fatal.
+	cmd.Printf("  [intel] Fetching NVD data for %d CVE(s) (~%.0fs)...\n",
+		len(allCVEs), float64(len(allCVEs))*0.7)
+	nvdCVEs := nvd.FetchBatch(allCVEs, "", 0)
 
 	// Build the IntelMap.
 	intelMap := make(githubsync.IntelMap, len(cvesPerRisk))
@@ -208,6 +215,19 @@ func buildIntelMap(risksBySynID map[string]*types.Risk, cacheDir string, cmd *co
 					Percentile: score.Percentile,
 					Date:       score.Date,
 				}
+			}
+
+			if nvdCVE, ok := nvdCVEs[cveID]; ok && nvdCVE.CVSS != nil {
+				nd := &githubsync.NVDData{
+					CVSSVersion:  nvdCVE.CVSS.Version,
+					BaseScore:    nvdCVE.CVSS.BaseScore,
+					Severity:     nvdCVE.CVSS.Severity,
+					VectorString: nvdCVE.CVSS.VectorString,
+				}
+				for _, ref := range nvdCVE.ExploitRefs() {
+					nd.ExploitURLs = append(nd.ExploitURLs, ref.URL)
+				}
+				ci.NVD = nd
 			}
 
 			intel = append(intel, ci)

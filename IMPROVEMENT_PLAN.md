@@ -312,6 +312,47 @@ previously vary in risk count, content, and ordering between runs of the exact s
 - **Exit:** zero packages without tests; ≥4 fuzz targets with corpora; any fuzz crashers fixed
   with regression tests; total coverage ≥ 35% (ratchet recorded).
 
+#### Phase 9 — Results (done, 2026-06-11)
+
+- 9.1 Added `pkg/input/strings_test.go` and `pkg/input/model_test.go`: cover
+  `Strings.MergeSingleton/MergeMultiline/MergeMap/MergeUniqueSlice` conflict/dedup paths, plus
+  `Model.Merge`/`Model.Load` for basic fields, conflicts, malformed YAML, nested includes,
+  feature-include glob expansion, diagram-tweak slice dedup, and tag normalization. Coverage
+  0% → 13.8%.
+- 9.2 Added `pkg/macros/macros_test.go` with a `loadFixture` helper (real model via
+  `ReadAndAnalyzeModel` against `demo/example/threagile.yaml`) and a `driveQuestions` helper
+  that scripts the question/answer flow for any `macros.Macros`. Covers macro listing/lookup,
+  `seed-tags`, `remove-unused-tags`, `seed-risk-tracking`, `discover-attack-surface`,
+  `add-vault`, and the 1023-LoC `add-build-pipeline` macro, asserting the resulting model
+  mutations. Coverage 0% → 48.0%.
+- 9.3 `pkg/common` and `pkg/docs` don't exist in this tree (nothing to test). Added
+  `pkg/examples/examples_test.go` (0% → 88.9%) and, as a bonus, `cmd/risk_demo/main_test.go`
+  (0% → 22.7%) since `cmd/risk_demo` was another previously-untested package.
+- 9.4 Added four native `go test -fuzz` targets, each with a seed corpus of valid + malformed
+  inputs: `pkg/input` (`FuzzModelUnmarshal`, model YAML), `pkg/import/terraform`
+  (`FuzzImport`), `pkg/import/openapi` (`FuzzImport`), `pkg/risks/script` (`FuzzRiskRuleParseFromData`,
+  risk-DSL rule files). Ran each for a 20s smoke (`-fuzztime=20s`); zero crashers found, so no
+  regression-test corpus entries were needed.
+- 9.5 Added `internal/threagile/config_accessors_test.go` (getters/setters round-trip on
+  `Config`), `internal/threagile/helpers_test.go` (`DefaultProgressReporter`, path helpers,
+  `severityChanged`/`hasHighOrCritical`/`hasCritical`, `wordWrap`, `checkDir`), and
+  `internal/threagile/cli_commands_test.go` (`validate`, `lint`/`lint --json`, and
+  `explain rules|macros|types`). Discovered along the way: the `--model` (and other
+  root-persistent) flags are only applied to `what.config` via the `processSystemArgs(os.Args[1:])`
+  pass during `Init()` — `isFlagOverridden` on a *subcommand* never finds root-persistent flags
+  in its own `PersistentFlags()`, so `cobra.Command.SetArgs` alone (as the existing
+  `executeCmd` test helper does) doesn't propagate `--model` to subcommands. Added
+  `newTestAppWithArgs(args...)`, which temporarily sets `os.Args` before `Init()` to mirror how
+  the production binary actually picks up these flags, rather than changing the production flag
+  plumbing (out of scope for a test-only phase). `internal/threagile` coverage 23.4% → 37.5%.
+- Repo-wide coverage (`go test ./... -cover`): 52.7% (≥ 35% target met). The only remaining
+  0%-coverage package, `cmd/script` (a manual debugging entry point with all logic inlined in
+  `main`), was given a minimal `run(scriptFilename string)` extraction plus
+  `cmd/script/main_test.go` covering the success path (default script + bundled
+  `test/parsed-model.yaml`) and a missing-file error path; 0% → 72.2%. Zero packages without
+  tests remain.
+- Verified: `go build ./...`, `go vet ./...`, full suite (1502 tests, incl. subtests) all green.
+
 ### Phase 10 — Dead code & API surface (F10)
 *Goal: shrink surface area, finish what the ad-hoc deletions started.*
 

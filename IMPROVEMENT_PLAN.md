@@ -545,6 +545,48 @@ previously vary in risk count, content, and ordering between runs of the exact s
 - **Exit:** CI blocks on lint + race + coverage ratchet; one tagged release produced end-to-end;
   a doc-vs-`--help` spot check finds no drift.
 
+#### Phase 13 — Results (13.2–13.5 done, 13.1 in progress, 2026-06-11)
+
+- 13.2 **Lint is now blocking.** Reduced `golangci-lint run ./...` from **179 issues → 0**:
+  - `--fix` auto-fixes (comment formatting, `WriteString(fmt.Sprintf)` → `Fprintf`,
+    if/else-if → switch, redundant slicing) across ~10 files, all reviewed.
+  - ~30 targeted manual fixes: unparam signature simplifications (`wordWrap`, `repeat`,
+    `copyFile`, `makeLegendNode` 11→9 params, `dataAssetListTitleJoinOrNone`,
+    `createDataFlowId`, github `patch`), gosec G306/G301 test-file permissions → 0600/0750,
+    G703/G704 documented `//nolint` justifications, gocritic exitAfterDefer/appendAssign/
+    assignOp/elseif fixes (including two real append-aliasing bugs in
+    `unencrypted_communication_rule.go` and `macros.go`, now safe copies), staticcheck
+    SA4000/SA9003/S1039/QF1012 fixes, the Phase-12 `noctx` regression
+    (`httptest.NewRequestWithContext`), and `regexpMust` package-level
+    `regexp.MustCompile` hoists in `types/helpers.go` + `model/parse.go`.
+  - Two documented `.golangci.yml` policy decisions: gocritic `typeSwitchVar`/
+    `singleCaseSwitch`/`ifElseChain` disabled (script-DSL parsing rewrites = regression risk,
+    zero behavioral value); `gochecknoglobals` not enabled (package-level lookup
+    tables/registries are the established architecture). `max-issues-per-linter`/
+    `max-same-issues` set to 0 (no cap — every issue fails CI).
+  - `go test -race` was already in `ci.yml`; the duplicate `golangci-lint-action.yml`
+    workflow (same job as ci.yml's `lint`) was deleted.
+- 13.3 Coverage ratchet added to ci.yml: computes total from `coverage.out`, fails below
+  **52.0%** (current: **54.3%**, up from Phase 9's 52.7%; original plan floor 24.6% long
+  surpassed — ratchet recorded at the new level per "must not decrease").
+- 13.2/13.3 Fuzz smoke added to ci.yml: all four fuzz targets run 10s each
+  (`pkg/input` FuzzModelUnmarshal, openapi/terraform FuzzImport,
+  `pkg/risks/script` FuzzRiskRuleParseFromData). All verified passing locally.
+- 13.4 Release workflow added: `.goreleaser.yaml` (validated with `goreleaser check`; full
+  snapshot build of all 6 OS/arch binaries succeeded locally) builds linux/darwin/windows ×
+  amd64/arm64 archives with license/templates/schema/example models, multi-arch Docker
+  images to `ghcr.io/threagile/threagile` via new `Dockerfile.goreleaser`.
+  `.github/workflows/release.yml` triggers on `v*` tags with a **security-gate job**
+  (build/vet/race-tests/golangci-lint/gosec) that must pass before goreleaser runs.
+  No tag has been pushed yet — the end-to-end tagged release remains to be exercised.
+- 13.5 `docs/releases.md` refreshed with the tag-driven release process.
+- 13.1 **In progress, not finished.** Spot-checked `docs/commands.md` against the built
+  binary's `--help`: all 30 commands present and correctly described (verified `import`,
+  `import-model`, `lsp` subtrees). Remaining: `flags.md`, `config.md`, `methodologies.md`,
+  the other 15 docs files, `README.md`, `SKILL.md`.
+- Verified at phase boundary: `go build` / `go vet` clean, `golangci-lint` **0 issues**,
+  **1503 tests pass under `-race`** in 30 packages, coverage **54.3%**.
+
 ---
 
 ## 5. Cross-cutting practices (apply throughout)
@@ -586,3 +628,114 @@ previously vary in risk count, content, and ordering between runs of the exact s
 Phase 4 is non-negotiable first — completed work is currently one bad command away from loss.
 Phases 5–6 unlock everything after them. Phases 8 and 12 are the two with real external risk
 reduction (abandoned PDF engine under the flagship report; unhardened HTTP server).
+
+---
+
+## 8. v3 roadmap — toward the ultimate threat-model-as-code platform
+
+> Added 2026-06-11 after a full audit of the post-Phase-13 tree (build/vet/lint clean,
+> 1503 race-clean tests, 54.3% coverage). Section 8.1 lists **defects found**; 8.2 lists
+> **performance headroom**; 8.3 is the **strategic feature roadmap**, sequenced the way a
+> platform owner would fund it: trust the engine first, meet developers where they live,
+> then own the enterprise workflow.
+
+### 8.1 Defects & debt found in the audit (fix before new features)
+
+| # | Finding | Severity |
+|---|---------|----------|
+| D1 | **`Dockerfile` builds the wrong code.** Stage 1 does `git clone https://github.com/threagile/threagile.git` — the image built from this repo contains *upstream* Threagile, none of this fork's work. Replace with `COPY . .` of the local build context (the new `Dockerfile.goreleaser` already does this correctly for releases). | **High** |
+| D2 | **Unpinned GitHub Action**: `securego/gosec@master` in `gosec-analysis.yml` and `release.yml` — a mutable ref in the *release security gate* is a supply-chain hole. Pin all third-party actions to commit SHAs. | High |
+| D3 | `pkg/risks/quant` (FAIR Monte-Carlo ALE simulation) is implemented and tested but **wired to no command** — flagged in Phase 10, still dead weight. Either ship it (see R1) or delete it. | Medium |
+| D4 | Phase 5b hygiene never closed: **77 TODO/FIXME/HACK**, **198 `_ =` ignored errors** (many justified Close() discards, never re-audited), **52 nolint/#nosec** suppressions. | Medium |
+| D5 | 13.1 docs reconciliation incomplete (see Phase 13 results). | Medium |
+| D6 | `internal/threagile` coverage is 37.5% — the CLI wiring layer is still the least-tested code in the repo. | Medium |
+| D7 | One tagged release has never been exercised end-to-end (exit criterion of Phase 13 still open). | Low |
+
+### 8.2 Performance headroom (measured or strongly suspected)
+
+| # | Item | Evidence |
+|---|------|----------|
+| P1 | **Excel column-width pass**: 56% of `RisksExcelReport` CPU is `excelize.GetCols` re-decoding written XML for auto-fit. Fix: compute widths from `riskItems` before writing. Profiled in Phase 11, deliberately deferred. | pprof, Phase 11 |
+| P2 | **`watch` re-analyzes from scratch** on every save. Incremental analysis — hash the model map, skip rules whose inputs didn't change, reuse the Phase-11 shared model map across iterations — would make watch near-instant on large models. | design gap |
+| P3 | **Report rendering is sequential** per format (PDF, adoc, Excel, JSON, Markdown are independent given the analyzed model). A format-level errgroup fan-out is low-risk now that Phase 6 goldens lock the outputs. | design gap |
+| P4 | Diagram generation shells out to Graphviz per diagram, serially; the two diagrams could render concurrently and dot output could be cached by model-graph hash. | design gap |
+| P5 | `types.Model` is round-tripped through YAML to build the script-rule map (Phase 11 made it once-per-run). A direct struct→map reflection walk would eliminate the remaining ~marshal cost for the biggest models. | pprof, Phase 11 |
+
+### 8.3 Strategic feature roadmap
+
+**Theme A — Trust the numbers (quantification & calibration)**
+
+- R1 **`threagile quantify`**: wire `pkg/risks/quant` into the CLI. Per-risk FAIR estimates
+  (already on the model schema) → Monte-Carlo ALE distributions, loss-exceedance curves in
+  the PDF/adoc reports, portfolio-level aggregate. `calibrate` already fits priors — close
+  the loop so calibration output feeds quantification input. This is the single highest-value
+  unshipped feature: the engine exists, tested, today.
+- R2 **Risk-acceptance workflow with expiry**: `accepted-until: 2026-12-31` +
+  `accepted-by:`/`justification:` on risk-tracking entries; `analyze`/`validate` fail CI when
+  an acceptance expires. Acceptance without expiry is how threat models rot — this is the
+  governance feature auditors actually ask for.
+- R3 **Severity-profile inheritance**: org-level `severity-profile.yaml` distributed as a
+  signed rule pack so business units share one risk appetite (builds on `profile-check` and
+  the existing Ed25519 pack signing).
+
+**Theme B — Meet developers in the PR (CI-native outputs)**
+
+- R4 **SARIF output** (`--risks-sarif`): risks become GitHub/GitLab code-scanning alerts with
+  locations pointing at the model YAML lines. One output writer; instant native UI in every
+  major forge. Highest leverage/effort ratio in this list.
+- R5 **PR-bot mode**: `threagile diff --format=markdown` + `generate-ci` templates that post
+  the risk delta as a PR comment and set a commit status. The `diff` engine exists; this is
+  packaging.
+- R6 **Policy-as-code gate**: `threagile gate --policy policy.yaml` — declarative thresholds
+  ("no new Critical", "Elevated+ must have tracking entries", "coverage of NIST 800-53 AC
+  family ≥ 80%") evaluated against the analysis result; exit code drives CI. Subsumes the
+  current ad-hoc severity flags.
+
+**Theme C — Model from reality (importers & SBOM)**
+
+- R7 **Kubernetes/Helm importer**: manifests → technical assets, services → communication
+  links, namespaces → trust boundaries. The terraform/openapi importer framework
+  (`pkg/import`) is the template; k8s is the most-requested missing source.
+- R8 **CloudFormation/Bicep + docker-compose importers** — same framework, breadth play.
+- R9 **SBOM ingestion (CycloneDX/SPDX)**: attach component inventories to technical assets;
+  correlate with the existing KEV/EPSS intel feeds so "this internet-facing asset runs a
+  KEV-listed component" becomes a generated risk. Accept VEX statements to suppress
+  not-affected findings. This turns the intel subsystem from reference data into live signal.
+- R10 **Live cloud discovery** (read-only AWS/Azure/GCP inventory → model skeleton) — the
+  long-pole differentiator; gate behind R7/R8 learnings.
+
+**Theme D — Threat knowledge graph**
+
+- R11 **MITRE ATT&CK / CAPEC mapping**: add `attack:`/`capec:` IDs to risk categories
+  (built-in + script DSL); export an ATT&CK Navigator layer JSON per model. Cheap (data
+  annotation, one exporter) and instantly speaks the SOC's language.
+- R12 **Attack-path analysis**: graph queries over the parsed model — shortest path from any
+  internet-facing asset to crown-jewel data assets, blast radius of a compromised asset,
+  choke-point ranking (the RAA engine already computes attacker attractiveness; paths are
+  the missing half). `threagile paths --from internet --to <data-asset>`.
+
+**Theme E — Enterprise & ecosystem**
+
+- R13 **Portfolio server**: aggregate N models in server mode — org-level dashboards, top
+  risks across teams, methodology-coverage heat map. Requires R14.
+- R14 **Server AuthN/Z**: OIDC login + per-model RBAC + audit log. The Phase-12 hardening
+  made the server safe to expose; this makes it safe to share.
+- R15 **More sync backends**: `pkg/sync` is interface-shaped but ships only GitHub. Jira and
+  Azure Boards cover most enterprises.
+- R16 **Signed, attested reports**: cosign-sign the report artifacts in the release/CI flow
+  (in-toto attestation linking report → model commit SHA) so a PDF is audit evidence, not
+  just a document.
+- R17 **Model inheritance/composition**: `extends: org-base.yaml` with override semantics —
+  org defaults (trust boundaries, shared infra, tag taxonomy) maintained once. The includes
+  engine is the foundation; inheritance adds merge-with-override.
+- R18 **Schema versioning + `threagile migrate`**: versioned model schema with automatic
+  migration, so model files survive tool upgrades — table stakes for "as code" longevity.
+- R19 **VS Code extension packaging**: the LSP server exists; publish the thin client so
+  completion/hover/diagnostics work out of the box.
+
+**Suggested sequencing** (value ÷ effort, dependencies):
+`D1–D2 (half a day, real risk)` → `R4 SARIF` → `R1 quantify` → `R2 acceptance-expiry` →
+`R5/R6 PR gate` → `R7 k8s importer` → `R11 ATT&CK` → `R9 SBOM+intel correlation` →
+`R12 attack paths` → `R15 Jira` → `R17 inheritance` → `R13/R14 portfolio+auth` → rest.
+
+---

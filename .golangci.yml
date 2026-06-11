@@ -1,0 +1,38 @@
+version: "2"
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - errcheck
+    - ineffassign
+    - unused
+    - unparam
+    - gocritic
+    - misspell
+    - bodyclose
+    - gosec
+    - gochecknoglobals
+    - noctx
+
+  settings:
+    gosec:
+      excludes:
+        - G304  # file path from variable — accepted pattern in this CLI tool
+    errcheck:
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintln
+        - fmt.Fprintf
+
+issues:
+  # start permissive: warn on everything but don't fail the build yet
+  # tighten per-phase as findings are fixed
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+        - unparam
+        - gochecknoglobals

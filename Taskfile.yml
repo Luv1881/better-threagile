@@ -80,3 +80,31 @@ tasks:
     linting:
         desc: all linting jobs
         deps: [golangci-lint, gosec]
+
+    install-tools:
+        desc: install static analysis tools (staticcheck, deadcode, golangci-lint)
+        cmds:
+          - go install honnef.co/go/tools/cmd/staticcheck@latest
+          - go install golang.org/x/tools/cmd/deadcode@latest
+          - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.11.0
+
+    staticcheck:
+        desc: run staticcheck on all packages
+        cmds:
+          - staticcheck ./...
+
+    deadcode:
+        desc: report unreachable functions and unused symbols
+        cmds:
+          - deadcode -test ./...
+
+    test-race:
+        desc: run full test suite with race detector
+        cmds:
+          - go test -race ./...
+
+    test-cover:
+        desc: run tests with coverage report, output coverage.out + summary
+        cmds:
+          - go test -race -coverprofile=coverage.out -covermode=atomic ./...
+          - go tool cover -func=coverage.out | tail -1

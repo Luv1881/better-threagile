@@ -28,46 +28,46 @@ func WriteDataFlowDiagramGraphvizDOT(parsedModel *types.Model,
 		dotContent.WriteString("  label=\"Shape legend\"; \n")
 		dotContent.WriteString("  color=\"lightgrey\"; \n")
 		dotContent.WriteString("  style=\"dashed\"; \n")
-		dotContent.WriteString(makeLegendNode("external_entity_item", "External Entity", "0", "black", "box", "solid", "filled", "2.0", VeryLightGray, "1", Black))
-		dotContent.WriteString(makeLegendNode("process_item", "Process", "0", "black", "ellipse", "solid", "filled", "2.0", VeryLightGray, "1", Black))
-		dotContent.WriteString(makeLegendNode("datastore_item", "Datastore", "0", "black", "cylinder", "solid", "filled", "2.0", VeryLightGray, "1", Black))
-		dotContent.WriteString(makeLegendNode("used_as_client_item", "Used as client", "0", "black", "octagon", "solid", "filled", "2.0", VeryLightGray, "1", Black))
+		dotContent.WriteString(makeLegendNode("external_entity_item", "External Entity", "0", "black", "box", "solid", "2.0", VeryLightGray, Black))
+		dotContent.WriteString(makeLegendNode("process_item", "Process", "0", "black", "ellipse", "solid", "2.0", VeryLightGray, Black))
+		dotContent.WriteString(makeLegendNode("datastore_item", "Datastore", "0", "black", "cylinder", "solid", "2.0", VeryLightGray, Black))
+		dotContent.WriteString(makeLegendNode("used_as_client_item", "Used as client", "0", "black", "octagon", "solid", "2.0", VeryLightGray, Black))
 		dotContent.WriteString("} \n")
 
 		dotContent.WriteString("subgraph cluster_tenant_legend { \n")
 		dotContent.WriteString("  label=\"Tenant legend\"; \n")
 		dotContent.WriteString("  color=\"lightgrey\"; \n")
 		dotContent.WriteString("  style=\"dashed\"; \n")
-		dotContent.WriteString(makeLegendNode("single_tenant", "Single tenant", "0", "black", "box", "solid", "filled", "2.0", VeryLightGray, "1", Black))
-		dotContent.WriteString(makeLegendNode("multi_tenant", "Multitenant", "1", "black", "box", "solid", "filled", "2.0", VeryLightGray, "1", Black))
+		dotContent.WriteString(makeLegendNode("single_tenant", "Single tenant", "0", "black", "box", "solid", "2.0", VeryLightGray, Black))
+		dotContent.WriteString(makeLegendNode("multi_tenant", "Multitenant", "1", "black", "box", "solid", "2.0", VeryLightGray, Black))
 		dotContent.WriteString("} \n")
 
 		dotContent.WriteString("subgraph cluster_label_legend { \n")
 		dotContent.WriteString("  label=\"Label color legend\"; \n")
 		dotContent.WriteString("  color=\"lightgrey\"; \n")
 		dotContent.WriteString("  style=\"dashed\"; \n")
-		dotContent.WriteString(makeLegendNode("mission_critical", "Mission Critical Asset", "0", Red, "box", "solid", "filled", "3.0", VeryLightGray, "1", Red))
-		dotContent.WriteString(makeLegendNode("critical", "Critical Asset", "0", Amber, "box", "solid", "filled", "3.0", VeryLightGray, "1", Amber))
-		dotContent.WriteString(makeLegendNode("other", "Important and Other Assets", "0", Black, "box", "solid", "filled", "2.0", VeryLightGray, "1", Black))
+		dotContent.WriteString(makeLegendNode("mission_critical", "Mission Critical Asset", "0", Red, "box", "solid", "3.0", VeryLightGray, Red))
+		dotContent.WriteString(makeLegendNode("critical", "Critical Asset", "0", Amber, "box", "solid", "3.0", VeryLightGray, Amber))
+		dotContent.WriteString(makeLegendNode("other", "Important and Other Assets", "0", Black, "box", "solid", "2.0", VeryLightGray, Black))
 		dotContent.WriteString("} \n")
 
 		dotContent.WriteString("subgraph cluster_border_line_legend { \n")
 		dotContent.WriteString("  label=\"Label color legend\"; \n")
 		dotContent.WriteString("  color=\"lightgrey\"; \n")
 		dotContent.WriteString("  style=\"dashed\"; \n")
-		dotContent.WriteString(makeLegendNode("dotted", "Model forgery attempt", "0", Black, "box", "dotted ", "filled", "2.0", VeryLightGray, "1", Black))
-		dotContent.WriteString(makeLegendNode("solid", "Normal", "0", Black, "box", "solid", "filled", "2.0", VeryLightGray, "1", Black))
+		dotContent.WriteString(makeLegendNode("dotted", "Model forgery attempt", "0", Black, "box", "dotted ", "2.0", VeryLightGray, Black))
+		dotContent.WriteString(makeLegendNode("solid", "Normal", "0", Black, "box", "solid", "2.0", VeryLightGray, Black))
 		dotContent.WriteString("} \n")
 
 		dotContent.WriteString("subgraph cluster_fill_legend { \n")
 		dotContent.WriteString("  label=\"Shape fill legend (darker for physical machines, brighter for container and even more brighter for serverless\"; \n")
 		dotContent.WriteString("  color=\"lightgrey\"; \n")
 		dotContent.WriteString("  style=\"dashed\"; \n")
-		dotContent.WriteString(makeLegendNode("invalid_item", "No data processed or stored, or using unknown technology, or no communication links", "0", "black", "box", "solid", "filled", "2.0", LightPink, "1", Black))
-		dotContent.WriteString(makeLegendNode("internet", "Asset used over the internet", "0", "black", "box", "solid", "filled", "2.0", ExtremeLightBlue, "1", Black))
-		dotContent.WriteString(makeLegendNode("out_of_scope", "Out of scope", "0", "black", "box", "solid", "filled", "2.0", OutOfScopeFancy, "1", Black))
-		dotContent.WriteString(makeLegendNode("custom_developed_part", "Custom developed part", "0", "black", "box", "solid", "filled", "2.0", CustomDevelopedParts, "1", Black))
-		dotContent.WriteString(makeLegendNode("other_assets", "Other assets", "0", "black", "box", "solid", "filled", "2.0", VeryLightGray, "1", Black))
+		dotContent.WriteString(makeLegendNode("invalid_item", "No data processed or stored, or using unknown technology, or no communication links", "0", "black", "box", "solid", "2.0", LightPink, Black))
+		dotContent.WriteString(makeLegendNode("internet", "Asset used over the internet", "0", "black", "box", "solid", "2.0", ExtremeLightBlue, Black))
+		dotContent.WriteString(makeLegendNode("out_of_scope", "Out of scope", "0", "black", "box", "solid", "2.0", OutOfScopeFancy, Black))
+		dotContent.WriteString(makeLegendNode("custom_developed_part", "Custom developed part", "0", "black", "box", "solid", "2.0", CustomDevelopedParts, Black))
+		dotContent.WriteString(makeLegendNode("other_assets", "Other assets", "0", "black", "box", "solid", "2.0", VeryLightGray, Black))
 		dotContent.WriteString("} \n")
 	}
 
@@ -164,7 +164,7 @@ func WriteDataFlowDiagramGraphvizDOT(parsedModel *types.Model,
 			color, fontColor, bgColor, style, fontname := rgbHexColorTwilight(), rgbHexColorTwilight() /*"#550E0C"*/, "#FAFAFA", "dashed", "Verdana"
 			penWidth := 4.5
 			if len(trustBoundary.TrustBoundariesNested) > 0 {
-				//color, fontColor, style, fontname = Blue, Blue, "dashed", "Verdana"
+				// color, fontColor, style, fontname = Blue, Blue, "dashed", "Verdana"
 				penWidth = 5.5
 			}
 			if parsedModel.FindParentTrustBoundary(trustBoundary) != nil {
@@ -194,7 +194,7 @@ func WriteDataFlowDiagramGraphvizDOT(parsedModel *types.Model,
 			keys := trustBoundary.TechnicalAssetsInside
 			sort.Strings(keys)
 			for _, technicalAssetInside := range keys {
-				//log.Println("About to add technical asset link to trust boundary: ", technicalAssetInside)
+				// log.Println("About to add technical asset link to trust boundary: ", technicalAssetInside)
 				technicalAsset := parsedModel.TechnicalAssets[technicalAssetInside]
 				snippet.WriteString(hash(technicalAsset.Id))
 				snippet.WriteString(";\n")
@@ -202,7 +202,7 @@ func WriteDataFlowDiagramGraphvizDOT(parsedModel *types.Model,
 			keys = trustBoundary.TrustBoundariesNested
 			sort.Strings(keys)
 			for _, trustBoundaryNested := range keys {
-				//log.Println("About to add nested trust boundary to trust boundary: ", trustBoundaryNested)
+				// log.Println("About to add nested trust boundary to trust boundary: ", trustBoundaryNested)
 				trustBoundaryNested := parsedModel.TrustBoundaries[trustBoundaryNested]
 				snippet.WriteString("LINK-NEEDS-REPLACED-BY-cluster_" + hash(trustBoundaryNested.Id))
 				snippet.WriteString(";\n")
@@ -258,7 +258,7 @@ func WriteDataFlowDiagramGraphvizDOT(parsedModel *types.Model,
 		for _, dataFlow := range technicalAsset.CommunicationLinks {
 			sourceId := technicalAsset.Id
 			targetId := dataFlow.TargetId
-			//log.Println("About to add link from", sourceId, "to", targetId, "with id", dataFlow.ID)
+			// log.Println("About to add link from", sourceId, "to", targetId, "with id", dataFlow.ID)
 			var arrowStyle, arrowColor, readOrWriteHead, readOrWriteTail string
 			if dataFlow.Readonly {
 				readOrWriteHead = "empty"
@@ -316,11 +316,11 @@ func WriteDataFlowDiagramGraphvizDOT(parsedModel *types.Model,
 	return file, nil
 }
 
-func makeLegendNode(id, title, compartmentBorder, labelColor, shape, borderLineStyle, shapeStyle, borderPenWidth, shapeFillColor, shapePeripheries, shapeBorderColor string) string {
+func makeLegendNode(id, title, compartmentBorder, labelColor, shape, borderLineStyle, borderPenWidth, shapeFillColor, shapeBorderColor string) string {
 	return "  " + id + ` [
 label=<<table border="0" cellborder="` + compartmentBorder + `" cellpadding="2" cellspacing="0"><tr><td><font point-size="15" color="` + DarkBlue + `">list of technologies` + `</font><br/><font point-size="15" color="` + LightGray + `">technical asset size</font></td></tr><tr><td><b><font color="` + labelColor + `">` + encode(title) + `</font></b><br/></td></tr><tr><td>attacker attractiveness level</td></tr></table>>
-shape=` + shape + ` style="` + borderLineStyle + `,` + shapeStyle + `" penwidth="` + borderPenWidth + `" fillcolor="` + shapeFillColor + `"
-peripheries=` + shapePeripheries + `
+shape=` + shape + ` style="` + borderLineStyle + `,filled" penwidth="` + borderPenWidth + `" fillcolor="` + shapeFillColor + `"
+peripheries=1
 color="` + shapeBorderColor + "\"\n  ]; "
 }
 

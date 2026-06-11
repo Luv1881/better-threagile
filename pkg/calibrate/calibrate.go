@@ -182,7 +182,7 @@ func FormatReport(cal *Calibration) string {
 	out += fmt.Sprintf("%-50s  %8s  %9s  %12s  %10s\n",
 		"Rule ID", "Obs", "Positives", "P(exploit)", "Brier")
 	out += fmt.Sprintf("%-50s  %8s  %9s  %12s  %10s\n",
-		repeat("-", 50), repeat("-", 8), repeat("-", 9), repeat("-", 12), repeat("-", 10))
+		repeat(50), repeat(8), repeat(9), repeat(12), repeat(10))
 	for _, r := range rows {
 		out += fmt.Sprintf("%-50s  %8d  %9d  %12.4f  %10.4f\n",
 			r.id, r.stats.Observations, r.stats.Positives, r.stats.LikelihoodPrior, r.stats.BrierScore)
@@ -190,10 +190,10 @@ func FormatReport(cal *Calibration) string {
 	return out
 }
 
-func repeat(s string, n int) string {
+func repeat(n int) string {
 	result := ""
 	for range n {
-		result += s
+		result += "-"
 	}
 	return result
 }

@@ -30,11 +30,9 @@ func (adoc adocReport) technicalAssets(f *os.File) {
 		if technicalAsset.OutOfScope {
 			colorPrefix = "[OutOfScope]#"
 			suffix = "out-of-scope"
-		} else {
-			if len(types.ReduceToOnlyStillAtRisk(risksStr)) == 0 {
-				colorPrefix = ""
-				colorSuffix = ""
-			}
+		} else if len(types.ReduceToOnlyStillAtRisk(risksStr)) == 0 {
+			colorPrefix = ""
+			colorSuffix = ""
 		}
 
 		// asset title
@@ -83,8 +81,8 @@ func (adoc adocReport) technicalAssets(f *os.File) {
 		}
 
 		tagsUsedText := joinedOrNoneString(technicalAsset.Tags, "")
-		dataAssetsProcessedText := dataAssetListTitleJoinOrNone(adoc.model.DataAssetsProcessedSorted(technicalAsset), "")
-		dataAssetsStoredText := dataAssetListTitleJoinOrNone(adoc.model.DataAssetsStoredSorted(technicalAsset), "")
+		dataAssetsProcessedText := dataAssetListTitleJoinOrNone(adoc.model.DataAssetsProcessedSorted(technicalAsset))
+		dataAssetsStoredText := dataAssetListTitleJoinOrNone(adoc.model.DataAssetsStoredSorted(technicalAsset))
 		formatsAcceptedText := dataFormatTitleJoinOrNone(technicalAsset.DataFormatsAcceptedSorted(), "[GrayText]#none of the special data formats accepted#")
 
 		writeLine(f, `
@@ -124,8 +122,8 @@ func (adoc adocReport) technicalAssets(f *os.File) {
 				writeLine(f, fixBasicHtml(outgoingCommLink.Description))
 
 				tagsUsedText := joinedOrNoneString(outgoingCommLink.Tags, "")
-				dataAssetsSentText := dataAssetListTitleJoinOrNone(adoc.model.DataAssetsSentSorted(outgoingCommLink), "")
-				dataAssetsReceivedText := dataAssetListTitleJoinOrNone(adoc.model.DataAssetsReceivedSorted(outgoingCommLink), "")
+				dataAssetsSentText := dataAssetListTitleJoinOrNone(adoc.model.DataAssetsSentSorted(outgoingCommLink))
+				dataAssetsReceivedText := dataAssetListTitleJoinOrNone(adoc.model.DataAssetsReceivedSorted(outgoingCommLink))
 
 				writeLine(f, `
 [cols="h,1,h,1",frame=none,grid=none]
@@ -149,8 +147,8 @@ func (adoc adocReport) technicalAssets(f *os.File) {
 				writeLine(f, fixBasicHtml(incomingCommLink.Description))
 
 				tagsUsedText := joinedOrNoneString(incomingCommLink.Tags, "")
-				dataAssetsSentText := dataAssetListTitleJoinOrNone(adoc.model.DataAssetsSentSorted(incomingCommLink), "")
-				dataAssetsReceivedText := dataAssetListTitleJoinOrNone(adoc.model.DataAssetsReceivedSorted(incomingCommLink), "")
+				dataAssetsSentText := dataAssetListTitleJoinOrNone(adoc.model.DataAssetsSentSorted(incomingCommLink))
+				dataAssetsReceivedText := dataAssetListTitleJoinOrNone(adoc.model.DataAssetsReceivedSorted(incomingCommLink))
 
 				writeLine(f, `
 [cols="h,1,h,1",frame=none,grid=none]

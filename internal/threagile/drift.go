@@ -73,9 +73,10 @@ Exit codes:
 				cmd.Printf("+ %d NEW finding(s):\n", len(added))
 				for _, r := range added {
 					marker := "  +"
-					if r.Severity == types.CriticalSeverity {
+					switch r.Severity {
+					case types.CriticalSeverity:
 						marker = "  + [CRITICAL]"
-					} else if r.Severity == types.HighSeverity {
+					case types.HighSeverity:
 						marker = "  + [HIGH]"
 					}
 					cmd.Printf("%s [%s] %s\n", marker, r.Severity.String(), r.SyntheticId)

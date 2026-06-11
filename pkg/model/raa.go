@@ -121,24 +121,25 @@ func calculateAttackerAttractiveness(input *types.Model, techAsset *types.Techni
 		}
 	}
 
-	if techAsset.Technologies.GetAttribute(types.LoadBalancer, types.ReverseProxy) {
-		score = score / 5.5
-	} else if techAsset.Technologies.GetAttribute(types.Monitoring) {
-		score = score / 5
-	} else if techAsset.Technologies.GetAttribute(types.ContainerPlatform) {
-		score = score * 5
-	} else if techAsset.Technologies.GetAttribute(types.Vault) {
-		score = score * 2
-	} else if techAsset.Technologies.GetAttribute(types.BuildPipeline, types.SourcecodeRepository, types.ArtifactRegistry) {
-		score = score * 2
-	} else if techAsset.Technologies.GetAttribute(types.IdentityProvider, types.IdentityStoreDatabase, types.IdentityStoreLDAP) {
-		score = score * 2.5
-	} else if techAsset.Type == types.Datastore {
-		score = score * 2
+	switch {
+	case techAsset.Technologies.GetAttribute(types.LoadBalancer, types.ReverseProxy):
+		score /= 5.5
+	case techAsset.Technologies.GetAttribute(types.Monitoring):
+		score /= 5
+	case techAsset.Technologies.GetAttribute(types.ContainerPlatform):
+		score *= 5
+	case techAsset.Technologies.GetAttribute(types.Vault):
+		score *= 2
+	case techAsset.Technologies.GetAttribute(types.BuildPipeline, types.SourcecodeRepository, types.ArtifactRegistry):
+		score *= 2
+	case techAsset.Technologies.GetAttribute(types.IdentityProvider, types.IdentityStoreDatabase, types.IdentityStoreLDAP):
+		score *= 2.5
+	case techAsset.Type == types.Datastore:
+		score *= 2
 	}
 
 	if techAsset.MultiTenant {
-		score = score * 1.5
+		score *= 1.5
 	}
 
 	return score

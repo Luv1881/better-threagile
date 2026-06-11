@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -39,7 +40,7 @@ func newTestServerInstance(t *testing.T) *server {
 func ginContextWithHeader(headerName, headerValue string) (*gin.Context, *httptest.ResponseRecorder) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 	if headerName != "" {
 		req.Header.Set(headerName, headerValue)
 	}

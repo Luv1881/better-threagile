@@ -78,9 +78,9 @@ func (what *Threagile) initInit() *Threagile {
 			var sb strings.Builder
 			today := time.Now().Format("2006-01-02")
 
-			sb.WriteString(fmt.Sprintf("threagile_version: 1.0.0\n\nincludes:\n  - meta.yaml\n"))
+			sb.WriteString("threagile_version: 1.0.0\n\nincludes:\n  - meta.yaml\n")
 			for _, c := range components {
-				sb.WriteString(fmt.Sprintf("  - feature_%s.yaml\n", sanitizeID(c.name)))
+				fmt.Fprintf(&sb, "  - feature_%s.yaml\n", sanitizeID(c.name))
 			}
 			sb.WriteString("\n")
 

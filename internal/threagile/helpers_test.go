@@ -99,10 +99,10 @@ func TestHasCritical(t *testing.T) {
 
 func TestWordWrap(t *testing.T) {
 	short := "short text"
-	assert.Equal(t, short, wordWrap(short, 80, "  "))
+	assert.Equal(t, short, wordWrap(short, 80))
 
 	long := "one two three four five six seven eight nine ten"
-	wrapped := wordWrap(long, 10, "  ")
+	wrapped := wordWrap(long, 10)
 	assert.Contains(t, wrapped, "\n  ")
 
 	for _, line := range bytes.Split([]byte(wrapped), []byte("\n")) {
@@ -119,6 +119,6 @@ func TestCheckDir(t *testing.T) {
 	assert.Error(t, c.checkDir(dir+"/does-not-exist", "test"))
 
 	file := dir + "/somefile"
-	assert.NoError(t, os.WriteFile(file, []byte("x"), 0o644))
+	assert.NoError(t, os.WriteFile(file, []byte("x"), 0o600))
 	assert.Error(t, c.checkDir(file, "test"))
 }

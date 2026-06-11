@@ -31,7 +31,9 @@ func TestHashSHA256_DifferentInputs(t *testing.T) {
 }
 
 func TestHash_Deterministic(t *testing.T) {
-	if hash("x") != hash("x") {
+	first := hash("x")
+	second := hash("x")
+	if first != second {
 		t.Error("hash is not deterministic")
 	}
 }

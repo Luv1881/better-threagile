@@ -43,7 +43,7 @@ var UsageTypeDescription = [...]TypeDescription{
 
 func (what Usage) String() string {
 	// NOTE: maintain list also in schema.json for validation in IDEs
-	//return [...]string{"business", "devops"}[what]
+	// return [...]string{"business", "devops"}[what]
 	return UsageTypeDescription[what].Name
 }
 

@@ -225,10 +225,7 @@ func TestSyncFindings_DryRun_NoHTTPCalls(t *testing.T) {
 		t.Fatalf("SyncFindings dry-run: %v", err)
 	}
 	_ = results
-	if called {
-		// The list call is OK; what we ensure is no CREATE call was made
-		// (the handler above doesn't distinguish method so just check results)
-	}
+	_ = called
 	for _, r := range results {
 		if r.Action != "dry-run-create" && r.Action != "skipped" {
 			t.Errorf("unexpected dry-run action %q for %q", r.Action, r.SyntheticID)

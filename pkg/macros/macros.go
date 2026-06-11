@@ -47,7 +47,7 @@ func ListCustomMacros() []Macros {
 func GetMacroByID(id string) (Macros, error) {
 	builtinMacros := ListBuiltInMacros()
 	customMacros := ListCustomMacros()
-	allMacros := append(builtinMacros, customMacros...)
+	allMacros := append(append([]Macros{}, builtinMacros...), customMacros...)
 	for _, macro := range allMacros {
 		if macro.GetMacroDetails().ID == id {
 			return macro, nil

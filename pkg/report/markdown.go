@@ -17,10 +17,10 @@ func MarkdownReport(model *types.Model) string {
 	var b strings.Builder
 
 	b.WriteString("# Threat Model Report\n\n")
-	b.WriteString(fmt.Sprintf("**Model:** %s  \n", model.Title))
-	b.WriteString(fmt.Sprintf("**Generated:** %s  \n", time.Now().UTC().Format("2006-01-02 15:04 UTC")))
+	fmt.Fprintf(&b, "**Model:** %s  \n", model.Title)
+	fmt.Fprintf(&b, "**Generated:** %s  \n", time.Now().UTC().Format("2006-01-02 15:04 UTC"))
 	if model.Author != nil && model.Author.Name != "" {
-		b.WriteString(fmt.Sprintf("**Author:** %s  \n", model.Author.Name))
+		fmt.Fprintf(&b, "**Author:** %s  \n", model.Author.Name)
 	}
 	b.WriteString("\n---\n\n")
 
@@ -36,21 +36,21 @@ func MarkdownReport(model *types.Model) string {
 		b.WriteString("## Summary\n\n")
 		b.WriteString("| Severity | Count |\n|---|---|\n")
 		if byCritical > 0 {
-			b.WriteString(fmt.Sprintf("| 🔴 Critical | %d |\n", byCritical))
+			fmt.Fprintf(&b, "| 🔴 Critical | %d |\n", byCritical)
 		}
 		if byHigh > 0 {
-			b.WriteString(fmt.Sprintf("| 🟠 High | %d |\n", byHigh))
+			fmt.Fprintf(&b, "| 🟠 High | %d |\n", byHigh)
 		}
 		if byElevated > 0 {
-			b.WriteString(fmt.Sprintf("| 🟡 Elevated | %d |\n", byElevated))
+			fmt.Fprintf(&b, "| 🟡 Elevated | %d |\n", byElevated)
 		}
 		if byMedium > 0 {
-			b.WriteString(fmt.Sprintf("| 🔵 Medium | %d |\n", byMedium))
+			fmt.Fprintf(&b, "| 🔵 Medium | %d |\n", byMedium)
 		}
 		if byLow > 0 {
-			b.WriteString(fmt.Sprintf("| ⚪ Low | %d |\n", byLow))
+			fmt.Fprintf(&b, "| ⚪ Low | %d |\n", byLow)
 		}
-		b.WriteString(fmt.Sprintf("| **Total** | **%d** |\n\n", len(risks)))
+		fmt.Fprintf(&b, "| **Total** | **%d** |\n\n", len(risks))
 	}
 
 	// Findings by severity
@@ -61,14 +61,14 @@ func MarkdownReport(model *types.Model) string {
 		sortedRisks := sortRisksBySeverity(risks)
 		for _, r := range sortedRisks {
 			sev := strings.ToUpper(r.Severity.String())
-			b.WriteString(fmt.Sprintf("### [%s] %s\n\n", sev, stripHTML(r.Title)))
-			b.WriteString(fmt.Sprintf("- **ID:** `%s`\n", r.SyntheticId))
-			b.WriteString(fmt.Sprintf("- **Category:** `%s`\n", r.CategoryId))
-			b.WriteString(fmt.Sprintf("- **Impact:** %s\n", r.ExploitationImpact.String()))
-			b.WriteString(fmt.Sprintf("- **Likelihood:** %s\n", r.ExploitationLikelihood.String()))
+			fmt.Fprintf(&b, "### [%s] %s\n\n", sev, stripHTML(r.Title))
+			fmt.Fprintf(&b, "- **ID:** `%s`\n", r.SyntheticId)
+			fmt.Fprintf(&b, "- **Category:** `%s`\n", r.CategoryId)
+			fmt.Fprintf(&b, "- **Impact:** %s\n", r.ExploitationImpact.String())
+			fmt.Fprintf(&b, "- **Likelihood:** %s\n", r.ExploitationLikelihood.String())
 			if r.MostRelevantTechnicalAssetId != "" {
 				if asset, ok := model.TechnicalAssets[r.MostRelevantTechnicalAssetId]; ok {
-					b.WriteString(fmt.Sprintf("- **Asset:** %s\n", asset.Title))
+					fmt.Fprintf(&b, "- **Asset:** %s\n", asset.Title)
 				}
 			}
 			if len(r.DataBreachTechnicalAssetIDs) > 0 {
@@ -79,7 +79,7 @@ func MarkdownReport(model *types.Model) string {
 					}
 				}
 				if len(assetNames) > 0 {
-					b.WriteString(fmt.Sprintf("- **Data Breach Scope:** %s\n", strings.Join(assetNames, ", ")))
+					fmt.Fprintf(&b, "- **Data Breach Scope:** %s\n", strings.Join(assetNames, ", "))
 				}
 			}
 			b.WriteString("\n")
@@ -99,9 +99,9 @@ func MarkdownReport(model *types.Model) string {
 			if a.Internet {
 				internet = "**Yes**"
 			}
-			b.WriteString(fmt.Sprintf("| %s | %s | %s | %s | %s | %s |\n",
+			fmt.Fprintf(&b, "| %s | %s | %s | %s | %s | %s |\n",
 				a.Title, a.Type.String(), internet,
-				a.Confidentiality.String(), a.Integrity.String(), a.Availability.String()))
+				a.Confidentiality.String(), a.Integrity.String(), a.Availability.String())
 		}
 		b.WriteString("\n")
 	}
@@ -115,7 +115,7 @@ func MarkdownReport(model *types.Model) string {
 			if da.HasPii || len(da.PiiCategories) > 0 {
 				pii = "**Yes**"
 			}
-			b.WriteString(fmt.Sprintf("| %s | %s | %s |\n", da.Title, da.Confidentiality.String(), pii))
+			fmt.Fprintf(&b, "| %s | %s | %s |\n", da.Title, da.Confidentiality.String(), pii)
 		}
 		b.WriteString("\n")
 	}

@@ -301,10 +301,7 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 				}
 
 				dataFlowTitle := fmt.Sprintf("%v", commLinkTitle)
-				commLinkId, err := createDataFlowId(id, dataFlowTitle)
-				if err != nil {
-					return nil, err
-				}
+				commLinkId := createDataFlowId(id, dataFlowTitle)
 				tags, err := parsedModel.CheckTags(lowerCaseAndTrim(commLink.Tags), "communication link '"+commLinkTitle+"' of technical asset '"+title+"'")
 				if err != nil {
 					return nil, err
@@ -354,33 +351,33 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 			return nil, err
 		}
 		parsedModel.TechnicalAssets[id] = &types.TechnicalAsset{
-			Id:                      id,
-			Usage:                   usage,
-			Title:                   title, //fmt.Sprintf("%v", asset["title"]),
-			Description:             withDefault(fmt.Sprintf("%v", asset.Description), title),
-			Type:                    technicalAssetType,
-			Size:                    technicalAssetSize,
-			Technologies:            technicalAssetTechnologies,
-			Tags:                    tags,
-			Machine:                 technicalAssetMachine,
-			Internet:                asset.Internet,
-			Encryption:              encryption,
-			MultiTenant:             asset.MultiTenant,
-			Redundant:               asset.Redundant,
-			CustomDevelopedParts:    asset.CustomDevelopedParts,
-			UsedAsClientByHuman:     asset.UsedAsClientByHuman,
-			OutOfScope:              asset.OutOfScope,
-			JustificationOutOfScope: fmt.Sprintf("%v", asset.JustificationOutOfScope),
-			Owner:                   fmt.Sprintf("%v", asset.Owner),
-			Confidentiality:         confidentiality,
-			Integrity:               integrity,
-			Availability:            availability,
-			JustificationCiaRating:  fmt.Sprintf("%v", asset.JustificationCiaRating),
-			DataAssetsProcessed:     dataAssetsProcessed,
-			DataAssetsStored:        dataAssetsStored,
-			DataFormatsAccepted:     dataFormatsAccepted,
-			CommunicationLinks:      communicationLinks,
-			DiagramTweakOrder:       asset.DiagramTweakOrder,
+			Id:                             id,
+			Usage:                          usage,
+			Title:                          title, // fmt.Sprintf("%v", asset["title"]),
+			Description:                    withDefault(fmt.Sprintf("%v", asset.Description), title),
+			Type:                           technicalAssetType,
+			Size:                           technicalAssetSize,
+			Technologies:                   technicalAssetTechnologies,
+			Tags:                           tags,
+			Machine:                        technicalAssetMachine,
+			Internet:                       asset.Internet,
+			Encryption:                     encryption,
+			MultiTenant:                    asset.MultiTenant,
+			Redundant:                      asset.Redundant,
+			CustomDevelopedParts:           asset.CustomDevelopedParts,
+			UsedAsClientByHuman:            asset.UsedAsClientByHuman,
+			OutOfScope:                     asset.OutOfScope,
+			JustificationOutOfScope:        fmt.Sprintf("%v", asset.JustificationOutOfScope),
+			Owner:                          fmt.Sprintf("%v", asset.Owner),
+			Confidentiality:                confidentiality,
+			Integrity:                      integrity,
+			Availability:                   availability,
+			JustificationCiaRating:         fmt.Sprintf("%v", asset.JustificationCiaRating),
+			DataAssetsProcessed:            dataAssetsProcessed,
+			DataAssetsStored:               dataAssetsStored,
+			DataFormatsAccepted:            dataFormatsAccepted,
+			CommunicationLinks:             communicationLinks,
+			DiagramTweakOrder:              asset.DiagramTweakOrder,
 			IsPiiProcessor:                 asset.IsPiiProcessor,
 			IsPiiController:                asset.IsPiiController,
 			DataMinimisation:               asset.DataMinimisation,
@@ -479,7 +476,7 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 		}
 		trustBoundary := &types.TrustBoundary{
 			Id:                    id,
-			Title:                 title, //fmt.Sprintf("%v", boundary["title"]),
+			Title:                 title, // fmt.Sprintf("%v", boundary["title"]),
 			Description:           withDefault(fmt.Sprintf("%v", boundary.Description), title),
 			Type:                  trustBoundaryType,
 			Tags:                  tags,
@@ -527,7 +524,7 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 		}
 		sharedRuntime := &types.SharedRuntime{
 			Id:                     id,
-			Title:                  title, //fmt.Sprintf("%v", boundary["title"]),
+			Title:                  title, // fmt.Sprintf("%v", boundary["title"]),
 			Description:            withDefault(fmt.Sprintf("%v", inputRuntime.Description), title),
 			Tags:                   tags,
 			TechnicalAssetsRunning: technicalAssetsRunning,
@@ -625,7 +622,7 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 		}
 
 		// NOW THE INDIVIDUAL RISK INSTANCES:
-		//individualRiskInstances := make([]model.Risk, 0)
+		// individualRiskInstances := make([]model.Risk, 0)
 		if customRiskCategoryCategory.RisksIdentified != nil { // TODO: also add syntax checks of input YAML when linked asset is not found or when synthetic-id is already used...
 			for title, individualRiskInstance := range customRiskCategoryCategory.RisksIdentified {
 				var mostRelevantDataAssetId, mostRelevantTechnicalAssetId, mostRelevantCommunicationLinkId, mostRelevantTrustBoundaryId, mostRelevantSharedRuntimeId string
@@ -830,12 +827,10 @@ func checkIdSyntax(id string) error {
 	return nil
 }
 
-func createDataFlowId(sourceAssetId, title string) (string, error) {
-	reg, err := regexp.Compile("[^A-Za-z0-9]+")
-	if err != nil {
-		return "", err
-	}
-	return sourceAssetId + ">" + strings.Trim(reg.ReplaceAllString(strings.ToLower(title), "-"), "- "), nil
+var dataFlowIDSanitizer = regexp.MustCompile("[^A-Za-z0-9]+")
+
+func createDataFlowId(sourceAssetId, title string) string {
+	return sourceAssetId + ">" + strings.Trim(dataFlowIDSanitizer.ReplaceAllString(strings.ToLower(title), "-"), "- ")
 }
 
 func createSyntheticId(categoryId string,

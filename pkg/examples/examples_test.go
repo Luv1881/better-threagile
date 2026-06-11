@@ -13,7 +13,7 @@ func TestCreateExampleModelFile(t *testing.T) {
 	appFolder := t.TempDir()
 	outputDir := t.TempDir()
 
-	require.NoError(t, os.WriteFile(filepath.Join(appFolder, "threagile-example-model.yaml"), []byte("title: example"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(appFolder, "threagile-example-model.yaml"), []byte("title: example"), 0o600))
 
 	err := CreateExampleModelFile(appFolder, outputDir, "input.yaml")
 	require.NoError(t, err)
@@ -27,7 +27,7 @@ func TestCreateExampleModelFile_FallbackToInputFile(t *testing.T) {
 	appFolder := t.TempDir()
 	outputDir := t.TempDir()
 
-	require.NoError(t, os.WriteFile(filepath.Join(appFolder, "input.yaml"), []byte("title: fallback"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(appFolder, "input.yaml"), []byte("title: fallback"), 0o600))
 
 	err := CreateExampleModelFile(appFolder, outputDir, "input.yaml")
 	require.NoError(t, err)
@@ -49,7 +49,7 @@ func TestCreateStubModelFile(t *testing.T) {
 	appFolder := t.TempDir()
 	outputDir := t.TempDir()
 
-	require.NoError(t, os.WriteFile(filepath.Join(appFolder, "threagile-stub-model.yaml"), []byte("title: stub"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(appFolder, "threagile-stub-model.yaml"), []byte("title: stub"), 0o600))
 
 	err := CreateStubModelFile(appFolder, outputDir, "input.yaml")
 	require.NoError(t, err)
@@ -63,7 +63,7 @@ func TestCreateStubModelFile_FallbackToInputFile(t *testing.T) {
 	appFolder := t.TempDir()
 	outputDir := t.TempDir()
 
-	require.NoError(t, os.WriteFile(filepath.Join(appFolder, "input.yaml"), []byte("title: fallback"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(appFolder, "input.yaml"), []byte("title: fallback"), 0o600))
 
 	err := CreateStubModelFile(appFolder, outputDir, "input.yaml")
 	require.NoError(t, err)
@@ -77,8 +77,8 @@ func TestCreateEditingSupportFiles(t *testing.T) {
 	appFolder := t.TempDir()
 	outputDir := t.TempDir()
 
-	require.NoError(t, os.WriteFile(filepath.Join(appFolder, "schema.json"), []byte("{}"), 0o644))
-	require.NoError(t, os.WriteFile(filepath.Join(appFolder, "live-templates.txt"), []byte("templates"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(appFolder, "schema.json"), []byte("{}"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(appFolder, "live-templates.txt"), []byte("templates"), 0o600))
 
 	err := CreateEditingSupportFiles(appFolder, outputDir)
 	require.NoError(t, err)

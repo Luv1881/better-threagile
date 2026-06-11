@@ -97,7 +97,7 @@ func (r *pdfReporter) WriteReportPDF(reportFilename string,
 	r.createAssignmentByFunction(model)
 	r.createRAA(model, introTextRAA)
 	r.embedDataRiskMapping(dataAssetDiagramFilenamePNG, tempFolder)
-	//createDataRiskQuickWins()
+	// createDataRiskQuickWins()
 	r.createOutOfScopeAssets(model)
 	r.createModelFailures(model)
 	r.createQuestions(model)
@@ -136,7 +136,7 @@ func (r *pdfReporter) createPdfAndInitMetadata(model *types.Model) {
 		r.addBreadcrumb(model)
 		r.pdf.SetFont("Helvetica", "", 10)
 		r.pdf.SetTextColor(127, 127, 127)
-		r.pdf.Text(8.6, 284, "Threat Model Report via Threagile") //: "+parsedModel.Title)
+		r.pdf.Text(8.6, 284, "Threat Model Report via Threagile") // : "+parsedModel.Title)
 		r.pdf.Link(8.4, 281, 54.6, 4, r.homeLink)
 		r.pageNo++
 		text := "Page " + strconv.Itoa(r.pageNo)

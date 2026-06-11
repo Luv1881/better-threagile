@@ -9,7 +9,14 @@ import (
 // nRisksPerCat risks. Half of each category's risks are still-at-risk.
 // nTracked risks have tracking entries so GeneratedRisksByCategoryWithCurrentStatus
 // must merge them.
-func buildBenchModel(nCategories, nRisksPerCat, nTracked int) *Model {
+const (
+	benchCategories  = 50
+	benchRisksPerCat = 20
+)
+
+func buildBenchModel(nTracked int) *Model {
+	nCategories := benchCategories
+	nRisksPerCat := benchRisksPerCat
 	m := &Model{
 		GeneratedRisksByCategory: make(map[string][]*Risk, nCategories),
 		RiskTracking:             make(map[string]*RiskTracking, nTracked),
@@ -48,7 +55,7 @@ func buildBenchModel(nCategories, nRisksPerCat, nTracked int) *Model {
 }
 
 func BenchmarkSortedRiskCategories(b *testing.B) {
-	m := buildBenchModel(50, 20, 0)
+	m := buildBenchModel(0)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = m.SortedRiskCategories()
@@ -57,7 +64,7 @@ func BenchmarkSortedRiskCategories(b *testing.B) {
 
 func BenchmarkGeneratedRisksByCategoryWithCurrentStatus_FirstCall(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		m := buildBenchModel(50, 20, 100)
+		m := buildBenchModel(100)
 		b.StartTimer()
 		_ = m.GeneratedRisksByCategoryWithCurrentStatus()
 		b.StopTimer()
@@ -65,7 +72,7 @@ func BenchmarkGeneratedRisksByCategoryWithCurrentStatus_FirstCall(b *testing.B) 
 }
 
 func BenchmarkGeneratedRisksByCategoryWithCurrentStatus_SubsequentCalls(b *testing.B) {
-	m := buildBenchModel(50, 20, 100)
+	m := buildBenchModel(100)
 	// warm up — first call applies tracking
 	_ = m.GeneratedRisksByCategoryWithCurrentStatus()
 	b.ResetTimer()
@@ -75,7 +82,7 @@ func BenchmarkGeneratedRisksByCategoryWithCurrentStatus_SubsequentCalls(b *testi
 }
 
 func BenchmarkSortedRisksOfCategory(b *testing.B) {
-	m := buildBenchModel(50, 20, 0)
+	m := buildBenchModel(0)
 	cats := m.SortedRiskCategories()
 	cat := cats[0]
 	b.ResetTimer()
@@ -85,7 +92,7 @@ func BenchmarkSortedRisksOfCategory(b *testing.B) {
 }
 
 func BenchmarkIdentifiedDataBreachProbability(b *testing.B) {
-	m := buildBenchModel(50, 20, 0)
+	m := buildBenchModel(0)
 	da := &DataAsset{Id: "da-0"}
 	m.DataAssets["da-0"] = da
 	// Wire a few risks to reference the data asset so the function has work to do
@@ -109,7 +116,7 @@ func BenchmarkIdentifiedDataBreachProbability(b *testing.B) {
 }
 
 func BenchmarkAllRisks(b *testing.B) {
-	m := buildBenchModel(50, 20, 0)
+	m := buildBenchModel(0)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = m.AllRisks()

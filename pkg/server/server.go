@@ -219,14 +219,14 @@ func RunServer(config serverConfigReader, builtinRiskRules types.RiskRules) {
 	router.PUT("/models/:model-id/cover", s.setCover)
 	router.GET("/models/:model-id/overview", s.getOverview)
 	router.PUT("/models/:model-id/overview", s.setOverview)
-	//router.GET("/models/:model-id/questions", getQuestions)
-	//router.PUT("/models/:model-id/questions", setQuestions)
+	// router.GET("/models/:model-id/questions", getQuestions)
+	// router.PUT("/models/:model-id/questions", setQuestions)
 	router.GET("/models/:model-id/abuse-cases", s.getAbuseCases)
 	router.PUT("/models/:model-id/abuse-cases", s.setAbuseCases)
 	router.GET("/models/:model-id/security-requirements", s.getSecurityRequirements)
 	router.PUT("/models/:model-id/security-requirements", s.setSecurityRequirements)
-	//router.GET("/models/:model-id/tags", getTags)
-	//router.PUT("/models/:model-id/tags", setTags)
+	// router.GET("/models/:model-id/tags", getTags)
+	// router.PUT("/models/:model-id/tags", setTags)
 
 	router.GET("/models/:model-id/data-assets", s.getDataAssets)
 	router.POST("/models/:model-id/data-assets", s.createNewDataAsset)
@@ -272,9 +272,10 @@ func RunServer(config serverConfigReader, builtinRiskRules types.RiskRules) {
 
 	log.Println("Threagile is shutting down...")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	if err := httpServer.Shutdown(ctx); err != nil {
-		log.Fatalf("server: graceful shutdown failed: %v", err)
+	shutdownErr := httpServer.Shutdown(ctx)
+	cancel()
+	if shutdownErr != nil {
+		log.Fatalf("server: graceful shutdown failed: %v", shutdownErr)
 	}
 }
 

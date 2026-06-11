@@ -14,7 +14,7 @@ func (m *AddBuildPipeline) Execute(modelInput *input.Model, model *types.Model) 
 	return message, validResult, err
 }
 
-func (m *AddBuildPipeline) applyChange(modelInput *input.Model, parsedModel *types.Model, changeLogCollector *[]string, dryRun bool) (message string, validResult bool, err error) {
+func (m *AddBuildPipeline) applyChange(modelInput *input.Model, parsedModel *types.Model, changeLogCollector *[]string, dryRun bool) (message string, validResult bool, err error) { //nolint:unparam // signature mirrors other macro applyChange implementations
 	var serverSideTechAssets = make([]string, 0)
 	// ################################################
 	modelInput.AddTagToModelInput(m.macroState["source-repository"][0], dryRun, changeLogCollector)

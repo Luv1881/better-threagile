@@ -60,7 +60,7 @@ func (r *UnencryptedCommunicationRule) GenerateRisks(input *types.Model) ([]*typ
 			}
 
 			transferringAuthData := dataFlow.Authentication != types.NoneAuthentication
-			dataAssetIds := append(dataFlow.DataAssetsSent, dataFlow.DataAssetsReceived...)
+			dataAssetIds := append(append([]string{}, dataFlow.DataAssetsSent...), dataFlow.DataAssetsReceived...)
 			slices.Sort(dataAssetIds) // ensure deterministic order
 			for _, sentDataAsset := range dataAssetIds {
 				dataAsset := input.DataAssets[sentDataAsset]

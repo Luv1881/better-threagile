@@ -95,11 +95,11 @@ func (what *Threagile) explainRisk(cmd *cobra.Command, args []string) error {
 				cmd.Printf("ASVS:       %s\n", category.ASVS)
 			}
 			cmd.Println()
-			cmd.Printf("Description:\n  %s\n\n", wordWrap(category.Description, 78, "  "))
-			cmd.Printf("Impact:\n  %s\n\n", wordWrap(category.Impact, 78, "  "))
-			cmd.Printf("Mitigation:\n  %s\n\n", wordWrap(category.Mitigation, 78, "  "))
+			cmd.Printf("Description:\n  %s\n\n", wordWrap(category.Description, 78))
+			cmd.Printf("Impact:\n  %s\n\n", wordWrap(category.Impact, 78))
+			cmd.Printf("Mitigation:\n  %s\n\n", wordWrap(category.Mitigation, 78))
 			if category.FalsePositives != "" {
-				cmd.Printf("False Positives:\n  %s\n\n", wordWrap(category.FalsePositives, 78, "  "))
+				cmd.Printf("False Positives:\n  %s\n\n", wordWrap(category.FalsePositives, 78))
 			}
 			if category.CheatSheet != "" {
 				cmd.Printf("Cheat Sheet: %s\n\n", category.CheatSheet)
@@ -136,7 +136,8 @@ func (what *Threagile) explainRisk(cmd *cobra.Command, args []string) error {
 }
 
 // wordWrap wraps text at maxWidth, indenting continuation lines with indent.
-func wordWrap(text string, maxWidth int, indent string) string {
+func wordWrap(text string, maxWidth int) string {
+	const indent = "  "
 	if len(text) <= maxWidth {
 		return text
 	}

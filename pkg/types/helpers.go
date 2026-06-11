@@ -9,9 +9,10 @@ import (
 	"strings"
 )
 
+var idSanitizer = regexp.MustCompile("[^A-Za-z0-9]+")
+
 func MakeID(val string) string {
-	reg, _ := regexp.Compile("[^A-Za-z0-9]+")
-	return strings.Trim(reg.ReplaceAllString(strings.ToLower(val), "-"), "- ")
+	return strings.Trim(idSanitizer.ReplaceAllString(strings.ToLower(val), "-"), "- ")
 }
 
 func contains(a []string, x string) bool {

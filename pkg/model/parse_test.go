@@ -44,15 +44,15 @@ func TestInferConfidentiality_ExpectHighestConfidentiality(t *testing.T) {
 	daPublicConfidentiality := createDataAsset(types.Public, types.Archive, types.Archive)
 	da[daPublicConfidentiality.ID] = daPublicConfidentiality
 
-	taWithConfidentialConfidentialityDataAsset := createTechnicalAsset(types.Internal, types.Operational, types.Operational)
+	taWithConfidentialConfidentialityDataAsset := createTechnicalAsset()
 	taWithConfidentialConfidentialityDataAsset.DataAssetsProcessed = append(taWithConfidentialConfidentialityDataAsset.DataAssetsProcessed, daConfidentialConfidentiality.ID)
 	ta[taWithConfidentialConfidentialityDataAsset.ID] = taWithConfidentialConfidentialityDataAsset
 
-	taWithRestrictedConfidentialityDataAsset := createTechnicalAsset(types.Internal, types.Operational, types.Operational)
+	taWithRestrictedConfidentialityDataAsset := createTechnicalAsset()
 	taWithRestrictedConfidentialityDataAsset.DataAssetsProcessed = append(taWithRestrictedConfidentialityDataAsset.DataAssetsProcessed, daRestrictedConfidentiality.ID)
 	ta[taWithRestrictedConfidentialityDataAsset.ID] = taWithRestrictedConfidentialityDataAsset
 
-	taWithPublicConfidentialityDataAsset := createTechnicalAsset(types.Internal, types.Operational, types.Operational)
+	taWithPublicConfidentialityDataAsset := createTechnicalAsset()
 	taWithPublicConfidentialityDataAsset.DataAssetsProcessed = append(taWithPublicConfidentialityDataAsset.DataAssetsProcessed, daPublicConfidentiality.ID)
 	ta[taWithPublicConfidentialityDataAsset.ID] = taWithPublicConfidentialityDataAsset
 
@@ -87,15 +87,15 @@ func TestInferIntegrity_ExpectHighestIntegrity(t *testing.T) {
 	daArchiveIntegrity := createDataAsset(types.Public, types.Archive, types.Archive)
 	da[daArchiveIntegrity.ID] = daArchiveIntegrity
 
-	taWithCriticalIntegrityDataAsset := createTechnicalAsset(types.Internal, types.Operational, types.Operational)
+	taWithCriticalIntegrityDataAsset := createTechnicalAsset()
 	taWithCriticalIntegrityDataAsset.DataAssetsProcessed = append(taWithCriticalIntegrityDataAsset.DataAssetsProcessed, daCriticalIntegrity.ID)
 	ta[taWithCriticalIntegrityDataAsset.ID] = taWithCriticalIntegrityDataAsset
 
-	taWithImportantIntegrityDataAsset := createTechnicalAsset(types.Internal, types.Operational, types.Operational)
+	taWithImportantIntegrityDataAsset := createTechnicalAsset()
 	taWithImportantIntegrityDataAsset.DataAssetsProcessed = append(taWithImportantIntegrityDataAsset.DataAssetsProcessed, daImportantIntegrity.ID)
 	ta[taWithImportantIntegrityDataAsset.ID] = taWithImportantIntegrityDataAsset
 
-	taWithArchiveIntegrityDataAsset := createTechnicalAsset(types.Internal, types.Operational, types.Operational)
+	taWithArchiveIntegrityDataAsset := createTechnicalAsset()
 	taWithArchiveIntegrityDataAsset.DataAssetsProcessed = append(taWithArchiveIntegrityDataAsset.DataAssetsProcessed, daArchiveIntegrity.ID)
 	ta[taWithArchiveIntegrityDataAsset.ID] = taWithArchiveIntegrityDataAsset
 
@@ -129,15 +129,15 @@ func TestInferAvailability_ExpectHighestAvailability(t *testing.T) {
 	daArchiveAvailability := createDataAsset(types.Public, types.Archive, types.Archive)
 	da[daArchiveAvailability.ID] = daArchiveAvailability
 
-	taWithCriticalAvailabilityDataAsset := createTechnicalAsset(types.Internal, types.Operational, types.Operational)
+	taWithCriticalAvailabilityDataAsset := createTechnicalAsset()
 	taWithCriticalAvailabilityDataAsset.DataAssetsProcessed = append(taWithCriticalAvailabilityDataAsset.DataAssetsProcessed, daCriticalAvailability.ID)
 	ta[taWithCriticalAvailabilityDataAsset.ID] = taWithCriticalAvailabilityDataAsset
 
-	taWithImportantAvailabilityDataAsset := createTechnicalAsset(types.Internal, types.Operational, types.Operational)
+	taWithImportantAvailabilityDataAsset := createTechnicalAsset()
 	taWithImportantAvailabilityDataAsset.DataAssetsProcessed = append(taWithImportantAvailabilityDataAsset.DataAssetsProcessed, daImportantAvailability.ID)
 	ta[taWithImportantAvailabilityDataAsset.ID] = taWithImportantAvailabilityDataAsset
 
-	taWithArchiveAvailabilityDataAsset := createTechnicalAsset(types.Internal, types.Operational, types.Operational)
+	taWithArchiveAvailabilityDataAsset := createTechnicalAsset()
 	taWithArchiveAvailabilityDataAsset.DataAssetsProcessed = append(taWithArchiveAvailabilityDataAsset.DataAssetsProcessed, daArchiveAvailability.ID)
 	ta[taWithArchiveAvailabilityDataAsset.ID] = taWithArchiveAvailabilityDataAsset
 
@@ -159,7 +159,7 @@ func createInputModel(technicalAssets map[string]input.TechnicalAsset, dataAsset
 	}
 }
 
-func createTechnicalAsset(confidentiality types.Confidentiality, integrity types.Criticality, availability types.Criticality) input.TechnicalAsset {
+func createTechnicalAsset() input.TechnicalAsset {
 	return input.TechnicalAsset{
 		ID: uuid.New().String(),
 		// those values are required to bypass validation
@@ -169,9 +169,9 @@ func createTechnicalAsset(confidentiality types.Confidentiality, integrity types
 		Technology:      "unknown-technology",
 		Encryption:      "none",
 		Machine:         "virtual",
-		Confidentiality: confidentiality.String(),
-		Integrity:       integrity.String(),
-		Availability:    availability.String(),
+		Confidentiality: types.Internal.String(),
+		Integrity:       types.Operational.String(),
+		Availability:    types.Operational.String(),
 	}
 }
 

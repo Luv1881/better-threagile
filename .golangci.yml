@@ -12,8 +12,13 @@ linters:
     - misspell
     - bodyclose
     - gosec
-    - gochecknoglobals
     - noctx
+  # gochecknoglobals is intentionally not enabled: the codebase relies on
+  # package-level lookup tables and registries as a deliberate, established
+  # pattern (type-description arrays in pkg/types, rule-pack registries in
+  # pkg/risks, shared HTTP clients, decompression-bomb limits, etc.). Forcing
+  # these into function-local scope or config structs would be a large,
+  # purely mechanical refactor with no behavioral benefit.
 
   settings:
     gosec:
@@ -24,10 +29,25 @@ linters:
         - fmt.Fprint
         - fmt.Fprintln
         - fmt.Fprintf
+    gocritic:
+      disabled-checks:
+        # The risk-script DSL (pkg/risks/script/...) parses `any` payloads via
+        # `switch x.(type) { case T: ... x.(T) ... }` repeated across ~10 expression/
+        # statement types. gocritic's suggested `switch v := x.(type)` rewrite touches
+        # delicate parsing code for purely cosmetic gain — not worth the regression risk.
+        - typeSwitchVar
+        # Several single-case switches in the script DSL and report code exist to mirror
+        # sibling multi-case switches (same dispatch shape) or are placeholders for
+        # planned additional cases; rewriting to if-statements would reduce consistency.
+        - singleCaseSwitch
+        # Many if/else-if chains here test unrelated conditions on different
+        # receivers/types (not a single tag value), so gocritic's switch-statement
+        # rewrite would not improve readability.
+        - ifElseChain
 
 issues:
-  # start permissive: warn on everything but don't fail the build yet
-  # tighten per-phase as findings are fixed
+  # Lint is blocking in CI: any remaining issue (outside the exclusions below)
+  # fails the build.
   max-issues-per-linter: 0
   max-same-issues: 0
   exclude-rules:

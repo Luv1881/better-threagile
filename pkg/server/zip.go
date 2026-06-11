@@ -131,7 +131,7 @@ func addFileToZip(zipWriter *zip.Writer, filename string) error {
 
 	// Using FileInfoHeader() above only uses the basename of the file. If we want
 	// to preserve the folder structure we can overwrite this with the full path.
-	//header.Title = filename
+	// header.Title = filename
 
 	// Change to deflate to gain better compression
 	// see http://golang.org/pkg/archive/zip/#pkg-constants

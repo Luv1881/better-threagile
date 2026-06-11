@@ -1,6 +1,7 @@
 package report
 
 import (
+	"fmt"
 	"image"
 	"log"
 	"os"
@@ -71,11 +72,11 @@ For a full high-resolution version of this diagram please refer to the PNG image
 func imageIsWiderThanHigh(diagramFilenamePNG string) bool {
 	/* #nosec diagramFilenamePNG is not tainted (see caller restricting it to image files of model folder only) */
 	imagePath, err := os.Open(diagramFilenamePNG)
-	defer func() { _ = imagePath.Close() }()
 	if err != nil {
-		log.Fatalln("error opening image file: %w", err)
+		log.Println("error opening image file:", err)
 		return false
 	}
+	defer func() { _ = imagePath.Close() }()
 	srcImage, _, _ := image.Decode(imagePath)
 	srcDimensions := srcImage.Bounds()
 	// wider than high?
@@ -93,7 +94,7 @@ func (adoc adocReport) writeDataFlowDiagram(diagramFilenamePNG string) error {
 	adocDfdFilename := filepath.Join(adoc.imagesDir, "data-flow-diagram.png")
 	err = copyFile(diagramFilenamePNG, adocDfdFilename)
 	if err != nil {
-		log.Fatal("Could not copy file: »" + diagramFilenamePNG + "« to »" + adocDfdFilename + "«: " + err.Error())
+		return fmt.Errorf("could not copy file: »%s« to »%s«: %w", diagramFilenamePNG, adocDfdFilename, err)
 	}
 
 	landScape := imageIsWiderThanHigh(adocDfdFilename)
@@ -132,7 +133,7 @@ func (adoc adocReport) writeDataRiskMapping(dataAssetDiagramFilenamePNG string) 
 	adocDataRiskMappingFilename := filepath.Join(adoc.imagesDir, "data-asset-diagram.png")
 	err = copyFile(dataAssetDiagramFilenamePNG, adocDataRiskMappingFilename)
 	if err != nil {
-		log.Fatal("Could not copy file: »" + dataAssetDiagramFilenamePNG + "« to »" + adocDataRiskMappingFilename + "«: " + err.Error())
+		return fmt.Errorf("could not copy file: »%s« to »%s«: %w", dataAssetDiagramFilenamePNG, adocDataRiskMappingFilename, err)
 	}
 
 	landScape := imageIsWiderThanHigh(adocDataRiskMappingFilename)

@@ -72,7 +72,7 @@ func goldenCompare(t *testing.T, goldenPath string, current []byte) {
 		if mkdirErr := os.MkdirAll(filepath.Dir(goldenPath), 0o750); mkdirErr != nil {
 			t.Fatalf("mkdir %s: %v", filepath.Dir(goldenPath), mkdirErr)
 		}
-		if writeErr := os.WriteFile(goldenPath, current, 0o600); writeErr != nil {
+		if writeErr := os.WriteFile(goldenPath, current, 0o600); writeErr != nil { //nolint:gosec // goldenPath is a fixed testdata path built from constants in this file
 			t.Fatalf("write golden %s: %v", goldenPath, writeErr)
 		}
 		t.Logf("golden file updated at %s", goldenPath)
@@ -83,7 +83,7 @@ func goldenCompare(t *testing.T, goldenPath string, current []byte) {
 		if mkdirErr := os.MkdirAll(filepath.Dir(goldenPath), 0o750); mkdirErr != nil {
 			t.Fatalf("mkdir %s: %v", filepath.Dir(goldenPath), mkdirErr)
 		}
-		if writeErr := os.WriteFile(goldenPath, current, 0o600); writeErr != nil {
+		if writeErr := os.WriteFile(goldenPath, current, 0o600); writeErr != nil { //nolint:gosec // goldenPath is a fixed testdata path built from constants in this file
 			t.Fatalf("write golden %s: %v", goldenPath, writeErr)
 		}
 		t.Logf("golden file created at %s (first run)", goldenPath)

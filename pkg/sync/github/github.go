@@ -57,7 +57,7 @@ type KEVData struct {
 
 // NVDData holds NVD CVSS and exploit reference data for a CVE.
 type NVDData struct {
-	CVSSVersion  string  // "v3" or "v2"
+	CVSSVersion  string // "v3" or "v2"
 	BaseScore    float64
 	Severity     string // CRITICAL / HIGH / MEDIUM / LOW
 	VectorString string
@@ -175,9 +175,9 @@ func (c *Client) SyncFindings(model *types.Model, mitigatedIDs []string, intel I
 		existing, found := existingIssues[label]
 
 		riskIntel := intel[risk.SyntheticId]
-		sev        := CalculateSeverity(risk, model, riskIntel)
-		title      := fmt.Sprintf("[%s] %s (score: %.2f)", strings.ToUpper(sev.Label), stripHTML(risk.Title), sev.Score)
-		body       := formatIssueBody(risk, model, riskIntel)
+		sev := CalculateSeverity(risk, model, riskIntel)
+		title := fmt.Sprintf("[%s] %s (score: %.2f)", strings.ToUpper(sev.Label), stripHTML(risk.Title), sev.Score)
+		body := formatIssueBody(risk, model, riskIntel)
 
 		if mitigated[risk.SyntheticId] {
 			if found && existing.State == "open" {
@@ -263,7 +263,7 @@ func (c *Client) closeIssue(number int, syntheticID string) SyncResult {
 	payload := map[string]any{"state": "closed"}
 	data, _ := json.Marshal(payload)
 	url := fmt.Sprintf("%s/repos/%s/%s/issues/%d", baseURL, c.cfg.Owner, c.cfg.Repo, number)
-	_, err := c.patch(url, data)
+	err := c.patch(url, data)
 	if err != nil {
 		return SyncResult{SyntheticID: syntheticID, Action: "close-failed", IssueNumber: number, Error: err}
 	}
@@ -278,7 +278,7 @@ func (c *Client) reopenIssue(number int, syntheticID string) SyncResult {
 	payload := map[string]any{"state": "open"}
 	data, _ := json.Marshal(payload)
 	url := fmt.Sprintf("%s/repos/%s/%s/issues/%d", baseURL, c.cfg.Owner, c.cfg.Repo, number)
-	_, err := c.patch(url, data)
+	err := c.patch(url, data)
 	if err != nil {
 		return SyncResult{SyntheticID: syntheticID, Action: "reopen-failed", IssueNumber: number, Error: err}
 	}
@@ -439,21 +439,21 @@ func formatIssueBody(r *types.Risk, model *types.Model, intel []CVEIntel) string
 	}
 
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("## %s — %s\n\n", badge, stripHTML(r.Title)))
+	fmt.Fprintf(&b, "## %s — %s\n\n", badge, stripHTML(r.Title))
 
 	// Summary table
 	b.WriteString("| Field | Value |\n|---|---|\n")
-	b.WriteString(fmt.Sprintf("| **Adjusted Score** | `%.2f/10` |\n", sev.Score))
-	b.WriteString(fmt.Sprintf("| **Category** | `%s` |\n", r.CategoryId))
+	fmt.Fprintf(&b, "| **Adjusted Score** | `%.2f/10` |\n", sev.Score)
+	fmt.Fprintf(&b, "| **Category** | `%s` |\n", r.CategoryId)
 	if r.MostRelevantTechnicalAssetId != "" {
 		if asset, ok := model.TechnicalAssets[r.MostRelevantTechnicalAssetId]; ok {
-			b.WriteString(fmt.Sprintf("| **Affected Asset** | `%s` |\n", asset.Title))
-			b.WriteString(fmt.Sprintf("| **RAA (Attacker Attractiveness)** | `%.0f/100` |\n", asset.RAA))
+			fmt.Fprintf(&b, "| **Affected Asset** | `%s` |\n", asset.Title)
+			fmt.Fprintf(&b, "| **RAA (Attacker Attractiveness)** | `%.0f/100` |\n", asset.RAA)
 		}
 	}
-	b.WriteString(fmt.Sprintf("| **Threagile Likelihood** | `%s` |\n", r.ExploitationLikelihood))
-	b.WriteString(fmt.Sprintf("| **Threagile Impact** | `%s` |\n", r.ExploitationImpact))
-	b.WriteString(fmt.Sprintf("| **Synthetic ID** | `%s` |\n\n", r.SyntheticId))
+	fmt.Fprintf(&b, "| **Threagile Likelihood** | `%s` |\n", r.ExploitationLikelihood)
+	fmt.Fprintf(&b, "| **Threagile Impact** | `%s` |\n", r.ExploitationImpact)
+	fmt.Fprintf(&b, "| **Synthetic ID** | `%s` |\n\n", r.SyntheticId)
 
 	// Scoring breakdown
 	b.WriteString("### Severity Scoring Breakdown\n\n```\n")
@@ -466,23 +466,22 @@ func formatIssueBody(r *types.Risk, model *types.Model, intel []CVEIntel) string
 	if len(intel) > 0 {
 		b.WriteString("### CVE Intelligence\n\n")
 		for _, ci := range intel {
-			b.WriteString(fmt.Sprintf("#### %s\n\n", ci.CVEID))
+			fmt.Fprintf(&b, "#### %s\n\n", ci.CVEID)
 
 			if ci.NVD != nil && ci.NVD.BaseScore > 0 {
-				b.WriteString(fmt.Sprintf("**CVSS %s:** `%.1f` (%s) — `%s`  \n",
-					ci.NVD.CVSSVersion, ci.NVD.BaseScore, ci.NVD.Severity, ci.NVD.VectorString))
+				fmt.Fprintf(&b, "**CVSS %s:** `%.1f` (%s) — `%s`  \n",
+					ci.NVD.CVSSVersion, ci.NVD.BaseScore, ci.NVD.Severity, ci.NVD.VectorString)
 			}
 			if ci.EPSS != nil {
-				b.WriteString(fmt.Sprintf(
-					"**EPSS:** %.2f%% exploitation probability in next 30 days (%.0fth percentile, %s)  \n",
-					ci.EPSS.Score*100, ci.EPSS.Percentile*100, ci.EPSS.Date))
+				fmt.Fprintf(&b, "**EPSS:** %.2f%% exploitation probability in next 30 days (%.0fth percentile, %s)  \n",
+					ci.EPSS.Score*100, ci.EPSS.Percentile*100, ci.EPSS.Date)
 			}
 			if ci.KEV != nil {
 				b.WriteString("**KEV (CISA):** ⚠️ ACTIVELY EXPLOITED IN THE WILD  \n")
-				b.WriteString(fmt.Sprintf("- Product: %s  \n", ci.KEV.Product))
-				b.WriteString(fmt.Sprintf("- Added: %s | Patch due: %s  \n", ci.KEV.DateAdded, ci.KEV.DueDate))
-				b.WriteString(fmt.Sprintf("- Required action: %s  \n", ci.KEV.RequiredAction))
-				b.WriteString(fmt.Sprintf("- Known ransomware use: %s  \n", ci.KEV.KnownRansomware))
+				fmt.Fprintf(&b, "- Product: %s  \n", ci.KEV.Product)
+				fmt.Fprintf(&b, "- Added: %s | Patch due: %s  \n", ci.KEV.DateAdded, ci.KEV.DueDate)
+				fmt.Fprintf(&b, "- Required action: %s  \n", ci.KEV.RequiredAction)
+				fmt.Fprintf(&b, "- Known ransomware use: %s  \n", ci.KEV.KnownRansomware)
 			} else {
 				b.WriteString("**KEV (CISA):** Not in known-exploited catalog  \n")
 			}
@@ -490,17 +489,15 @@ func formatIssueBody(r *types.Risk, model *types.Model, intel []CVEIntel) string
 			if ci.NVD != nil && len(ci.NVD.ExploitURLs) > 0 {
 				b.WriteString("\n**Proof of Concept / Exploit References:**\n\n")
 				for _, u := range ci.NVD.ExploitURLs {
-					b.WriteString(fmt.Sprintf("- [%s](%s)\n", u, u))
+					fmt.Fprintf(&b, "- [%s](%s)\n", u, u)
 				}
 			} else {
 				b.WriteString("\n**PoC / Exploit:** No public exploit references in NVD  \n")
 			}
 
-			b.WriteString(fmt.Sprintf(
-				"\n🔍 [ExploitDB search for %s](https://www.exploit-db.com/search?cve=%s)"+
-					"  ·  [NVD entry](https://nvd.nist.gov/vuln/detail/%s)\n\n",
-				ci.CVEID, strings.TrimPrefix(ci.CVEID, "CVE-"), ci.CVEID,
-			))
+			fmt.Fprintf(&b, "\n🔍 [ExploitDB search for %s](https://www.exploit-db.com/search?cve=%s)"+
+				"  ·  [NVD entry](https://nvd.nist.gov/vuln/detail/%s)\n\n",
+				ci.CVEID, strings.TrimPrefix(ci.CVEID, "CVE-"), ci.CVEID)
 		}
 	} else {
 		b.WriteString("### Threat Intelligence\n\n")
@@ -532,13 +529,14 @@ func (c *Client) post(url string, body []byte) ([]byte, error) {
 	return c.do(req)
 }
 
-func (c *Client) patch(url string, body []byte) ([]byte, error) {
+func (c *Client) patch(url string, body []byte) error {
 	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewReader(body)) //nolint:noctx
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	return c.do(req)
+	_, doErr := c.do(req)
+	return doErr
 }
 
 func (c *Client) do(req *http.Request) ([]byte, error) {
@@ -546,7 +544,7 @@ func (c *Client) do(req *http.Request) ([]byte, error) {
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("User-Agent", userAgent)
 
-	resp, err := c.http.Do(req)
+	resp, err := c.http.Do(req) //nolint:gosec // requests are built against the configured GitHub API base URL, not arbitrary user input
 	if err != nil {
 		return nil, fmt.Errorf("github api: %w", err)
 	}

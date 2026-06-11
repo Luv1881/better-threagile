@@ -92,7 +92,7 @@ func (r customRiskRule) SupportedTags() []string {
 	return []string{"demo tag"}
 }
 
-func (r customRiskRule) GenerateRisks(parsedModel *types.Model) ([]*types.Risk, error) {
+func (r customRiskRule) GenerateRisks(parsedModel *types.Model) ([]*types.Risk, error) { //nolint:unparam // implements types.RiskRule
 	generatedRisks := make([]*types.Risk, 0)
 	for _, techAsset := range parsedModel.TechnicalAssets {
 		generatedRisks = append(generatedRisks, createRisk(techAsset))

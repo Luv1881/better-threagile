@@ -107,7 +107,7 @@ func (adoc adocReport) writeDefaultTheme(logoImagePath string) error {
 			logoDestPath := filepath.Join(adoc.targetDirectory, "theme", adocLogoPath)
 			err = copyFile(logoImagePath, logoDestPath)
 			if err != nil {
-				log.Fatal("Could not copy file: »" + logoImagePath + "« to »" + logoDestPath + "«: " + err.Error())
+				return fmt.Errorf("could not copy file: »%s« to »%s«: %w", logoImagePath, logoDestPath, err)
 			}
 		} else {
 			log.Println("logo image path does not exist: " + logoImagePath)
@@ -449,19 +449,19 @@ func joinedOrNoneString(strs []string, noneValue string) string {
 		noneValue = "[GrayText]#none#"
 	}
 	sort.Strings(strs)
-	singleLine := strings.Join(strs[:], ", ")
+	singleLine := strings.Join(strs, ", ")
 	if len(singleLine) == 0 {
 		singleLine = noneValue
 	}
 	return singleLine
 }
 
-func dataAssetListTitleJoinOrNone(assets []*types.DataAsset, noneValue string) string {
+func dataAssetListTitleJoinOrNone(assets []*types.DataAsset) string {
 	var dataAssetTitles []string
 	for _, dataAsset := range assets {
 		dataAssetTitles = append(dataAssetTitles, dataAsset.Title)
 	}
-	return joinedOrNoneString(dataAssetTitles, noneValue)
+	return joinedOrNoneString(dataAssetTitles, "")
 }
 
 func technicalAssetTitleOrNone(links []*types.TechnicalAsset, noneValue string) string {

@@ -188,7 +188,7 @@ func (m *AddVaultMacro) Execute(modelInput *input.Model, parsedModel *types.Mode
 	return message, validResult, err
 }
 
-func (m *AddVaultMacro) applyChange(modelInput *input.Model, parsedModel *types.Model, changeLogCollector *[]string, dryRun bool) (message string, validResult bool, err error) {
+func (m *AddVaultMacro) applyChange(modelInput *input.Model, parsedModel *types.Model, changeLogCollector *[]string, dryRun bool) (message string, validResult bool, err error) { //nolint:unparam // signature mirrors other macro applyChange implementations
 	modelInput.AddTagToModelInput(m.macroState["vault-name"][0], dryRun, changeLogCollector)
 
 	var serverSideTechAssets = make([]string, 0)

@@ -29,6 +29,23 @@ jobs:
       - name: Test (race detector + coverage)
         run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
 
+      - name: Coverage ratchet
+        run: |
+          total=$(go tool cover -func=coverage.out | tail -1 | grep -oE '[0-9]+\.[0-9]+')
+          echo "Total coverage: ${total}%"
+          floor=52.0
+          if awk -v t="$total" -v f="$floor" 'BEGIN { exit !(t < f) }'; then
+            echo "Coverage ${total}% is below the floor of ${floor}% (must not decrease)"
+            exit 1
+          fi
+
+      - name: Fuzz smoke test
+        run: |
+          go test ./pkg/input/... -run=NONE -fuzz=FuzzModelUnmarshal -fuzztime=10s
+          go test ./pkg/import/openapi/... -run=NONE -fuzz=FuzzImport -fuzztime=10s
+          go test ./pkg/import/terraform/... -run=NONE -fuzz=FuzzImport -fuzztime=10s
+          go test ./pkg/risks/script -run=NONE -fuzz=FuzzRiskRuleParseFromData -fuzztime=10s
+
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:

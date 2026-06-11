@@ -1,0 +1,63 @@
+= Threat Model Report: Some Example Application
+:title-page:
+:author: John Doe
+:author-homepage: https://www.example.com
+:email: 
+:toc:
+:toclevels: 2
+:icons: font
+:revdate: 1 July 2020
+
+include::010_ManagementSummary.adoc[leveloffset=+1]
+<<<
+include::020_ImpactIntialRisks.adoc[leveloffset=+1]
+<<<
+include::030_RiskMitigationStatus.adoc[leveloffset=+1]
+<<<
+include::035_AssetRegister.adoc[leveloffset=+1]
+<<<
+include::040_ImpactRemainingRisks.adoc[leveloffset=+1]
+<<<
+include::050_TargetDescription.adoc[leveloffset=+1]
+[page-layout=landscape]
+<<<
+include::060_DataFlowDiagram.adoc[leveloffset=+1]
+[page-layout=portrait]
+<<<
+include::070_SecurityRequirements.adoc[leveloffset=+1]
+<<<
+include::080_AbuseCases.adoc[leveloffset=+1]
+<<<
+include::090_TagListing.adoc[leveloffset=+1]
+<<<
+include::100_STRIDE.adoc[leveloffset=+1]
+<<<
+include::110_AssignmentByFunction.adoc[leveloffset=+1]
+<<<
+include::120_RAA.adoc[leveloffset=+1]
+[page-layout=landscape]
+<<<
+include::130_DataRiskMapping.adoc[leveloffset=+1]
+[page-layout=portrait]
+<<<
+include::140_OutOfScopeAssets.adoc[leveloffset=+1]
+<<<
+include::150_ModelFailures.adoc[leveloffset=+1]
+<<<
+include::160_Questions.adoc[leveloffset=+1]
+<<<
+include::170_RiskCategories.adoc[leveloffset=+1]
+<<<
+include::180_TechnicalAssets.adoc[leveloffset=+1]
+<<<
+include::190_DataAssets.adoc[leveloffset=+1]
+<<<
+include::200_TrustBoundaries.adoc[leveloffset=+1]
+<<<
+include::210_SharedRuntimes.adoc[leveloffset=+1]
+<<<
+include::220_RiskRulesChecked.adoc[leveloffset=+1]
+<<<
+include::400_AppendixRating.adoc[leveloffset=+1]
+<<<
+include::500_Disclaimer.adoc[leveloffset=+1]

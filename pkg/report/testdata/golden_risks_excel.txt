@@ -1,0 +1,2 @@
+Some Example Application: rows=67 headerCols=20
+  header: Severity | Likelihood | Impact | STRIDE | Function | CWE | Risk Category | Technical Asset | Communication Link | RAA % | Identified Risk | Action | Mitigation | Check | ID | Status | Justification | Date | Checked by | Ticket

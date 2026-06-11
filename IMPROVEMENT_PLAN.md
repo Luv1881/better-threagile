@@ -100,6 +100,59 @@ packages still at zero tests.
 - **Exit:** `errcheck` clean or every exception commented; no `fmt.Print*` left in `pkg/`;
   lint-finding count recorded and reduced.
 
+**Phase 5 — DONE for 5.1/5.2/5.3 (gosec/errcheck/noctx subset), 5.4, and 5.6. 5.5 (TODO triage)
+and the remaining 5.3 style-only suppressions deferred — see Phase 5b below.**
+
+- 5.6: `golangci-lint v2.12.2` installed to `$(go env GOPATH)/bin`; lint baseline recorded:
+  **217 → 163 issues** (54 fixed). Breakdown of what was fixed:
+  - All **12 errcheck** findings (unchecked `Close()` on response bodies, gzip/tar/zip
+    readers, file handles, fsnotify watcher) — wrapped in `defer func(){ _ = x.Close() }()`
+    or `_ = x.Close()`, the standard idiomatic pattern for non-actionable Close errors.
+  - All **4 noctx** findings — `exec.Command` → `exec.CommandContext(context.Background(), ...)`
+    in `pkg/model/runner.go`, `pkg/report/graphviz.go` (×2), `pkg/server/execute.go`.
+  - **16 of 17 gosec** findings: G306/G301 file/dir permissions tightened to 0600/0750
+    across `pkg/intel/cache`, `pkg/calibrate`, `internal/threagile/import_data.go`, and
+    several test files; G104 (unhandled `os.WriteFile` errors in profile/calibrate tests)
+    now explicitly checked; G115 (uint64→int64 PRNG seed in `pkg/risks/quant/monte_carlo.go`)
+    and G704 (test-only URL rewrite in `pkg/sync/github/github_test.go`) documented with
+    `//nolint` + reason. One G703 (path-traversal false positive on a golden-file path in
+    `pkg/report/json_test.go`) remains, deferred to Phase 5b.
+  - **1 unused** field (`questionsAnswered` in `pkg/macros/discover-attack-surface.go`) removed.
+  - **2 of 13 unparam** findings fixed (`sortByDataBreachProbability`, `ContainsExpression.evalBool`
+    — unused params renamed/annotated); 11 remain (mostly "always receives constant X" in
+    test helpers and macros — deferred, low risk/low value).
+- 5.4: `fmt.Print*` in `pkg/` reduced **86 → 62**. Fixed: 3 GitHub-sync dry-run messages,
+  2 `pkg/server` verbose-mode prints, and a swallowed-panic `fmt.Printf` in
+  `WriteReportPDF` (which was also a correctness bug — the `recover()` handler discarded
+  the panic and returned `nil`; it now returns a named `error`). Also deleted ~17 lines of
+  commented-out `fmt.Println` debug code in `pkg/macros`, `pkg/model`, `pkg/risks/builtin`.
+  **Remaining 62 are intentional**, not violations of F6: ~50 are `pkg/macros/macros.go`,
+  the interactive question/answer wizard's direct stdin/stdout UI (its actual job), and
+  ~7 are `pkg/server/progress-reporter.go`, which *is* the logger/progress-reporter
+  implementation referenced by F6 itself. F6 is considered resolved; no further action.
+- 5.1: `_ =` count went **104 → 117** — the increase is expected: many of the errcheck
+  fixes above (5.6) replaced naked `Close()`/`f.Close()` calls with explicitly-discarded
+  `_ = x.Close()`, which is the justified/idiomatic form. Re-auditing this count for new,
+  *unjustified* `_ =` is folded into Phase 5b.
+- 5.2: the 1 remaining non-test `panic()` (`pkg/server/hash.go` `xor()`) is kept — it
+  guards a programmer-error invariant (mismatched buffer lengths) and already carries a
+  comment explaining why a panic (not an error return) is correct here.
+
+**Verified after Phase 5:** `go build`/`go vet` clean, **1411 tests pass**, coverage
+unchanged at **24.6%**.
+
+#### Phase 5b — Remaining hygiene (carried forward, not yet started)
+
+- Triage the **71 TODO/FIXME/HACK** comments (5.5, untouched).
+- Audit the **43 `nolint`/`#nosec`** suppressions (up from 41 — 2 new ones added in 5.6,
+  both documented) for staleness.
+- Remaining **163 lint findings**: `gocritic` (71, mostly `QF1012`/`sprintfQuotedString`
+  style suggestions and a few more dead-comment blocks), `gochecknoglobals` (40 — mostly
+  legitimate config maps/regexes/embedded-FS vars that should be reviewed case-by-case,
+  not blanket-suppressed), `staticcheck` (40, mostly `QF1012` `WriteString(fmt.Sprintf(...))`
+  → `fmt.Fprintf(...)`), `unparam` (11), and 1 `gosec` G703 false positive. This baseline
+  feeds Phase 13.2 (lint warn → blocking).
+
 ### Phase 6 — Golden-test safety net for the report engine (N5)
 *Goal: characterization coverage for every output format, as the prerequisite for Phase 7.*
 

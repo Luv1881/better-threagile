@@ -363,6 +363,42 @@ previously vary in risk count, content, and ordering between runs of the exact s
 - 10.3 Reduce exported API surface: unexport `pkg/` symbols with no external callers.
 - **Exit:** `deadcode` clean or remaining items justified in-line; suite green.
 
+#### Phase 10 — Results (done, 2026-06-11)
+
+- 10.1 Ran `golang.org/x/tools/cmd/deadcode` (28 unreachable funcs) and
+  `staticcheck -checks U1000` (clean — everything has at least a test caller). Deleted the only
+  genuinely orphaned code: `pkg/risks/script/property/{greater-or-equal,less-or-equal}.go`
+  (two `property.Item` implementations with no constructor call anywhere, including tests other
+  than their own — `common/property.go`'s `NewHistoryEntry` only ever constructs
+  `Equal/NotEqual/Greater/Less/True/False/Blank/Value`) and their ~70 lines of dedicated tests
+  in `pkg/risks/script/property/property_test.go`.
+- The remaining 18 `deadcode` items are public API reachable only from their own package's
+  tests, not dead in the "delete" sense — each is a working, tested feature whose CLI/report
+  wiring is a separate (larger) task than this cleanup phase:
+  - `pkg/risks/quant/monte_carlo.go` (`RunMonteCarlo`, `PERTSample`, `betaSample`,
+    `gammaSample`, `modelSeedFromID`): FAIR Monte-Carlo ALE simulation (Wave 1 A.1) — types
+    (`FairEstimate`, `MonteCarloResult`) exist on the model but no command runs the simulation
+    yet.
+  - `pkg/calibrate.LoadCalibration`, `pkg/coverage.AnalyzeWithGaps`, `pkg/profile.Default`,
+    `pkg/intel/epss.{LoadCached,SaveCached}`, `pkg/intel/kev.LoadOrRefresh`: symmetric
+    load/save/default counterparts to functions the CLI does call (`SaveCalibration`,
+    `Analyze`, `profile.Load`, the cache `Save` path, etc.) — kept as the natural API shape;
+    each is exercised by its package's test suite.
+  - `pkg/risks/script/common.{EmptyEvent,NewHistory,NewBlankProperty}` and
+    `pkg/risks/script/property.{NewBlank,Blank.Negate,Blank.Negated,Blank.Text}`: script-DSL
+    history/event helpers used by that package's own test suite to construct fixtures; kept as
+    they back the `Blank` property variant used by `NewHistoryEntry`.
+- 10.2 Swept for fork-divergence orphans (tarball pack loader, plugin ABI): both were already
+  removed in earlier waves (Wave 6 notes "`pkg/plugin/abi.go` ... deleted as dead code"; Phase 2
+  of v1 deleted the tarball loader). Remaining `plugin`/`tarball` hits are all the current,
+  live features (rule-rule plugin loading in `pkg/model/runner.go`, remote rule-pack fetching in
+  `pkg/risks/remote.go`). Nothing further to remove.
+- 10.3 Reduce exported API surface: skipped beyond 10.1 — `staticcheck -checks U1000` found no
+  unused exported symbols, so there's no low-risk unexport candidate list to act on without a
+  deeper (and out-of-scope) design review of `pkg/` as a public API.
+- Verified: `go build ./...`, full suite green (no test count change beyond the ~70 deleted
+  lines).
+
 ### Phase 11 — Performance (F9)
 *Goal: measure, then optimize proven hot paths.*
 

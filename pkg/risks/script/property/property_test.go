@@ -186,80 +186,6 @@ func TestLess_Path_DoesNotPanic(t *testing.T) {
 	assert.NotPanics(t, func() { l.Path() })
 }
 
-// --- GreaterOrEqual ---
-
-func TestNewGreaterOrEqual_ReturnsNonNil(t *testing.T) {
-	ge := NewGreaterOrEqual()
-	assert.NotNil(t, ge)
-}
-
-func TestGreaterOrEqual_Negated_DefaultFalse(t *testing.T) {
-	ge := NewGreaterOrEqual()
-	assert.False(t, ge.Negated())
-}
-
-func TestGreaterOrEqual_Text_Default(t *testing.T) {
-	ge := NewGreaterOrEqual()
-	assert.Equal(t, []string{"greater than or equal to"}, ge.Text())
-}
-
-func TestGreaterOrEqual_Negate_SetsNegated(t *testing.T) {
-	ge := NewGreaterOrEqual()
-	ge.Negate()
-	assert.True(t, ge.Negated())
-	assert.Equal(t, []string{"less than"}, ge.Text())
-}
-
-func TestGreaterOrEqual_DoubleNegate_RestoresOriginal(t *testing.T) {
-	ge := NewGreaterOrEqual()
-	ge.Negate()
-	ge.Negate()
-	assert.False(t, ge.Negated())
-	assert.Equal(t, []string{"greater than or equal to"}, ge.Text())
-}
-
-func TestGreaterOrEqual_Path_DoesNotPanic(t *testing.T) {
-	ge := NewGreaterOrEqual()
-	assert.NotPanics(t, func() { ge.Path() })
-}
-
-// --- LessOrEqual ---
-
-func TestNewLessOrEqual_ReturnsNonNil(t *testing.T) {
-	le := NewLessOrEqual()
-	assert.NotNil(t, le)
-}
-
-func TestLessOrEqual_Negated_DefaultFalse(t *testing.T) {
-	le := NewLessOrEqual()
-	assert.False(t, le.Negated())
-}
-
-func TestLessOrEqual_Text_Default(t *testing.T) {
-	le := NewLessOrEqual()
-	assert.Equal(t, []string{"less than or equal to"}, le.Text())
-}
-
-func TestLessOrEqual_Negate_SetsNegated(t *testing.T) {
-	le := NewLessOrEqual()
-	le.Negate()
-	assert.True(t, le.Negated())
-	assert.Equal(t, []string{"greater than"}, le.Text())
-}
-
-func TestLessOrEqual_DoubleNegate_RestoresOriginal(t *testing.T) {
-	le := NewLessOrEqual()
-	le.Negate()
-	le.Negate()
-	assert.False(t, le.Negated())
-	assert.Equal(t, []string{"less than or equal to"}, le.Text())
-}
-
-func TestLessOrEqual_Path_DoesNotPanic(t *testing.T) {
-	le := NewLessOrEqual()
-	assert.NotPanics(t, func() { le.Path() })
-}
-
 // --- True ---
 
 func TestNewTrue_ReturnsNonNil(t *testing.T) {
@@ -460,14 +386,6 @@ func TestGreater_ImplementsItemWithPath(t *testing.T) {
 
 func TestLess_ImplementsItemWithPath(t *testing.T) {
 	var _ ItemWithPath = NewLess()
-}
-
-func TestGreaterOrEqual_ImplementsItemWithPath(t *testing.T) {
-	var _ ItemWithPath = NewGreaterOrEqual()
-}
-
-func TestLessOrEqual_ImplementsItemWithPath(t *testing.T) {
-	var _ ItemWithPath = NewLessOrEqual()
 }
 
 func TestBlank_ImplementsItem(t *testing.T) {

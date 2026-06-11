@@ -168,6 +168,47 @@ unchanged at **24.6%**.
 - **Exit:** `pkg/report` coverage materially above the current ~1%; every output format has at
   least one characterization test; goldens regenerable with one command.
 
+#### Phase 6 — Results (done)
+
+- Added `pkg/report/fixture_test.go` (shared fixture: loads `demo/example/threagile.yaml` via
+  `model.ReadAndAnalyzeModel`, plus PNG-fixture and `UPDATE_GOLDEN=1`/auto-create golden helpers).
+- `markdown_test.go`: byte-for-byte golden for `MarkdownReport()` (`testdata/golden_report.md`),
+  with the `**Generated:**` timestamp line normalized.
+- `adoc_test.go`: golden file listing of the generated `adocReport/` directory (26 files) plus
+  golden content of `000_main.adoc`.
+- `excel_test.go`: golden summaries (sheet names, row/header counts, header row) for both the
+  risks Excel and the tags Excel.
+- `pdf_test.go` (internal `package report` test, with local stubs to avoid import cycles):
+  smoke test that a full PDF report renders successfully (`%PDF-` header, non-trivial size).
+- `pkg/report` statement coverage: **~1% → 76%**.
+- All goldens regenerate via `UPDATE_GOLDEN=1 go test ./pkg/report/...`.
+
+**Major finding: building the golden tests uncovered real nondeterminism bugs in risk
+generation**, all now fixed:
+- Two **data races** introduced by the Phase 4 parallel "fan out" risk generation
+  (`pkg/model/read.go`):
+  - `unnecessary_data_transfer_rule.go` and `unguarded_access_from_internet_rule.go` sorted
+    `input.IncomingTechnicalCommunicationLinksMappedByTargetId[id]` *in place*, racing with other
+    rules reading the same shared slice concurrently. Fixed by copying before sorting.
+  - `applyRiskGeneration` wrote results into `parsedModel.GeneratedRisksByCategory` while
+    script-rule workers were still marshalling the whole `parsedModel` (including that map) via
+    `Scope.SetModel()`. Fixed by collecting into a local map first and merging only after all
+    workers finish.
+- Four **map-iteration ordering bugs** causing nondeterministic risk content/order across runs
+  (same input, different output):
+  - `lateral_movement_shared_runtime_rule.go`: "most sensitive asset" selection iterated a map;
+    now iterates `runtime.TechnicalAssetsRunning` (a slice) for deterministic tie-breaking.
+  - `markdown.go`: the Data Assets table iterated `model.DataAssets` (a map); now uses a new
+    `sortedDataAssets()` helper.
+  - `unchecked_deployment_rule.go`, `server_side_request_forgery_rule.go`,
+    `code_backdooring_rule.go`: each built `DataBreachTechnicalAssetIDs` from a
+    `map[string]interface{}` set without sorting; all three now `sort.Strings()` the result.
+  - `types.Model.AllRisks()` (used by `WriteRisksJSON` and the Markdown report) iterated
+    `GeneratedRisksByCategory` (a map) directly; now iterates category IDs in sorted order.
+
+These were **production-impacting**, not just test-infrastructure issues: real reports could
+previously vary in risk count, content, and ordering between runs of the exact same model.
+
 ### Phase 7 — Refactor monster files (F7) — *only after Phase 6 is green*
 *Goal: maintainable, testable units; no behavior change.*
 

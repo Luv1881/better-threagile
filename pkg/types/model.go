@@ -540,13 +540,16 @@ func (model *Model) GetRiskCategory(categoryID string) *RiskCategory {
 }
 
 func (model *Model) AllRisks() []*Risk {
+	categoryIDs := make([]string, 0, len(model.GeneratedRisksByCategory))
 	total := 0
-	for _, risks := range model.GeneratedRisksByCategory {
+	for categoryID, risks := range model.GeneratedRisksByCategory {
+		categoryIDs = append(categoryIDs, categoryID)
 		total += len(risks)
 	}
+	sort.Strings(categoryIDs)
 	result := make([]*Risk, 0, total)
-	for _, risks := range model.GeneratedRisksByCategory {
-		result = append(result, risks...)
+	for _, categoryID := range categoryIDs {
+		result = append(result, model.GeneratedRisksByCategory[categoryID]...)
 	}
 	return result
 }

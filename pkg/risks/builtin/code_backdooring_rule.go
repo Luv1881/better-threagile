@@ -1,6 +1,8 @@
 package builtin
 
 import (
+	"sort"
+
 	"github.com/threagile/threagile/pkg/types"
 )
 
@@ -99,6 +101,7 @@ func (r *CodeBackdooringRule) createRisk(input *types.Model, technicalAsset *typ
 	for key := range uniqueDataBreachTechnicalAssetIDs {
 		dataBreachTechnicalAssetIDs = append(dataBreachTechnicalAssetIDs, key)
 	}
+	sort.Strings(dataBreachTechnicalAssetIDs)
 	// create risk
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,

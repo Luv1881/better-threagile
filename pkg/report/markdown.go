@@ -110,7 +110,7 @@ func MarkdownReport(model *types.Model) string {
 	if len(model.DataAssets) > 0 {
 		b.WriteString("## Data Assets\n\n")
 		b.WriteString("| Asset | Confidentiality | PII |\n|---|---|---|\n")
-		for _, da := range model.DataAssets {
+		for _, da := range sortedDataAssets(model) {
 			pii := "No"
 			if da.HasPii || len(da.PiiCategories) > 0 {
 				pii = "**Yes**"
@@ -159,6 +159,15 @@ func sortedAssets(model *types.Model) []*types.TechnicalAsset {
 	out := make([]*types.TechnicalAsset, 0, len(model.TechnicalAssets))
 	for _, a := range model.TechnicalAssets {
 		out = append(out, a)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Title < out[j].Title })
+	return out
+}
+
+func sortedDataAssets(model *types.Model) []*types.DataAsset {
+	out := make([]*types.DataAsset, 0, len(model.DataAssets))
+	for _, da := range model.DataAssets {
+		out = append(out, da)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Title < out[j].Title })
 	return out

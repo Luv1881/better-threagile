@@ -209,14 +209,22 @@ func applyRiskGeneration(parsedModel *types.Model, rules types.RiskRules,
 		close(results)
 	}()
 
+	// Collect into a local map first: writing directly into
+	// parsedModel.GeneratedRisksByCategory here would race with script-rule
+	// workers that are still running and marshal the whole parsedModel
+	// (including this map) via Scope.SetModel.
+	collected := make(map[string][]*types.Risk, len(activeRules))
 	for res := range results {
 		if res.err != nil {
 			progressReporter.Warnf("Error generating risks for %q: %v", res.id, res.err)
 			continue
 		}
 		if len(res.risks) > 0 {
-			parsedModel.GeneratedRisksByCategory[res.id] = res.risks
+			collected[res.id] = res.risks
 		}
+	}
+	for id, riskList := range collected {
+		parsedModel.GeneratedRisksByCategory[id] = riskList
 	}
 
 	if len(skippedRules) > 0 {

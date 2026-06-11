@@ -65,9 +65,15 @@ func (r *LateralMovementSharedRuntimeRule) GenerateRisks(input *types.Model) ([]
 		}
 
 		// Find the least and most sensitive asset to calibrate impact
+		// Iterate in the deterministic order of runtime.TechnicalAssetsRunning
+		// (rather than the assets map) so that ties are broken consistently.
 		var minSens, maxSens float64
 		var mostSensitiveAsset *types.TechnicalAsset
-		for _, asset := range assets {
+		for _, assetID := range runtime.TechnicalAssetsRunning {
+			asset, ok := assets[assetID]
+			if !ok {
+				continue
+			}
 			s := asset.HighestSensitivityScore()
 			if s < minSens || mostSensitiveAsset == nil {
 				minSens = s

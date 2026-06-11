@@ -58,7 +58,12 @@ func (r *UnguardedAccessFromInternetRule) GenerateRisks(input *types.Model) ([]*
 			continue
 		}
 
-		commLinks := input.IncomingTechnicalCommunicationLinksMappedByTargetId[technicalAsset.Id]
+		// Copy before sorting: the underlying slice is shared via
+		// input.IncomingTechnicalCommunicationLinksMappedByTargetId and read
+		// concurrently by other risk rules during parallel risk generation;
+		// sorting it in place caused a data race (and nondeterministic output).
+		commLinks := make([]*types.CommunicationLink, len(input.IncomingTechnicalCommunicationLinksMappedByTargetId[technicalAsset.Id]))
+		copy(commLinks, input.IncomingTechnicalCommunicationLinksMappedByTargetId[technicalAsset.Id])
 		sort.Sort(types.ByTechnicalCommunicationLinkIdSort(commLinks))
 		for _, incomingAccess := range commLinks {
 			if technicalAsset.Technologies.GetAttribute(types.LoadBalancer) {

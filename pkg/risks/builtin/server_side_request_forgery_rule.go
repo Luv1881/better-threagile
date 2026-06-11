@@ -1,6 +1,8 @@
 package builtin
 
 import (
+	"sort"
+
 	"github.com/threagile/threagile/pkg/types"
 )
 
@@ -97,6 +99,7 @@ func (r *ServerSideRequestForgeryRule) createRisk(input *types.Model, technicalA
 	for key := range uniqueDataBreachTechnicalAssetIDs {
 		dataBreachTechnicalAssetIDs = append(dataBreachTechnicalAssetIDs, key)
 	}
+	sort.Strings(dataBreachTechnicalAssetIDs)
 	likelihood := types.Likely
 	if outgoingFlow.Usage == types.DevOps {
 		likelihood = types.Unlikely

@@ -61,7 +61,12 @@ func (r *UnnecessaryDataTransferRule) GenerateRisks(input *types.Model) ([]*type
 			risks = r.checkRisksAgainstTechnicalAsset(input, risks, technicalAsset, outgoingDataFlow, false)
 		}
 		// incoming data flows
-		commLinks := input.IncomingTechnicalCommunicationLinksMappedByTargetId[technicalAsset.Id]
+		// Copy before sorting: the underlying slice is shared via
+		// input.IncomingTechnicalCommunicationLinksMappedByTargetId and read
+		// concurrently by other risk rules during parallel risk generation;
+		// sorting it in place caused a data race (and nondeterministic output).
+		commLinks := make([]*types.CommunicationLink, len(input.IncomingTechnicalCommunicationLinksMappedByTargetId[technicalAsset.Id]))
+		copy(commLinks, input.IncomingTechnicalCommunicationLinksMappedByTargetId[technicalAsset.Id])
 		sort.Sort(types.ByTechnicalCommunicationLinkIdSort(commLinks))
 		for _, incomingDataFlow := range commLinks {
 			targetAsset := input.TechnicalAssets[incomingDataFlow.SourceId]

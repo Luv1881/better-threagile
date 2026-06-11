@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jung-kurt/gofpdf/contrib/gofpdi"
+	"github.com/go-pdf/fpdf/contrib/gofpdi"
 	"github.com/threagile/threagile/pkg/types"
 )
 

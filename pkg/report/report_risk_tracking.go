@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/threagile/threagile/pkg/types"
-	"github.com/wcharczuk/go-chart"
-	"github.com/wcharczuk/go-chart/drawing"
+	chart "github.com/wcharczuk/go-chart/v2"
+	"github.com/wcharczuk/go-chart/v2/drawing"
 )
 
 func (r *pdfReporter) createRiskMitigationStatus(parsedModel *types.Model, tempFolder string) error {
@@ -38,8 +38,8 @@ func (r *pdfReporter) createRiskMitigationStatus(parsedModel *types.Model, tempF
 	stackedBarChartRiskTracking := chart.StackedBarChart{
 		Width: 4000,
 		//Height: 2500,
-		XAxis: chart.Style{Show: false, FontSize: 26, TextVerticalAlign: chart.TextVerticalAlignBottom},
-		YAxis: chart.Style{Show: true, FontSize: 26, TextVerticalAlign: chart.TextVerticalAlignBottom},
+		XAxis: chart.Style{Hidden: true, FontSize: 26, TextVerticalAlign: chart.TextVerticalAlignBottom},
+		YAxis: chart.Style{Hidden: false, FontSize: 26, TextVerticalAlign: chart.TextVerticalAlignBottom},
 		Bars: []chart.StackedBar{
 			{
 				Name:  types.LowSeverity.Title(),

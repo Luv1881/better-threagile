@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/threagile/threagile/pkg/types"
-	"github.com/wcharczuk/go-chart"
+	chart "github.com/wcharczuk/go-chart/v2"
 )
 
 func sortByTechnicalAssetRiskSeverityAndTitleStillAtRisk(assets []*types.TechnicalAsset, parsedModel *types.Model) {

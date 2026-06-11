@@ -1,10 +1,9 @@
 package macros
 
 import (
+	"slices"
 	"sort"
 	"strconv"
-
-	"github.com/mpvl/unique"
 
 	"github.com/threagile/threagile/pkg/input"
 	"github.com/threagile/threagile/pkg/types"
@@ -59,7 +58,7 @@ func (*removeUnusedTagsMacro) Execute(modelInput *input.Model, parsedModel *type
 		modelInput.TagsAvailable = append(modelInput.TagsAvailable, runtime.Tags...)
 	}
 	count := len(modelInput.TagsAvailable)
-	unique.Strings(&modelInput.TagsAvailable)
 	sort.Strings(modelInput.TagsAvailable)
+	modelInput.TagsAvailable = slices.Compact(modelInput.TagsAvailable)
 	return "Model file removal of " + strconv.Itoa(count-len(modelInput.TagsAvailable)) + " unused tags successful", true, nil
 }

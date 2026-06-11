@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"unicode/utf8"
 
-	"github.com/jung-kurt/gofpdf"
-	"github.com/jung-kurt/gofpdf/contrib/gofpdi"
+	"github.com/go-pdf/fpdf"
+	"github.com/go-pdf/fpdf/contrib/gofpdi"
 	"github.com/threagile/threagile/pkg/types"
-	"github.com/wcharczuk/go-chart"
-	"github.com/wcharczuk/go-chart/drawing"
+	chart "github.com/wcharczuk/go-chart/v2"
+	"github.com/wcharczuk/go-chart/v2/drawing"
 )
 
 const fontSizeHeadline, fontSizeHeadlineSmall, fontSizeBody, fontSizeSmall, fontSizeVerySmall = 20, 16, 12, 9, 7
@@ -20,7 +20,7 @@ const allowedPdfLandscapePages, embedDiagramLegendPage = true, false
 
 type pdfReporter struct {
 	isLandscapePage               bool
-	pdf                           *gofpdf.Fpdf
+	pdf                           *fpdf.Fpdf
 	coverTemplateId               int
 	contentTemplateId             int
 	diagramLegendTemplateId       int
@@ -118,7 +118,7 @@ func (r *pdfReporter) WriteReportPDF(reportFilename string,
 }
 
 func (r *pdfReporter) createPdfAndInitMetadata(model *types.Model) {
-	r.pdf = gofpdf.New("P", "mm", "A4", "")
+	r.pdf = fpdf.New("P", "mm", "A4", "")
 	r.pdf.SetCreator(model.Author.Homepage, true)
 	r.pdf.SetAuthor(model.Author.Name, true)
 	r.pdf.SetTitle("Threat Model Report: "+model.Title, true)
@@ -201,7 +201,7 @@ func (r *pdfReporter) embedStackedBarChart(sbcChart chart.StackedBarChart, x flo
 	if err != nil {
 		return fmt.Errorf("error rendering chart: %w", err)
 	}
-	var options gofpdf.ImageOptions
+	var options fpdf.ImageOptions
 	options.ImageType = ""
 	r.pdf.RegisterImage(tmpFilePNG.Name(), "")
 	r.pdf.ImageOptions(tmpFilePNG.Name(), x, y, 0, 110, false, options, 0, "")
@@ -223,7 +223,7 @@ func (r *pdfReporter) embedPieChart(pieChart chart.PieChart, x float64, y float6
 	if err != nil {
 		return fmt.Errorf("error rendering chart: %w", err)
 	}
-	var options gofpdf.ImageOptions
+	var options fpdf.ImageOptions
 	options.ImageType = ""
 	r.pdf.RegisterImage(tmpFilePNG.Name(), "")
 	r.pdf.ImageOptions(tmpFilePNG.Name(), x, y, 60, 0, false, options, 0, "")

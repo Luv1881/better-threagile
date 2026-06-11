@@ -108,8 +108,8 @@ const (
 	ThirdPartyLicenses = " - golang (Google Go License): https://golang.org/LICENSE\n" +
 		" - go-yaml (MIT License): https://github.com/go-yaml/yaml/blob/v3/LICENSE\n" +
 		" - graphviz (CPL License): https://graphviz.gitlab.io/license/\n" +
-		" - gofpdf (MIT License): https://github.com/jung-kurt/gofpdf/blob/master/LICENSE\n" +
-		" - go-chart (MIT License): https://github.com/wcharczuk/go-chart/blob/master/LICENSE\n" +
+		" - fpdf (MIT License, fork of jung-kurt/gofpdf): https://github.com/go-pdf/fpdf/blob/master/LICENSE\n" +
+		" - go-chart (MIT License): https://github.com/wcharczuk/go-chart/blob/master/LICENSE (v2)\n" +
 		" - excelize (BSD License): https://github.com/qax-os/excelize/blob/master/LICENSE\n" +
 		" - graphics-go (BSD License): https://github.com/BurntSushi/graphics-go/blob/master/LICENSE\n" +
 		" - google-uuid (BSD License): https://github.com/google/uuid/blob/master/LICENSE\n" +

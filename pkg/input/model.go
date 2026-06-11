@@ -13,7 +13,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mpvl/unique"
 
 	"gopkg.in/yaml.v3"
 )
@@ -300,12 +299,12 @@ func (model *Model) Merge(dir string, includeFilename string) error {
 		case "diagram_tweak_invisible_connections_between_assets":
 			model.DiagramTweakInvisibleConnectionsBetweenAssets = append(model.DiagramTweakInvisibleConnectionsBetweenAssets, includedModel.DiagramTweakInvisibleConnectionsBetweenAssets...)
 			sort.Strings(model.DiagramTweakInvisibleConnectionsBetweenAssets)
-			unique.Strings(&model.DiagramTweakInvisibleConnectionsBetweenAssets)
+			model.DiagramTweakInvisibleConnectionsBetweenAssets = slices.Compact(model.DiagramTweakInvisibleConnectionsBetweenAssets)
 
 		case "diagram_tweak_same_rank_assets":
 			model.DiagramTweakSameRankAssets = append(model.DiagramTweakSameRankAssets, includedModel.DiagramTweakSameRankAssets...)
 			sort.Strings(model.DiagramTweakSameRankAssets)
-			unique.Strings(&model.DiagramTweakSameRankAssets)
+			model.DiagramTweakSameRankAssets = slices.Compact(model.DiagramTweakSameRankAssets)
 		}
 	}
 

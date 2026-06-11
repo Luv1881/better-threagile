@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/jung-kurt/gofpdf"
-	"github.com/jung-kurt/gofpdf/contrib/gofpdi"
+	"github.com/go-pdf/fpdf"
+	"github.com/go-pdf/fpdf/contrib/gofpdi"
 )
 
 func (r *pdfReporter) embedDataFlowDiagram(diagramFilenamePNG string, _ string) {
@@ -67,7 +67,7 @@ func (r *pdfReporter) embedDataFlowDiagram(diagramFilenamePNG string, _ string) 
 			r.pdf.Ln(10)
 		}*/
 	// embed in PDF
-	var options gofpdf.ImageOptions
+	var options fpdf.ImageOptions
 	options.ImageType = ""
 	r.pdf.RegisterImage(diagramFilenamePNG, "")
 	var maxWidth, maxHeight, newWidth int
@@ -159,7 +159,7 @@ func (r *pdfReporter) embedDataRiskMapping(diagramFilenamePNG string, _ string) 
 	*/
 	// embed in PDF
 	r.pdf.Ln(10)
-	var options gofpdf.ImageOptions
+	var options fpdf.ImageOptions
 	options.ImageType = ""
 	r.pdf.RegisterImage(diagramFilenamePNG, "")
 	if widerThanHigh {

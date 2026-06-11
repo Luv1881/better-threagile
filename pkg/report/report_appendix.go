@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jung-kurt/gofpdf"
+	"github.com/go-pdf/fpdf"
 	"github.com/threagile/threagile/pkg/types"
 )
 
@@ -257,7 +257,7 @@ func (r *pdfReporter) createTargetDescription(parsedModel *types.Model, baseFold
 	return nil
 }
 
-func (r *pdfReporter) addCustomImages(customImages []map[string]string, baseFolder string, html gofpdf.HTMLBasicType) error {
+func (r *pdfReporter) addCustomImages(customImages []map[string]string, baseFolder string, html fpdf.HTMLBasicType) error {
 	var text strings.Builder
 	for _, customImage := range customImages {
 		for imageFilename := range customImage {
@@ -280,7 +280,7 @@ func (r *pdfReporter) addCustomImages(customImages []map[string]string, baseFold
 				html.Write(5, text.String())
 				text.Reset()
 
-				var options gofpdf.ImageOptions
+				var options fpdf.ImageOptions
 				options.ImageType = ""
 				r.pdf.RegisterImage(imageFullFilename, "")
 				r.pdf.ImageOptions(imageFullFilename, 15, r.pdf.GetY()+50, 170, 0, true, options, 0, "")

@@ -1,10 +1,9 @@
 package macros
 
 import (
+	"slices"
 	"sort"
 	"strconv"
-
-	"github.com/mpvl/unique"
 
 	"github.com/threagile/threagile/pkg/input"
 	"github.com/threagile/threagile/pkg/types"
@@ -46,7 +45,7 @@ func (*SeedTagsMacro) Execute(modelInput *input.Model, parsedModel *types.Model)
 	for tag := range parsedModel.AllSupportedTags {
 		modelInput.TagsAvailable = append(modelInput.TagsAvailable, tag)
 	}
-	unique.Strings(&modelInput.TagsAvailable)
 	sort.Strings(modelInput.TagsAvailable)
+	modelInput.TagsAvailable = slices.Compact(modelInput.TagsAvailable)
 	return "Model file seeding with " + strconv.Itoa(len(parsedModel.AllSupportedTags)) + " tags successful", true, nil
 }

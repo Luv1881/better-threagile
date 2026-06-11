@@ -26,7 +26,9 @@ business_drivers:
   reputational_sensitivity: medium
 `
 	path := filepath.Join(t.TempDir(), "profile.yaml")
-	os.WriteFile(path, []byte(yaml), 0o644) //nolint:errcheck
+	if err := os.WriteFile(path, []byte(yaml), 0o600); err != nil {
+		t.Fatal(err)
+	}
 
 	p, err := profile.Load(path)
 	if err != nil {
@@ -51,7 +53,9 @@ weights:
   availability: 1.8
 `
 	path := filepath.Join(t.TempDir(), "profile.yaml")
-	os.WriteFile(path, []byte(yaml), 0o644) //nolint:errcheck
+	if err := os.WriteFile(path, []byte(yaml), 0o600); err != nil {
+		t.Fatal(err)
+	}
 
 	p, err := profile.Load(path)
 	if err != nil {
@@ -76,7 +80,9 @@ weights:
   availability: 0.0
 `
 	path := filepath.Join(t.TempDir(), "profile.yaml")
-	os.WriteFile(path, []byte(yaml), 0o644) //nolint:errcheck
+	if err := os.WriteFile(path, []byte(yaml), 0o600); err != nil {
+		t.Fatal(err)
+	}
 
 	p, err := profile.Load(path)
 	if err != nil {

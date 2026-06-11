@@ -38,7 +38,7 @@ type rewriteTransport struct {
 func (t *rewriteTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Clone so we don't mutate the original
 	r2 := req.Clone(req.Context())
-	parsed, _ := http.NewRequest(req.Method, t.base+req.URL.Path+"?"+req.URL.RawQuery, req.Body)
+	parsed, _ := http.NewRequest(req.Method, t.base+req.URL.Path+"?"+req.URL.RawQuery, req.Body) //nolint:noctx,gosec // test transport rewrites requests to a local httptest server
 	r2.URL = parsed.URL
 	r2.Host = parsed.Host
 	rt := t.rt

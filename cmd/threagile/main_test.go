@@ -73,7 +73,7 @@ func TestParseModelJson(t *testing.T) {
 	unmarshalError := json.Unmarshal(modelJson, &modelStruct)
 	if unmarshalError != nil {
 		jsonFile := "test.json"
-		_ = os.WriteFile(jsonFile, modelJson, 0644)
+		_ = os.WriteFile(jsonFile, modelJson, 0600)
 		fmt.Printf("Yaml file: %v\n", modelFile)
 		fmt.Printf("Json file: %v\n", jsonFile)
 		t.Error("Unable to parse model json: ", unmarshalError)

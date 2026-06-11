@@ -145,7 +145,7 @@ func writeOrDiff(cmd *cobra.Command, model *types.Model, outputFile string, diff
 		return nil
 	}
 
-	if err := os.WriteFile(outputFile, out, 0o644); err != nil {
+	if err := os.WriteFile(outputFile, out, 0o600); err != nil {
 		return fmt.Errorf("failed to write output file: %w", err)
 	}
 	cmd.Printf("Written %d bytes to %s\n", len(out), outputFile)

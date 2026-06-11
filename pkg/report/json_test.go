@@ -151,10 +151,10 @@ func TestWriteRisksJSON_GoldenFile(t *testing.T) {
 
 	// If no golden file yet: create it
 	if _, err := os.Stat(goldenPath); os.IsNotExist(err) {
-		if err := os.MkdirAll(filepath.Dir(goldenPath), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(goldenPath), 0o750); err != nil {
 			t.Fatalf("mkdir testdata: %v", err)
 		}
-		if err := os.WriteFile(goldenPath, current, 0o644); err != nil {
+		if err := os.WriteFile(goldenPath, current, 0o600); err != nil {
 			t.Fatalf("write golden: %v", err)
 		}
 		t.Logf("golden file created at %s (first run)", goldenPath)

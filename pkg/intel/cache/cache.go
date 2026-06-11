@@ -52,7 +52,7 @@ func Load(cacheDir, name string) (*Entry, error) {
 
 // Save writes an entry to cacheDir/name.json, creating the directory if needed.
 func Save(cacheDir, name, source string, payload any) error {
-	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
+	if err := os.MkdirAll(cacheDir, 0o750); err != nil {
 		return fmt.Errorf("cache: failed to create dir %s: %w", cacheDir, err)
 	}
 
@@ -73,7 +73,7 @@ func Save(cacheDir, name, source string, payload any) error {
 	}
 
 	path := filepath.Join(cacheDir, name+".json")
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := os.WriteFile(path, data, 0o600); err != nil {
 		return fmt.Errorf("cache: failed to write %s: %w", path, err)
 	}
 	return nil

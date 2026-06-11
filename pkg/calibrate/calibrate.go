@@ -145,7 +145,7 @@ func SaveCalibration(path string, cal *Calibration) error {
 	if err != nil {
 		return fmt.Errorf("calibrate: marshal: %w", err)
 	}
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := os.WriteFile(path, data, 0o600); err != nil {
 		return fmt.Errorf("calibrate: write %s: %w", path, err)
 	}
 	return nil

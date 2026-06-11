@@ -107,7 +107,9 @@ func TestLoadCorpus(t *testing.T) {
 	}
 	data, _ := json.Marshal(findings)
 	path := filepath.Join(t.TempDir(), "corpus.json")
-	os.WriteFile(path, data, 0o644) //nolint:errcheck
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
 	loaded, err := calibrate.LoadCorpus(path)
 	if err != nil {
 		t.Fatalf("load: %v", err)

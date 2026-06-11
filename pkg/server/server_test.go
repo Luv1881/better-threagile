@@ -63,10 +63,10 @@ func TestZipAndUnzip_RoundTrip(t *testing.T) {
 	// Create two source files
 	f1 := filepath.Join(dir, "file1.txt")
 	f2 := filepath.Join(dir, "file2.txt")
-	if err := os.WriteFile(f1, []byte("content one"), 0o644); err != nil {
+	if err := os.WriteFile(f1, []byte("content one"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(f2, []byte("content two"), 0o644); err != nil {
+	if err := os.WriteFile(f2, []byte("content two"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -77,7 +77,7 @@ func TestZipAndUnzip_RoundTrip(t *testing.T) {
 
 	// Unzip into a fresh directory
 	destDir := filepath.Join(dir, "extracted")
-	if err := os.MkdirAll(destDir, 0o755); err != nil {
+	if err := os.MkdirAll(destDir, 0o750); err != nil {
 		t.Fatal(err)
 	}
 	extracted, err := unzip(zipPath, destDir)

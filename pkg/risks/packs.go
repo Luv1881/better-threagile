@@ -1,54 +1,35 @@
 package risks
 
 import (
-	"bytes"
 	"embed"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/threagile/threagile/pkg/types"
 )
 
-//go:embed methodologies/*.tar.gz
+//go:embed methodologies/ai-ml methodologies/cloud-native methodologies/linddun methodologies/octave methodologies/pasta methodologies/supply-chain methodologies/trike methodologies/vast
 var embeddedPacks embed.FS
 
 // AvailableBuiltinPacks lists the methodology pack names shipped with the binary.
 var AvailableBuiltinPacks = []string{"linddun", "pasta", "vast", "cloud-native", "supply-chain", "ai-ml", "octave", "trike"}
 
-// LoadRulePack loads a named built-in methodology rule pack by name (e.g., "linddun").
-// It extracts the embedded tar.gz into a temporary directory, loads the YAML risk rules,
-// and cleans up the temporary directory before returning.
+// LoadRulePack loads a named built-in methodology rule pack directly from the
+// embedded filesystem. No temp directory or extraction is required.
 func LoadRulePack(name string) (types.RiskRules, error) {
 	name = strings.ToLower(strings.TrimSpace(name))
-	packPath := fmt.Sprintf("methodologies/%s.tar.gz", name)
+	packDir := fmt.Sprintf("methodologies/%s", name)
 
-	data, readErr := embeddedPacks.ReadFile(packPath)
-	if readErr != nil {
+	entries, err := embeddedPacks.ReadDir(packDir)
+	if err != nil {
 		return nil, fmt.Errorf("built-in rule pack %q not found (available: %s)",
 			name, strings.Join(AvailableBuiltinPacks, ", "))
 	}
-
-	tmpDir, tmpErr := os.MkdirTemp("", "threagile-pack-"+name+"-*")
-	if tmpErr != nil {
-		return nil, fmt.Errorf("failed to create temp dir for rule pack %q: %w", name, tmpErr)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	if err := extractTarGz(bytes.NewReader(data), tmpDir); err != nil {
-		return nil, fmt.Errorf("failed to extract rule pack %q: %w", name, err)
+	if len(entries) == 0 {
+		return nil, fmt.Errorf("built-in rule pack %q is empty", name)
 	}
 
-	// The tar was created with 'tar -czf linddun.tar.gz -C methodologies linddun/'
-	// so after extraction the rules live at tmpDir/linddun/
-	rulesDir := filepath.Join(tmpDir, name)
-	if _, statErr := os.Stat(rulesDir); os.IsNotExist(statErr) {
-		// fall back to scanning tmpDir itself if no sub-directory exists
-		rulesDir = tmpDir
-	}
-
-	rules, loadErr := LoadExternalScriptRiskRules(rulesDir)
+	rules, loadErr := LoadRulePackFromFS(embeddedPacks, packDir)
 	if loadErr != nil {
 		return nil, fmt.Errorf("failed to load rules from pack %q: %w", name, loadErr)
 	}

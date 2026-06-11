@@ -4,6 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"log"
 	"os"
 
 	"github.com/threagile/threagile/pkg/risks/builtin"
@@ -66,14 +67,14 @@ func GetBuiltInRiskRules() types.RiskRules {
 
 	scriptRules, scriptError := GetScriptRiskRules()
 	if scriptError != nil {
-		fmt.Printf("error loading script risk rules: %v\n", scriptError)
+		log.Printf("error loading script risk rules: %v", scriptError)
 		return rules
 	}
 
 	for id, rule := range scriptRules {
 		builtinRule, ok := rules[id]
 		if ok && builtinRule != nil {
-			fmt.Printf("WARNING: script risk rule %q shadows built-in risk rule\n", id)
+			log.Printf("WARNING: script risk rule %q shadows built-in risk rule", id)
 		}
 
 		rules[id] = rule
@@ -117,6 +118,41 @@ func (what RiskRules) LoadRiskRules() (RiskRules, error) {
 	}
 
 	return what, nil
+}
+
+// LoadRulePackFromFS loads YAML risk rules from an embedded FS subtree rooted at packDir.
+// Used by LoadRulePack to avoid temp-dir extraction.
+func LoadRulePackFromFS(fileSystem embed.FS, packDir string) (types.RiskRules, error) {
+	rules := make(types.RiskRules)
+
+	walkError := fs.WalkDir(fileSystem, packDir, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if entry.IsDir() || len(path) < 5 || path[len(path)-5:] != ".yaml" {
+			return nil
+		}
+
+		newRule := new(script.RiskRule).Init()
+		loadError := newRule.Load(fileSystem, path, entry)
+		if loadError != nil {
+			return fmt.Errorf("failed to load pack rule %q: %w", path, loadError)
+		}
+
+		if newRule.Category().ID == "" {
+			return nil
+		}
+
+		rules[newRule.Category().ID] = newRule
+		return nil
+	})
+
+	if walkError != nil {
+		return nil, walkError
+	}
+
+	return rules, nil
 }
 
 // LoadExternalScriptRiskRules loads YAML-based risk rules from a local directory.

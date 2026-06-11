@@ -1,6 +1,8 @@
 package server
 
 import (
+	"archive/zip"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -93,6 +95,108 @@ func TestUnzip_NonExistentFile(t *testing.T) {
 	_, err := unzip("/tmp/does-not-exist.zip", t.TempDir())
 	if err == nil {
 		t.Fatal("expected error for nonexistent zip")
+	}
+}
+
+func TestUnzip_TooManyFiles_Rejected(t *testing.T) {
+	dir := t.TempDir()
+
+	zipPath := filepath.Join(dir, "many.zip")
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	zipWriter := zip.NewWriter(zipFile)
+	for i := 0; i < 5; i++ {
+		w, createErr := zipWriter.Create(fmt.Sprintf("file-%d.txt", i))
+		if createErr != nil {
+			t.Fatal(createErr)
+		}
+		if _, writeErr := w.Write([]byte("x")); writeErr != nil {
+			t.Fatal(writeErr)
+		}
+	}
+	if closeErr := zipWriter.Close(); closeErr != nil {
+		t.Fatal(closeErr)
+	}
+	if closeErr := zipFile.Close(); closeErr != nil {
+		t.Fatal(closeErr)
+	}
+
+	originalMaxFiles := maxUnzipFiles
+	maxUnzipFiles = 2
+	defer func() { maxUnzipFiles = originalMaxFiles }()
+
+	_, err = unzip(zipPath, t.TempDir())
+	if err == nil {
+		t.Fatal("expected error for archive exceeding file-count limit")
+	}
+}
+
+func TestUnzip_TooLarge_Rejected(t *testing.T) {
+	dir := t.TempDir()
+
+	zipPath := filepath.Join(dir, "large.zip")
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	zipWriter := zip.NewWriter(zipFile)
+	w, createErr := zipWriter.Create("file.txt")
+	if createErr != nil {
+		t.Fatal(createErr)
+	}
+	if _, writeErr := w.Write([]byte("0123456789")); writeErr != nil {
+		t.Fatal(writeErr)
+	}
+	if closeErr := zipWriter.Close(); closeErr != nil {
+		t.Fatal(closeErr)
+	}
+	if closeErr := zipFile.Close(); closeErr != nil {
+		t.Fatal(closeErr)
+	}
+
+	originalMaxSize := maxUnzipTotalSize
+	maxUnzipTotalSize = 5
+	defer func() { maxUnzipTotalSize = originalMaxSize }()
+
+	_, err = unzip(zipPath, t.TempDir())
+	if err == nil {
+		t.Fatal("expected error for archive exceeding total-size limit")
+	}
+}
+
+func TestUnzip_ZipSlip_Rejected(t *testing.T) {
+	dir := t.TempDir()
+
+	zipPath := filepath.Join(dir, "slip.zip")
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	zipWriter := zip.NewWriter(zipFile)
+	w, createErr := zipWriter.Create("../../etc/evil.txt")
+	if createErr != nil {
+		t.Fatal(createErr)
+	}
+	if _, writeErr := w.Write([]byte("evil")); writeErr != nil {
+		t.Fatal(writeErr)
+	}
+	if closeErr := zipWriter.Close(); closeErr != nil {
+		t.Fatal(closeErr)
+	}
+	if closeErr := zipFile.Close(); closeErr != nil {
+		t.Fatal(closeErr)
+	}
+
+	destDir := filepath.Join(dir, "extracted")
+	if mkdirErr := os.MkdirAll(destDir, 0o750); mkdirErr != nil {
+		t.Fatal(mkdirErr)
+	}
+
+	_, err = unzip(zipPath, destDir)
+	if err == nil {
+		t.Fatal("expected error for zip-slip path traversal")
 	}
 }
 

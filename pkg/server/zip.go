@@ -35,6 +35,14 @@ func zipFiles(filename string, files []string) error {
 	return nil
 }
 
+// maxUnzipFiles and maxUnzipTotalSize bound the resources a single uploaded
+// archive can consume during extraction (decompression-bomb protection).
+// Declared as vars (not consts) so tests can lower them temporarily.
+var (
+	maxUnzipFiles     = 10000
+	maxUnzipTotalSize = int64(1 << 30) // 1 GiB
+)
+
 // Unzip will decompress a zip archive, moving all files and folders
 // within the zip file (parameter 1) to an output directory (parameter 2).
 func unzip(src string, dest string) ([]string, error) {
@@ -45,6 +53,18 @@ func unzip(src string, dest string) ([]string, error) {
 		return filenames, err
 	}
 	defer func() { _ = r.Close() }()
+
+	if len(r.File) > maxUnzipFiles {
+		return filenames, fmt.Errorf("too many files in archive (%d, limit %d)", len(r.File), maxUnzipFiles)
+	}
+
+	var totalSize int64
+	for _, f := range r.File {
+		totalSize += f.FileInfo().Size()
+		if totalSize > maxUnzipTotalSize {
+			return filenames, fmt.Errorf("uncompressed archive size exceeds limit of %d bytes", maxUnzipTotalSize)
+		}
+	}
 
 	for _, f := range r.File {
 		// Store filename/path for returning and using later on

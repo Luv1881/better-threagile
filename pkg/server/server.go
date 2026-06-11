@@ -5,14 +5,18 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package server
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -94,7 +98,13 @@ func RunServer(config serverConfigReader, builtinRiskRules types.RiskRules) {
 		locksByFolderName:              make(map[string]*sync.Mutex),
 		builtinRiskRules:               builtinRiskRules,
 	}
+	if !s.config.GetVerbose() {
+		gin.SetMode(gin.ReleaseMode)
+	}
 	router := gin.Default()
+	if err := router.SetTrustedProxies(nil); err != nil {
+		log.Fatalf("server: unable to set trusted proxies: %v", err)
+	}
 	router.LoadHTMLGlob(filepath.Join(s.config.GetServerFolder(), "static", "*.html")) // <==
 	router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", gin.H{})
@@ -238,9 +248,33 @@ func RunServer(config serverConfigReader, builtinRiskRules types.RiskRules) {
 
 	s.customRiskRules = model.LoadCustomRiskRules(s.config.GetPluginFolder(), s.config.GetRiskRulePlugins(), config.GetProgressReporter())
 
+	httpServer := &http.Server{
+		Addr:              ":" + strconv.Itoa(s.config.GetServerPort()),
+		Handler:           router,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       60 * time.Second,
+		WriteTimeout:      300 * time.Second,
+		IdleTimeout:       120 * time.Second,
+		MaxHeaderBytes:    1 << 20, // 1 MB
+	}
+
 	log.Printf("Threagile is running on port %d...", s.config.GetServerPort())
-	if err := router.Run(":" + strconv.Itoa(s.config.GetServerPort())); err != nil {
-		log.Fatalf("server: listen failed: %v", err)
+
+	go func() {
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("server: listen failed: %v", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Println("Threagile is shutting down...")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := httpServer.Shutdown(ctx); err != nil {
+		log.Fatalf("server: graceful shutdown failed: %v", err)
 	}
 }
 

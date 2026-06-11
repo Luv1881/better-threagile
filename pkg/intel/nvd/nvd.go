@@ -115,7 +115,7 @@ func Fetch(cveID, apiBase string) (*CVE, error) {
 	if err != nil {
 		return nil, fmt.Errorf("nvd: fetch %s: %w", cveID, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, nil

@@ -137,7 +137,7 @@ func httpGet(rawURL string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch %q: %w", rawURL, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected HTTP status fetching %q: %s", rawURL, resp.Status)
@@ -277,7 +277,7 @@ func extractTarGz(src io.Reader, destDir string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create gzip reader: %w", err)
 	}
-	defer gz.Close()
+	defer func() { _ = gz.Close() }()
 
 	var totalExtracted int64
 	tr := tar.NewReader(gz)
@@ -310,7 +310,7 @@ func extractTarGz(src io.Reader, destDir string) error {
 
 		remaining := maxExtractBytes - totalExtracted
 		n, copyErr := io.Copy(f, io.LimitReader(tr, remaining+1)) //nolint:gosec
-		f.Close()
+		_ = f.Close()
 		if copyErr != nil {
 			return fmt.Errorf("failed to write file %q: %w", destPath, copyErr)
 		}
@@ -351,14 +351,14 @@ func extractZip(src []byte, destDir string) error {
 
 		f, err := os.OpenFile(destPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600) //nolint:gosec
 		if err != nil {
-			rc.Close()
+			_ = rc.Close()
 			return fmt.Errorf("failed to create file %q: %w", destPath, err)
 		}
 
 		remaining := maxExtractBytes - totalExtracted
 		n, copyErr := io.Copy(f, io.LimitReader(rc, remaining+1)) //nolint:gosec
-		f.Close()
-		rc.Close()
+		_ = f.Close()
+		_ = rc.Close()
 		if copyErr != nil {
 			return fmt.Errorf("failed to write zip entry %q: %w", zf.Name, copyErr)
 		}

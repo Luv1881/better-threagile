@@ -67,7 +67,7 @@ func FetchScore(cveID, apiBase string) (*Score, error) {
 	if err != nil {
 		return nil, fmt.Errorf("epss: failed to fetch score for %s: %w", cveID, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, nil // CVE not in EPSS database
@@ -110,7 +110,7 @@ func FetchBatch(cveIDs []string, apiBase string) (ScoreMap, error) {
 	if err != nil {
 		return nil, fmt.Errorf("epss: batch fetch failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("epss: unexpected HTTP status %d", resp.StatusCode)

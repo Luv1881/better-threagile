@@ -97,7 +97,7 @@ func Refresh(cacheDir, feedURL string) (*Catalog, error) {
 	if err != nil {
 		return nil, fmt.Errorf("kev: failed to download catalog from %s: %w", feedURL, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("kev: unexpected HTTP status %d from %s", resp.StatusCode, feedURL)

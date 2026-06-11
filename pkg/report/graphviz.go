@@ -1,6 +1,7 @@
 package report
 
 import (
+	"context"
 	"fmt"
 	"hash/fnv"
 	"os"
@@ -449,7 +450,7 @@ func GenerateDataFlowDiagramGraphvizImage(dotFile *os.File, targetDir string,
 
 	// exec
 
-	cmd := exec.Command("dot", "-Tpng", tmpFileDOT.Name(), "-o", tmpFilePNG.Name()) // #nosec G204
+	cmd := exec.CommandContext(context.Background(), "dot", "-Tpng", tmpFileDOT.Name(), "-o", tmpFilePNG.Name()) // #nosec G204
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
@@ -845,7 +846,7 @@ func GenerateDataAssetDiagramGraphvizImage(dotFile *os.File, targetDir string,
 	}
 
 	// exec
-	cmd := exec.Command("dot", "-Tpng", tmpFileDOT.Name(), "-o", tmpFilePNG.Name()) // #nosec G204
+	cmd := exec.CommandContext(context.Background(), "dot", "-Tpng", tmpFileDOT.Name(), "-o", tmpFilePNG.Name()) // #nosec G204
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()

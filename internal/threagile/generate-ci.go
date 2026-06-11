@@ -154,7 +154,7 @@ func (what *Threagile) initGenerateCI() *Threagile {
 			if err != nil {
 				return fmt.Errorf("failed to create CI file %q: %w", outFile, err)
 			}
-			defer f.Close()
+			defer func() { _ = f.Close() }()
 
 			tmpl, err := template.New("ci").Delims("[[", "]]").Parse(ci.tmpl)
 			if err != nil {

@@ -5,6 +5,7 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package server
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -239,7 +240,7 @@ func (s *server) doItViaRuntimeCall(modelFile string, outputDir string,
 		return fmt.Errorf("doItViaRuntimeCall: resolve executable: %w", nameError)
 	}
 
-	cmd = exec.Command(self, args...) // #nosec G204
+	cmd = exec.CommandContext(context.Background(), self, args...) // #nosec G204
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("doItViaRuntimeCall: subprocess failed: %s", string(out))

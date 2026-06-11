@@ -25,7 +25,7 @@ func (what *Threagile) initWatch() *Threagile {
 			if err != nil {
 				return fmt.Errorf("failed to create file watcher: %w", err)
 			}
-			defer watcher.Close()
+			defer func() { _ = watcher.Close() }()
 
 			if err := watcher.Add(watchDir); err != nil {
 				return fmt.Errorf("failed to watch directory %q: %w", watchDir, err)

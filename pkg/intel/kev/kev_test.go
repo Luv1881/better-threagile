@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -109,7 +110,14 @@ func TestLoad_NoCache(t *testing.T) {
 }
 
 func TestLoadOrRefresh_UsesCachWhenFresh(t *testing.T) {
-	srv := newTestServer(t, 200, sampleCatalog())
+	var requestCount int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&requestCount, 1)
+		data, _ := json.Marshal(sampleCatalog())
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(200)
+		_, _ = w.Write(data)
+	}))
 	defer srv.Close()
 
 	dir := t.TempDir()
@@ -118,14 +126,20 @@ func TestLoadOrRefresh_UsesCachWhenFresh(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Refresh: %v", err)
 	}
+	if got := atomic.LoadInt32(&requestCount); got != 1 {
+		t.Fatalf("requests after Refresh = %d, want 1", got)
+	}
 
-	// Second call should use cache (server would still respond; we just check no error)
+	// Second call should use the fresh cache and make no additional HTTP requests.
 	catalog, err := LoadOrRefresh(dir, srv.URL, 24*time.Hour)
 	if err != nil {
 		t.Fatalf("LoadOrRefresh: %v", err)
 	}
 	if catalog == nil {
 		t.Fatal("expected catalog")
+	}
+	if got := atomic.LoadInt32(&requestCount); got != 1 {
+		t.Fatalf("requests after LoadOrRefresh with fresh cache = %d, want 1 (no extra network call)", got)
 	}
 }
 

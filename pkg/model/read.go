@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/threagile/threagile/pkg/input"
+	"github.com/threagile/threagile/pkg/risks/script/common"
 	"github.com/threagile/threagile/pkg/types"
 )
 
@@ -183,6 +184,14 @@ func applyRiskGeneration(parsedModel *types.Model, rules types.RiskRules,
 		workers = 1
 	}
 
+	// Pre-convert the model to the map representation used by script-rule
+	// scopes once, instead of re-marshaling/unmarshaling it for every rule.
+	// Safe because script rules only ever read from $model, never write to it.
+	modelMap, modelMapErr := common.ModelToMap(parsedModel)
+	if modelMapErr != nil {
+		progressReporter.Warnf("Unable to convert model to map for script rules: %v", modelMapErr)
+	}
+
 	jobs := make(chan ruleEntry, len(activeRules))
 	results := make(chan ruleResult, len(activeRules))
 	var wg sync.WaitGroup
@@ -192,7 +201,13 @@ func applyRiskGeneration(parsedModel *types.Model, rules types.RiskRules,
 		go func() {
 			defer wg.Done()
 			for entry := range jobs {
-				newRisks, riskErr := entry.rule.GenerateRisks(parsedModel)
+				var newRisks []*types.Risk
+				var riskErr error
+				if mapRule, ok := entry.rule.(types.ModelMapRiskRule); ok && modelMap != nil {
+					newRisks, riskErr = mapRule.GenerateRisksFromMap(modelMap)
+				} else {
+					newRisks, riskErr = entry.rule.GenerateRisks(parsedModel)
+				}
 				results <- ruleResult{id: entry.id, risks: newRisks, err: riskErr}
 			}
 		}()

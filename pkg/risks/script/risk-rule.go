@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/threagile/threagile/pkg/input"
+	"github.com/threagile/threagile/pkg/risks/script/common"
 	"github.com/threagile/threagile/pkg/types"
 	"gopkg.in/yaml.v3"
 )
@@ -59,6 +60,18 @@ func (what *RiskRule) SupportedTags() []string {
 }
 
 func (what *RiskRule) GenerateRisks(parsedModel *types.Model) ([]*types.Risk, error) {
+	modelMap, modelError := common.ModelToMap(parsedModel)
+	if modelError != nil {
+		return nil, modelError
+	}
+
+	return what.GenerateRisksFromMap(modelMap)
+}
+
+// GenerateRisksFromMap behaves like GenerateRisks but takes a pre-converted
+// model map, avoiding a redundant yaml marshal/unmarshal of the whole model
+// when generating risks for many rules against the same model.
+func (what *RiskRule) GenerateRisksFromMap(modelMap map[string]any) ([]*types.Risk, error) {
 	if what.script == nil {
 		return nil, fmt.Errorf("no script found in risk rule")
 	}
@@ -68,10 +81,7 @@ func (what *RiskRule) GenerateRisks(parsedModel *types.Model) ([]*types.Risk, er
 		return nil, scopeError
 	}
 
-	modelError := newScope.SetModel(parsedModel)
-	if modelError != nil {
-		return nil, modelError
-	}
+	newScope.SetModelMap(modelMap)
 
 	newRisks, errorLiteral, riskError := what.script.GenerateRisks(newScope)
 	if riskError != nil {

@@ -39,6 +39,12 @@ tasks:
         cmds:
           - go test ./...
 
+    bench:
+        desc: run performance benchmarks (analyze pipeline and report rendering)
+        cmds:
+          - go test ./pkg/model/... -bench=. -benchmem -run=^$
+          - go test ./pkg/report/... -bench=. -benchmem -run=^$
+
     convert-example-project-adoc-to-pdf:
         desc: create example project and create a pdf from the asciidoctor output
         deps: [create-example-project]

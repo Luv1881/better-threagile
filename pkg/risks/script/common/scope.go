@@ -43,19 +43,40 @@ func (what *Scope) Init(risk *types.RiskCategory, methods map[string]Statement) 
 }
 
 func (what *Scope) SetModel(model *types.Model) error {
-	if model != nil {
-		data, marshalError := yaml.Marshal(model)
-		if marshalError != nil {
-			return marshalError
-		}
-
-		unmarshalError := yaml.Unmarshal(data, &what.Model)
-		if unmarshalError != nil {
-			return unmarshalError
-		}
+	modelMap, err := ModelToMap(model)
+	if err != nil {
+		return err
 	}
 
+	what.Model = modelMap
 	return nil
+}
+
+// SetModelMap sets the scope's model directly from an already-converted
+// model map, avoiding a redundant yaml marshal/unmarshal round-trip.
+func (what *Scope) SetModelMap(modelMap map[string]any) {
+	what.Model = modelMap
+}
+
+// ModelToMap converts a *types.Model into the map[string]any representation
+// used by script scopes, via a yaml marshal/unmarshal round-trip.
+func ModelToMap(model *types.Model) (map[string]any, error) {
+	if model == nil {
+		return nil, nil
+	}
+
+	data, marshalError := yaml.Marshal(model)
+	if marshalError != nil {
+		return nil, marshalError
+	}
+
+	var modelMap map[string]any
+	unmarshalError := yaml.Unmarshal(data, &modelMap)
+	if unmarshalError != nil {
+		return nil, unmarshalError
+	}
+
+	return modelMap, nil
 }
 
 func (what *Scope) Clone() (*Scope, error) {

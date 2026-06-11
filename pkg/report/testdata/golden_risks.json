@@ -1,0 +1,1 @@
+[{"category":"missing-authentication","severity":"high","exploitation_likelihood":"unlikely","exploitation_impact":"low","title":"Missing Authentication","synthetic_id":"risk-001"},{"category":"sql-injection","risk_status":"accepted","severity":"critical","exploitation_likelihood":"unlikely","exploitation_impact":"low","title":"SQL Injection","synthetic_id":"risk-002"}]

@@ -112,6 +112,7 @@ func runLSPServer(in io.Reader, out io.Writer) error {
 					URI string `json:"uri"`
 				} `json:"textDocument"`
 			}
+			// Params may be absent for some editors; fall back to empty URI on parse failure.
 			_ = json.Unmarshal(msg.Params, &p)
 			uri := p.TextDocument.URI
 			path := strings.TrimPrefix(uri, "file://")

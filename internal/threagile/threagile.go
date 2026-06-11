@@ -57,7 +57,6 @@ func (what *Threagile) Init(buildTimestamp string) *Threagile {
 		initSeverityProfile().
 		initDrift().
 		initSync().
-		initLLM().
 		initCompletion().
 		initLSP().
 		processSystemArgs(what.rootCmd)

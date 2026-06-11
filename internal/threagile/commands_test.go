@@ -2,6 +2,7 @@ package threagile
 
 import (
 	"bytes"
+	"os"
 	"strings"
 	"testing"
 )
@@ -9,6 +10,19 @@ import (
 // newTestApp creates a fully-initialized Threagile instance for testing.
 // It wires all commands (the same as production) but uses a zeroed build timestamp.
 func newTestApp() *Threagile {
+	app := new(Threagile)
+	app.Init("")
+	return app
+}
+
+// newTestAppWithArgs creates a fully-initialized Threagile instance, mimicking
+// production startup where global flags (e.g. --model) are picked up from
+// os.Args during Init() before the cobra command tree is executed.
+func newTestAppWithArgs(args ...string) *Threagile {
+	oldArgs := os.Args
+	os.Args = append([]string{"threagile"}, args...)
+	defer func() { os.Args = oldArgs }()
+
 	app := new(Threagile)
 	app.Init("")
 	return app

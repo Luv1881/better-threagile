@@ -17,6 +17,10 @@ func main() {
 	flag.StringVar(&scriptFilename, "script", "", "script file")
 	flag.Parse()
 
+	run(scriptFilename)
+}
+
+func run(scriptFilename string) {
 	if len(scriptFilename) == 0 {
 		scriptFilename = filepath.Join("pkg", "risks", "scripts", "accidental-secret-leak.yaml")
 	}

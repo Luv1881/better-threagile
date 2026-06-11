@@ -38,16 +38,6 @@ func (what *ExcelColumns) GetColumnsForMethodology(methodologyTitle string) Exce
 	return *what
 }
 
-func (what *ExcelColumns) FindColumnNameByTitle(title string) string {
-	for column, excelColumn := range *what {
-		if strings.EqualFold(excelColumn.Title, title) {
-			return column
-		}
-	}
-
-	return ""
-}
-
 func (what *ExcelColumns) FindColumnIndexByTitle(title string) int {
 	for column, excelColumn := range *what {
 		if strings.EqualFold(excelColumn.Title, title) {

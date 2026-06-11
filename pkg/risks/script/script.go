@@ -178,9 +178,7 @@ func (what *Script) GetTechnicalAssetsByRiskID(scope *common.Scope, riskID strin
 	}
 
 	matchingTechAssets := make([]any, 0)
-	for techAssetName, techAsset := range techAssets {
-		_ = techAssetName
-
+	for _, techAsset := range techAssets {
 		isMatch, _, matchError := what.matchRisk(scope, techAsset)
 		if matchError != nil {
 			return nil, matchError

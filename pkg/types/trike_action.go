@@ -11,17 +11,6 @@ const (
 	TrikeActionExecute TrikeAction = "execute"
 )
 
-// TrikeActions returns all standard Trike actions.
-func TrikeActions() []TrikeAction {
-	return []TrikeAction{
-		TrikeActionCreate,
-		TrikeActionRead,
-		TrikeActionUpdate,
-		TrikeActionDelete,
-		TrikeActionExecute,
-	}
-}
-
 // TrikeMatrixCell represents one cell in the Trike action matrix.
 // It specifies whether an actor performing an action on a technical asset
 // is considered acceptable from an organisational risk perspective.

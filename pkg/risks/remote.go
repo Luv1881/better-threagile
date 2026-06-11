@@ -39,17 +39,6 @@ type FetchOptions struct {
 	RequireSigned bool
 }
 
-// FetchAndCacheRules downloads a rules archive from rawURL and unpacks it into a
-// subdirectory of cacheDir. The URL may carry the following fragment hints:
-//   - #sha256=<hex>   — verify the archive's SHA256 matches before extraction
-//   - #ttl=24h        — override the default 24h cache lifetime
-//
-// If the URL has a sibling <URL>.sig file and TrustedKeys are configured,
-// the signature is verified before extraction.
-func FetchAndCacheRules(rawURL, cacheDir string) (string, error) {
-	return FetchAndCacheRulesWithOptions(rawURL, cacheDir, FetchOptions{})
-}
-
 // FetchAndCacheRuleSources fetches and caches each configured rules archive.
 func FetchAndCacheRuleSources(rawURLs []string, cacheDir string, opts FetchOptions) ([]string, error) {
 	localDirs := make([]string, 0, len(rawURLs))

@@ -764,25 +764,6 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 		}
 	}
 
-	/*
-		data, _ := json.MarshalIndent(parsedModel, "", "  ")
-		_ = os.WriteFile(filepath.Join("all.json"), data, 0644)
-	*/
-
-	/**
-	inYamlData, _ := yaml.Marshal(modelInput)
-	_ = os.WriteFile(filepath.Join("in.yaml"), inYamlData, 0644)
-
-	inJsonData, _ := json.MarshalIndent(modelInput, "", "  ")
-	_ = os.WriteFile(filepath.Join("in.json"), inJsonData, 0644)
-
-	outYamlData, _ := yaml.Marshal(parsedModel)
-	_ = os.WriteFile(filepath.Join("out.yaml"), outYamlData, 0644)
-
-	outJsonData, _ := json.MarshalIndent(parsedModel, "", "  ")
-	_ = os.WriteFile(filepath.Join("out.json"), outJsonData, 0644)
-	/**/
-
 	// Threat Scenarios (PASTA) ========================================================================
 	parsedModel.ThreatScenarios = make(map[string]*types.ThreatScenario)
 	for title, scenario := range modelInput.ThreatScenarios {

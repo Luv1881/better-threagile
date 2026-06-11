@@ -1,0 +1,85 @@
+version: 2
+
+project_name: threagile
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: threagile
+    main: ./cmd/threagile
+    binary: threagile
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.buildTimestamp={{.Timestamp}}
+
+archives:
+  - id: threagile
+    format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_{{ .Os }}_{{ .Arch }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE.txt
+      - report/template/background.pdf
+      - support/openapi.yaml
+      - support/schema.json
+      - support/live-templates.txt
+
+dockers:
+  - image_templates:
+      - "ghcr.io/threagile/threagile:{{ .Tag }}-amd64"
+      - "ghcr.io/threagile/threagile:latest-amd64"
+    dockerfile: Dockerfile.goreleaser
+    use: buildx
+    goarch: amd64
+    build_flag_templates:
+      - "--platform=linux/amd64"
+  - image_templates:
+      - "ghcr.io/threagile/threagile:{{ .Tag }}-arm64"
+      - "ghcr.io/threagile/threagile:latest-arm64"
+    dockerfile: Dockerfile.goreleaser
+    use: buildx
+    goarch: arm64
+    build_flag_templates:
+      - "--platform=linux/arm64"
+
+docker_manifests:
+  - name_template: "ghcr.io/threagile/threagile:{{ .Tag }}"
+    image_templates:
+      - "ghcr.io/threagile/threagile:{{ .Tag }}-amd64"
+      - "ghcr.io/threagile/threagile:{{ .Tag }}-arm64"
+  - name_template: "ghcr.io/threagile/threagile:latest"
+    image_templates:
+      - "ghcr.io/threagile/threagile:latest-amd64"
+      - "ghcr.io/threagile/threagile:latest-arm64"
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  version_template: "{{ .Tag }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+
+release:
+  github:
+    owner: threagile
+    name: threagile

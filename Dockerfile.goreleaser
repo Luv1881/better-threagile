@@ -1,0 +1,30 @@
+######
+## Release image: packages a goreleaser-built threagile binary
+######
+FROM alpine
+
+LABEL type="threagile"
+
+RUN apk add --update --no-cache ca-certificates graphviz ttf-freefont libc6-compat \
+    && rm -rf /var/cache/apk/*
+
+RUN mkdir -p /app /data \
+    && chown -R 1000:1000 /app /data
+
+WORKDIR /app
+
+COPY --chown=1000:1000 threagile /app/
+COPY --chown=1000:1000 LICENSE.txt /app/
+COPY --chown=1000:1000 report/template/background.pdf /app/
+COPY --chown=1000:1000 support/openapi.yaml /app/
+COPY --chown=1000:1000 support/schema.json /app/
+COPY --chown=1000:1000 support/live-templates.txt /app/
+COPY --chown=1000:1000 demo/example/threagile.yaml /app/threagile-example-model.yaml
+COPY --chown=1000:1000 demo/stub/threagile.yaml /app/threagile-stub-model.yaml
+
+USER 1000:1000
+
+ENV PATH=/app:$PATH GIN_MODE=release
+
+ENTRYPOINT ["/app/threagile"]
+CMD ["help"]

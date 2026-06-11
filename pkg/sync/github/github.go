@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -230,7 +231,7 @@ func (c *Client) listThreagileIssues() (map[string]*Issue, error) {
 
 func (c *Client) createIssue(title, body string, risk *types.Risk, synLabel, sevLabel string) SyncResult {
 	if c.cfg.DryRun {
-		fmt.Printf("[dry-run] would create issue: %s\n", title)
+		log.Printf("[dry-run] would create issue: %s", title)
 		return SyncResult{SyntheticID: risk.SyntheticId, Action: "dry-run-create"}
 	}
 
@@ -256,7 +257,7 @@ func (c *Client) createIssue(title, body string, risk *types.Risk, synLabel, sev
 
 func (c *Client) closeIssue(number int, syntheticID string) SyncResult {
 	if c.cfg.DryRun {
-		fmt.Printf("[dry-run] would close issue #%d\n", number)
+		log.Printf("[dry-run] would close issue #%d", number)
 		return SyncResult{SyntheticID: syntheticID, Action: "dry-run-close", IssueNumber: number}
 	}
 	payload := map[string]any{"state": "closed"}
@@ -271,7 +272,7 @@ func (c *Client) closeIssue(number int, syntheticID string) SyncResult {
 
 func (c *Client) reopenIssue(number int, syntheticID string) SyncResult {
 	if c.cfg.DryRun {
-		fmt.Printf("[dry-run] would reopen issue #%d\n", number)
+		log.Printf("[dry-run] would reopen issue #%d", number)
 		return SyncResult{SyntheticID: syntheticID, Action: "dry-run-reopen", IssueNumber: number}
 	}
 	payload := map[string]any{"state": "open"}
@@ -549,7 +550,7 @@ func (c *Client) do(req *http.Request) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("github api: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {

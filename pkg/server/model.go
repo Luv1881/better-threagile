@@ -1214,14 +1214,14 @@ func (s *server) analyzeModelOnServerDirectly(ginContext *gin.Context) {
 		return
 	}
 	if s.config.GetVerbose() {
-		fmt.Println("Streaming back result file: " + tmpResultFile.Name())
+		log.Println("Streaming back result file: " + tmpResultFile.Name())
 	}
 	ginContext.FileAttachment(tmpResultFile.Name(), "threagile-result.zip")
 }
 
 func (s *server) writeModelYAML(ginContext *gin.Context, yaml string, key []byte, modelFolder string, changeReasonForHistory string, skipBackup bool) (ok bool) {
 	if s.config.GetVerbose() {
-		fmt.Println("about to write " + strconv.Itoa(len(yaml)) + " bytes of yaml into model folder: " + modelFolder)
+		log.Println("about to write " + strconv.Itoa(len(yaml)) + " bytes of yaml into model folder: " + modelFolder)
 	}
 	var b bytes.Buffer
 	w := gzip.NewWriter(&b)

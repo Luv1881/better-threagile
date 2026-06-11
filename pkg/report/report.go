@@ -65,11 +65,10 @@ func (r *pdfReporter) WriteReportPDF(reportFilename string,
 	customRiskRules types.RiskRules,
 	tempFolder string,
 	model *types.Model,
-	hideChapters map[ChaptersToShowHide]bool) error {
+	hideChapters map[ChaptersToShowHide]bool) (err error) {
 	defer func() {
-		value := recover()
-		if value != nil {
-			fmt.Printf("error creating PDF report: %v", value)
+		if value := recover(); value != nil {
+			err = fmt.Errorf("error creating PDF report: %v", value)
 		}
 	}()
 
@@ -78,7 +77,7 @@ func (r *pdfReporter) WriteReportPDF(reportFilename string,
 	r.parseBackgroundTemplate(templateFilename)
 	r.createCover(model)
 	r.createTableOfContents(model)
-	err := r.createManagementSummary(model, tempFolder)
+	err = r.createManagementSummary(model, tempFolder)
 	if err != nil {
 		return fmt.Errorf("error creating management summary: %w", err)
 	}
@@ -3944,7 +3943,7 @@ func (r *pdfReporter) createDataAssets(parsedModel *types.Model) {
 	}
 }
 
-func sortByDataBreachProbability(risks []*types.Risk, parsedModel *types.Model) {
+func sortByDataBreachProbability(risks []*types.Risk, _ *types.Model) {
 	sort.Slice(risks, func(i, j int) bool {
 
 		if risks[i].DataBreachProbability == risks[j].DataBreachProbability {

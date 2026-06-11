@@ -12,7 +12,6 @@ import (
 // seeds entry_point_type declarations on internet-exposed assets and generates
 // a starter threat_scenarios block.
 type DiscoverAttackSurface struct {
-	questionsAnswered []string
 }
 
 func NewDiscoverAttackSurface() *DiscoverAttackSurface {

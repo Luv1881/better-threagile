@@ -78,7 +78,6 @@ func (r *UnnecessaryDataTransferRule) checkRisksAgainstTechnicalAsset(input *typ
 	for _, transferredDataAssetId := range dataFlow.DataAssetsSent {
 		if !processesOrStoresDataAsset(technicalAsset, transferredDataAssetId) {
 			transferredDataAsset := input.DataAssets[transferredDataAssetId]
-			//fmt.Print("--->>> Checking "+technicalAsset.ID+": "+transferredDataAsset.ID+" sent via "+dataFlow.ID+"\n")
 			if transferredDataAsset.Confidentiality >= types.Confidential || transferredDataAsset.Integrity >= types.Critical {
 				commPartnerId := dataFlow.TargetId
 				if inverseDirection {
@@ -95,7 +94,6 @@ func (r *UnnecessaryDataTransferRule) checkRisksAgainstTechnicalAsset(input *typ
 	for _, transferredDataAssetId := range dataFlow.DataAssetsReceived {
 		if !processesOrStoresDataAsset(technicalAsset, transferredDataAssetId) {
 			transferredDataAsset := input.DataAssets[transferredDataAssetId]
-			//fmt.Print("--->>> Checking "+technicalAsset.ID+": "+transferredDataAsset.ID+" received via "+dataFlow.ID+"\n")
 			if transferredDataAsset.Confidentiality >= types.Confidential || transferredDataAsset.Integrity >= types.Critical {
 				commPartnerId := dataFlow.TargetId
 				if inverseDirection {

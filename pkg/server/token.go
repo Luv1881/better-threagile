@@ -7,7 +7,6 @@ package server
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -274,7 +273,7 @@ func (s *server) housekeepingTokenMaps() {
 			// remove all elements older than 1 minute (= 60000000000 ns) soft
 			// and all elements older than 3 minutes (= 180000000000 ns) hard
 			if now-val.lastAccessedNanoTime > 60000000000 || now-val.createdNanoTime > 180000000000 {
-				fmt.Println("About to remove a token hash from maps")
+				log.Println("About to remove a token hash from maps")
 				s.deleteTokenHashFromMaps(tokenHash)
 			}
 		} else {

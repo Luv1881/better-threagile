@@ -457,7 +457,6 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 					return nil, fmt.Errorf("referenced technical asset %q at trust boundary %q is modeled in multiple trust boundaries", technicalAssetsInside[i], title)
 				}
 				checklistToAvoidAssetBeingModeledInMultipleTrustBoundaries[technicalAssetsInside[i]] = true
-				//fmt.Println("asset "+technicalAssetsInside[i]+" at i="+strconv.Itoa(i))
 			}
 		}
 
@@ -497,7 +496,6 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 		parsedModel.TrustBoundaries[id] = trustBoundary
 		for _, technicalAsset := range trustBoundary.TechnicalAssetsInside {
 			parsedModel.DirectContainingTrustBoundaryMappedByTechnicalAssetId[technicalAsset] = trustBoundary
-			//fmt.Println("Asset "+technicalAsset+" is directly in trust boundary "+trustBoundary.ID)
 		}
 	}
 	err = parsedModel.CheckNestedTrustBoundariesExisting()

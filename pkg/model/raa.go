@@ -69,11 +69,9 @@ func calculatePivotingNeighbourEffectAdjustment(input *types.Model, techAsset *t
 	adjustment := 0.0
 	for _, commLink := range techAsset.CommunicationLinks {
 		outgoingNeighbour := input.TechnicalAssets[commLink.TargetId]
-		//if outgoingNeighbour.getTrustBoundary() == techAsset.getTrustBoundary() { // same trust boundary
 		delta := calculateRelativeAttackerAttractiveness(input, calculateAttackerAttractiveness(input, outgoingNeighbour)) - calculateRelativeAttackerAttractiveness(input, calculateAttackerAttractiveness(input, techAsset))
 		if delta > 0 {
 			potentialIncrease := delta / 3
-			//fmt.Println("Positive delta from", techAsset.ID, "to", outgoingNeighbour.ID, "is", delta, "yields to pivoting neighbour effect of an increase of", potentialIncrease)
 			if potentialIncrease > adjustment {
 				adjustment = potentialIncrease
 			}

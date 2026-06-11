@@ -73,6 +73,7 @@ func (what *ContainsExpression) EvalBool(scope *common.Scope) (*common.BoolValue
 	return what.evalBool(scope, item, inValue)
 }
 
+//nolint:unparam // scope is unused here but kept for signature symmetry with the sibling *Expression.evalBool helpers
 func (what *ContainsExpression) evalBool(scope *common.Scope, item common.Value, inValue common.Value) (*common.BoolValue, string, error) {
 	if inValue == nil {
 		return common.SomeBoolValue(false, nil), "", nil

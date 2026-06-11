@@ -500,6 +500,36 @@ previously vary in risk count, content, and ordering between runs of the exact s
 - **Exit:** server passes a hostile-input test set; timeouts verifiable in tests; gosec clean
   for `pkg/server`.
 
+#### Phase 12 — Results (done, 2026-06-11)
+
+- 12.1/12.2/12.3 `pkg/server/server.go`'s `RunServer` no longer calls `router.Run(...)`.
+  `gin.SetMode(gin.ReleaseMode)` is now set unless `config.GetVerbose()` (debug mode stays
+  available via the existing `--verbose`/`-v` flag); `router.SetTrustedProxies(nil)` is called
+  explicitly so gin never trusts `X-Forwarded-For` from arbitrary clients. The router is now
+  served via an explicit `*http.Server` with `ReadHeaderTimeout: 10s`, `ReadTimeout: 60s`,
+  `WriteTimeout: 300s` (generous enough for large PDF/Excel report streaming),
+  `IdleTimeout: 120s`, and `MaxHeaderBytes: 1MB`. `ListenAndServe` runs in a goroutine; the main
+  goroutine blocks on `SIGINT`/`SIGTERM` via `signal.Notify`, then calls `Shutdown(ctx)` with a
+  30s grace period so in-flight analyses can finish before the process exits.
+- 12.4 `pkg/server/zip.go`'s `unzip` already had zip-slip protection (path-prefix check); added
+  decompression-bomb limits: rejects archives with more than `maxUnzipFiles` (10000) entries or
+  a total declared uncompressed size over `maxUnzipTotalSize` (1 GiB), checked up front before
+  any extraction happens. Both are package vars (not consts) so tests can lower them. New tests
+  in `pkg/server/server_test.go`: `TestUnzip_TooManyFiles_Rejected`,
+  `TestUnzip_TooLarge_Rejected`, `TestUnzip_ZipSlip_Rejected`. The `/direct/analyze`,
+  `/direct/check`, and `/models/:model-id` (import) endpoints already had a 50MB upload-size
+  check in `pkg/server/execute.go`'s `execute` (pre-existing, verified still in place).
+- 12.5 Added `pkg/server/token_test.go` covering the auth failure branches: missing/malformed
+  `key`/`token` headers and unknown key/token hashes for `checkKeyToFolderName` and
+  `checkTokenToFolderName` (all → 404), `deleteToken`/`deleteKey` not-found paths,
+  `checkObjectCreationThrottler` (20 allowed, 21st → 429), and a `createKey`→`createToken`→
+  `checkTokenToFolderName`→`deleteToken`→`checkTokenToFolderName` round trip proving a deleted
+  token no longer resolves.
+- 12.6 `go run github.com/securego/gosec/v2/cmd/gosec@latest ./pkg/server/...` —
+  **0 issues** both before and after this phase's changes (10 pre-existing `#nosec`
+  justifications unchanged).
+- Verified: `go build ./...`, `go vet ./...`, full `go test ./... -count=1` green.
+
 ### Phase 13 — Docs, release & CI enforcement (N7, N8, N9, F4 closure)
 *Goal: docs match reality; quality gates become blocking; releases are reproducible.*
 

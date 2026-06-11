@@ -413,6 +413,78 @@ previously vary in risk count, content, and ordering between runs of the exact s
 - **Exit:** benchmark suite committed and runnable via Taskfile; documented before/after on
   at least the top 2 hot paths; no `-race` findings.
 
+#### Phase 11 — Results (done, 2026-06-11)
+
+- 11.1 Added `pkg/model/synthetic.go` (`BuildSyntheticModelInput(nAssets int)`, exported for
+  reuse from `pkg/report`) producing a valid 200-asset chained model (each asset has one data
+  asset and a communication link to the previous asset). Added
+  `pkg/model/analyze_bench_test.go` (`package model_test` to avoid an import cycle with
+  `internal/threagile`):
+  - `BenchmarkAnalyzeModel_200Assets` — full parse + risk-generation, default STRIDE + all
+    built-in rules.
+  - `BenchmarkAnalyzeModel_AllMethodologies` — sub-benchmarks for all 7 `Methodology` enum
+    values plus the `ai-ml` and `supply-chain` rule packs (the "9 methodologies").
+  - `TestAnalyzeModel_SyntheticLargeModel_Race` — runs the same 200-asset model under `-race`
+    to stress the Wave-1 parallel rule runner at scale (11.3).
+
+  Added `pkg/report/render_bench_test.go` (`package report_test`) with
+  `BenchmarkMarkdownReport_200Assets`, `BenchmarkRisksExcelReport_200Assets`, and
+  `BenchmarkTagsExcelReport_200Assets`, all driven off the same synthetic 200-asset model via
+  `model.AnalyzeModel`.
+
+  Added a `bench` task to `Taskfile.yml` running `go test ./pkg/model/... -bench=. -benchmem
+  -run=^$` and the equivalent for `pkg/report`.
+
+- 11.2/11.3 Profiled `BenchmarkAnalyzeModel_AllMethodologies/supply-chain` (the most
+  allocation-heavy sub-benchmark) with `-cpuprofile`/`-memprofile`. **74% of all allocations**
+  came from `gopkg.in/yaml.v3.Marshal`/`Unmarshal` inside
+  `pkg/risks/script/common.(*Scope).SetModel` — every script-based risk rule re-marshaled the
+  *entire* `*types.Model` to YAML and unmarshaled it into a fresh `map[string]any` for its own
+  scope, even though all ~50+ script rules run against the same model in the same
+  `applyRiskGeneration` pass and the DSL only ever *reads* from `$model` (confirmed: no
+  `Scope.Model` writes anywhere in `pkg/risks/script`).
+
+  **Fix:** extracted `common.ModelToMap(model *types.Model) (map[string]any, error)` (the
+  marshal/unmarshal round-trip, now done once) and `Scope.SetModelMap(map[string]any)` (no
+  conversion). Added `script.(*RiskRule).GenerateRisksFromMap(modelMap)` and a new optional
+  `types.ModelMapRiskRule` interface. `pkg/model/read.go`'s `applyRiskGeneration` now converts
+  `parsedModel` to a map **once** before fanning out to workers (at the same point in time the
+  per-rule conversions used to happen — before any risks are written back, so results are
+  identical) and each worker calls `GenerateRisksFromMap` on the shared, read-only map instead
+  of re-converting. Non-script rules (Go-native) are unaffected (fall back to `GenerateRisks`).
+
+  **Before/after** (`go test ./pkg/model/... -bench=. -benchmem -run=^$`, `-benchtime=3x`):
+
+  | Benchmark | Before (ns/op, B/op, allocs/op) | After |
+  |---|---|---|
+  | `AnalyzeModel_200Assets` (stride) | 166.2ms, 269MB, 2.11M allocs | 147.7ms, 138.5MB, 1.42M allocs (−11%, −49%, −33%) |
+  | `AllMethodologies/ai-ml` | 412.3ms, 1530MB, 9.54M allocs | 170.8ms, 202MB, 2.40M allocs (−59%, −87%, −75%) |
+  | `AllMethodologies/supply-chain` | 572.4ms, 2237MB, 13.87M allocs | 185.3ms, 236MB, 2.96M allocs (−68%, −89%, −79%) |
+
+  `TestAnalyzeModel_SyntheticLargeModel_Race -race` passes (11.3) — no new races from the
+  shared read-only model map.
+
+  Second hot path profiled: `BenchmarkRisksExcelReport_200Assets` (200-asset model →
+  ~hundreds of rows). 56% of CPU time is `excelize.(*File).GetCols` (re-decoding the written
+  sheet's XML to compute auto-fit column widths) — this is excelize's own row-enumeration
+  cost, not redundant work in our code (`GetCellStyle`/`GetStyle` calls in the same loop are
+  <2% of total). Fixing it would mean replacing the column-width pass with width estimates
+  derived from `riskItems`/`groupedRisk` *before* writing — a real but invasive
+  `pkg/report/excel.go` rewrite. At realistic risk counts (the `demo/example` model) this path
+  is sub-millisecond-scale per row and not user-visible; documented here as a profiled,
+  understood cost rather than fixed, per "fix the top allocators/CPU sinks only" — not
+  "rewrite excelize integration."
+
+- 11.4 `pkg/intel/kev/kev_test.go`'s `TestLoadOrRefresh_UsesCachWhenFresh` now uses an
+  atomic-counter HTTP handler and asserts exactly 1 request total: one for the initial
+  `Refresh` (populating the cache) and **zero** additional requests from the subsequent
+  `LoadOrRefresh` call with a fresh (24h TTL) cache — proving the cache-hit path makes no
+  network calls. (`pkg/intel/epss` has no `LoadOrRefresh`-equivalent batch function, so no
+  analogous test was added there.)
+
+- Verified: `go build ./...`, `go vet ./...`, `go test ./... -count=1` all green; `go test
+  ./pkg/model/... ./pkg/risks/... ./pkg/types/... -race -count=1` clean (no race findings).
+
 ### Phase 12 — Server hardening (N3)
 *Goal: the REST server is safe to expose beyond localhost.*
 

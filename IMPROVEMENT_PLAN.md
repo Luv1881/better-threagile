@@ -224,6 +224,33 @@ previously vary in risk count, content, and ordering between runs of the exact s
 - **Exit:** no single non-generated file > ~800 LoC in these areas; goldens and full test
   suite byte-identical/green; coverage not lower.
 
+#### Phase 7 — Results (done)
+
+- 7.1 `pkg/report/report.go` (4721) split into 13 chapter-cohesive files (`report.go` core
+  319 LoC + `report_cover.go`, `report_summary.go`, `report_risk_tracking.go`,
+  `report_risk_categories.go`, `report_overview.go`, `report_requirements.go`,
+  `report_tags.go`, `report_technical_assets.go`, `report_data_assets.go`,
+  `report_trust_boundaries.go`, `report_appendix.go`, `report_diagrams.go`). All purely
+  mechanical (function-level moves + `goimports`), no logic changes.
+  `report_technical_assets.go` is 822 LoC because `createTechnicalAssets` is a single
+  ~810-line function; left as one file rather than risk a behavior-changing internal split.
+- 7.2 `pkg/report/adocReport.go` (2317) split into 9 files the same way (`adocReport.go` core
+  489 LoC + `adoc_summary.go`, `adoc_target.go`, `adoc_requirements.go`, `adoc_overview.go`,
+  `adoc_risk_categories.go`, `adoc_assets.go`, `adoc_trust_boundaries.go`, `adoc_appendix.go`).
+- 7.3 `pkg/server/model.go` (1389) split along resource seams into `model.go` (595, model
+  CRUD/persistence/crypto), `model_metadata.go` (219, cover/overview/abuse-cases/security-reqs),
+  `model_data_assets.go` (358), `model_shared_runtimes.go` (259).
+- 7.4 `internal/threagile/config.go` (974) split into `config.go` (610: struct, interfaces,
+  `Defaults`/`Load`/`Merge`/path helpers) and `config_accessors.go` (372: pure
+  getters/setters).
+- 7.5 `pkg/macros/add-build-pipeline-macro.go` (1011) split into prompt-flow
+  (`add-build-pipeline-macro.go`, 265: question flow / `ApplyAnswer`/`GoBack`) and
+  model-mutation (`add-build-pipeline-macro-execute.go`, 754: `Execute`/`applyChange`).
+  `pkg/types/model.go` (920) and `pkg/model/parse.go` (900) left as-is — no clean seam (both
+  are cohesive `Model`-method/parsing files only marginally over budget).
+- All splits verified: `go build ./...`, `go vet ./...`, full `go test ./...` (1416 tests)
+  green, and `pkg/report` golden tests (adoc/Excel/Markdown/PDF) byte-identical.
+
 ### Phase 8 — Dependency health (N2)
 *Goal: no abandoned or deprecated code under the flagship features.*
 

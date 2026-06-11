@@ -268,6 +268,32 @@ previously vary in risk count, content, and ordering between runs of the exact s
 - **Exit:** no archived/deprecated direct dependencies (or each pin documented); `go mod tidy`
   clean; goldens unchanged (or intentionally regenerated with a note).
 
+#### Phase 8 — Results (done, 2026-06-11)
+
+- 8.1 Migrated `jung-kurt/gofpdf` (archived) → `github.com/go-pdf/fpdf` v0.9.0, the maintained
+  drop-in fork (same `fpdf` package name, same `contrib/gofpdi` API). Updated
+  `pkg/report/{colors,report,report_appendix,report_cover,report_diagrams}.go` and the license
+  attribution in `internal/threagile/consts.go`. PDF golden/smoke test unchanged.
+- 8.2 `aws-sdk-go` confirmed not a dependency at all (already removed in earlier waves) — no
+  action needed.
+- 8.3 Removed `mpvl/unique` (2015, trivial), replaced its `sort.Strings` + `unique.Strings`
+  pairs with `sort.Strings` + stdlib `slices.Compact` in `pkg/input/model.go`,
+  `pkg/macros/{seed-tags,remove-unused-tags}-macro.go`, `pkg/report/risk-group.go`. Migrated
+  `wcharczuk/go-chart` (`+incompatible`) → `github.com/wcharczuk/go-chart/v2` v2.1.2 (properly
+  versioned successor); fixed the breaking `chart.Style.Show bool` → `Hidden bool` (inverted)
+  field rename in `pkg/report/report_risk_tracking.go`. Updated chart license note in
+  `internal/threagile/consts.go`. All goldens (Markdown/Excel/Adoc/PDF) unchanged.
+- 8.4 Ran `go get -u ./...` for routine bumps (mscfb, msoleps, cobra, pflag, testify, ugorji,
+  excelize + xuri/efp/nfp, golang.org/x/{arch,crypto,image,net,sys,text}, protobuf). **Pinned
+  `gin` at v1.10.0** (rejected the v1.12.0 bump): it transitively pulls in
+  `quic-go/quic-go`, `quic-go/qpack`, and `go.mongodb.org/mongo-driver/v2` for HTTP/3 support —
+  too large a dependency-surface increase for a routine bump. Documented here as the
+  "pin and document" exit allowance.
+- 8.5 `go mod tidy` run after each migration step; tree is tidy.
+- 8.6 Skipped (optional) — Dependabot/Renovate config not added.
+- Verified: `go build ./...`, `go vet ./...`, full suite (1416 tests) all green; golangci-lint
+  issue count unchanged (165, identical breakdown) vs. pre-Phase-8 tree.
+
 ### Phase 9 — Close the remaining test gaps (N4, N6)
 *Goal: every shipped package has meaningful tests; untrusted-input parsers get fuzzed.*
 

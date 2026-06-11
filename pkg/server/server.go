@@ -5,7 +5,6 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package server
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -239,8 +238,10 @@ func RunServer(config serverConfigReader, builtinRiskRules types.RiskRules) {
 
 	s.customRiskRules = model.LoadCustomRiskRules(s.config.GetPluginFolder(), s.config.GetRiskRulePlugins(), config.GetProgressReporter())
 
-	fmt.Println("Threagile is running...")
-	_ = router.Run(":" + strconv.Itoa(s.config.GetServerPort())) // listen and serve on 0.0.0.0:8080 or whatever port was specified
+	log.Printf("Threagile is running on port %d...", s.config.GetServerPort())
+	if err := router.Run(":" + strconv.Itoa(s.config.GetServerPort())); err != nil {
+		log.Fatalf("server: listen failed: %v", err)
+	}
 }
 
 func (s *server) exampleFile(ginContext *gin.Context) {
@@ -285,14 +286,7 @@ func (s *server) addSupportedTags(input []byte) []byte {
 	}
 	sort.Strings(tags)
 	if s.config.GetVerbose() {
-		fmt.Print("Supported tags of all risk rules: ")
-		for i, tag := range tags {
-			if i > 0 {
-				fmt.Print(", ")
-			}
-			fmt.Print(tag)
-		}
-		fmt.Println()
+		log.Printf("Supported tags of all risk rules: %s", strings.Join(tags, ", "))
 	}
 	replacement := "tags_available:"
 	for _, tag := range tags {

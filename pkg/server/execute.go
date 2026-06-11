@@ -95,7 +95,7 @@ func (s *server) execute(ginContext *gin.Context, dryRun bool) (yamlContent []by
 	if strings.ToLower(filepath.Ext(filenameUploaded)) == ".zip" {
 		// unzip first (including the resources like images etc.)
 		if s.config.GetVerbose() {
-			fmt.Println("Decompressing uploaded archive")
+			log.Println("Decompressing uploaded archive")
 		}
 		filenamesUnzipped, err := unzip(tmpModelFile.Name(), tmpInputDir)
 		if err != nil {
@@ -111,7 +111,8 @@ func (s *server) execute(ginContext *gin.Context, dryRun bool) (yamlContent []by
 			}
 		}
 		if !found {
-			panic(fmt.Errorf("no yaml file found in uploaded archive"))
+			handleErrorInServiceCall(fmt.Errorf("no yaml file found in uploaded archive"), ginContext)
+			return yamlContent, false
 		}
 	}
 
@@ -132,9 +133,15 @@ func (s *server) execute(ginContext *gin.Context, dryRun bool) (yamlContent []by
 	methodology := ginContext.DefaultQuery("methodology", s.config.GetMethodology())
 
 	if dryRun {
-		s.doItViaRuntimeCall(yamlFile, tmpOutputDir, false, false, false, false, false, true, true, true, 40, methodology)
+		if err = s.doItViaRuntimeCall(yamlFile, tmpOutputDir, false, false, false, false, false, true, true, true, 40, methodology); err != nil {
+			handleErrorInServiceCall(err, ginContext)
+			return yamlContent, false
+		}
 	} else {
-		s.doItViaRuntimeCall(yamlFile, tmpOutputDir, true, true, true, true, true, true, true, true, dpi, methodology)
+		if err = s.doItViaRuntimeCall(yamlFile, tmpOutputDir, true, true, true, true, true, true, true, true, dpi, methodology); err != nil {
+			handleErrorInServiceCall(err, ginContext)
+			return yamlContent, false
+		}
 	}
 
 	yamlContent, err = os.ReadFile(filepath.Clean(yamlFile))
@@ -178,10 +185,11 @@ func (s *server) execute(ginContext *gin.Context, dryRun bool) (yamlContent []by
 	return yamlContent, true
 }
 
-// ultimately to avoid any in-process memory and/or data leaks by the used third party libs like PDF generation: exec and quit
+// doItViaRuntimeCall re-executes the threagile binary as a subprocess to avoid
+// in-process memory/data leaks from PDF generation and third-party libs.
 func (s *server) doItViaRuntimeCall(modelFile string, outputDir string,
 	generateDataFlowDiagram, generateDataAssetDiagram, generateReportPdf, generateRisksExcel, generateTagsExcel, generateRisksJSON, generateTechnicalAssetsJSON, generateStatsJSON bool,
-	dpi int, methodology string) {
+	dpi int, methodology string) error {
 	// Remember to also add the same args to the exec based sub-process calls!
 	var cmd *exec.Cmd
 	args := []string{"analyze-model",
@@ -228,20 +236,18 @@ func (s *server) doItViaRuntimeCall(modelFile string, outputDir string,
 	}
 	self, nameError := os.Executable()
 	if nameError != nil {
-		panic(nameError)
+		return fmt.Errorf("doItViaRuntimeCall: resolve executable: %w", nameError)
 	}
 
 	cmd = exec.Command(self, args...) // #nosec G204
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		panic(fmt.Errorf("%v", string(out)))
-	} else {
-		if s.config.GetVerbose() && len(out) > 0 {
-			fmt.Println("---")
-			fmt.Print(string(out))
-			fmt.Println("---")
-		}
+		return fmt.Errorf("doItViaRuntimeCall: subprocess failed: %s", string(out))
 	}
+	if s.config.GetVerbose() && len(out) > 0 {
+		log.Printf("---\n%s\n---", string(out))
+	}
+	return nil
 }
 
 func (s *server) editModelAnalyze(ginContext *gin.Context) {

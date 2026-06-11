@@ -253,7 +253,10 @@ func writeToFile(name string, item any, filename string, progressReporter types.
 		return
 	}
 
-	_ = os.MkdirAll(filepath.Dir(filename), 0750)
+	if mkdirErr := os.MkdirAll(filepath.Dir(filename), 0750); mkdirErr != nil {
+		progressReporter.Warnf("Unable to create directory for %v: %v", name, mkdirErr)
+		return
+	}
 
 	writeError := os.WriteFile(filename, exported, 0600)
 	if writeError != nil {

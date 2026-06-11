@@ -111,6 +111,8 @@ func (s *server) riskTrackingSummary(ginContext *gin.Context) {
 
 func (s *server) explainRisk(ginContext *gin.Context) {
 	var payload explainRiskRequest
+	// ShouldBindJSON error is intentionally ignored: the handler falls back to
+	// the synthetic_id query parameter, so a missing/malformed body is not fatal.
 	_ = ginContext.ShouldBindJSON(&payload)
 	if payload.SyntheticID == "" {
 		payload.SyntheticID = ginContext.Query("synthetic_id")

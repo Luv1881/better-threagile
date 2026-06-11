@@ -1179,10 +1179,11 @@ func (s *server) analyzeModelOnServerDirectly(ginContext *gin.Context) {
 	}
 	defer func() { _ = os.Remove(tmpResultFile.Name()) }() // #nosec G703
 
-	err = os.WriteFile(tmpModelFile.Name(), []byte(yamlText), 0400) // #nosec G703
-
-	s.doItViaRuntimeCall(tmpModelFile.Name(), tmpOutputDir, true, true, true, true, true, true, true, true, dpi, ginContext.DefaultQuery("methodology", s.config.GetMethodology()))
-	if err != nil {
+	if err = os.WriteFile(tmpModelFile.Name(), []byte(yamlText), 0400); err != nil { // #nosec G703
+		handleErrorInServiceCall(err, ginContext)
+		return
+	}
+	if err = s.doItViaRuntimeCall(tmpModelFile.Name(), tmpOutputDir, true, true, true, true, true, true, true, true, dpi, ginContext.DefaultQuery("methodology", s.config.GetMethodology())); err != nil {
 		handleErrorInServiceCall(err, ginContext)
 		return
 	}

@@ -247,7 +247,10 @@ func (c *Client) createIssue(title, body string, risk *types.Risk, synLabel, sev
 		return SyncResult{SyntheticID: risk.SyntheticId, Action: "create-failed", Error: err}
 	}
 	var created Issue
-	_ = json.Unmarshal(resp, &created)
+	if unmarshalErr := json.Unmarshal(resp, &created); unmarshalErr != nil {
+		// Issue was created (HTTP 2xx confirmed above); issue number is unavailable.
+		return SyncResult{SyntheticID: risk.SyntheticId, Action: "created"}
+	}
 	return SyncResult{SyntheticID: risk.SyntheticId, Action: "created", IssueNumber: created.Number}
 }
 

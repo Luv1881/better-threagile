@@ -11,9 +11,11 @@ import (
 	"hash/fnv"
 )
 
+// xor XORs key with xorKey byte-by-byte. Callers must guarantee equal lengths;
+// mismatched lengths are a programmer error and panic rather than silently corrupt output.
 func xor(key []byte, xor []byte) []byte {
 	if len(key) != len(xor) {
-		panic(fmt.Errorf("key length not matching XOR length"))
+		panic(fmt.Errorf("xor: key length %d != xor length %d", len(key), len(xor)))
 	}
 	result := make([]byte, len(xor))
 	for i, b := range key {

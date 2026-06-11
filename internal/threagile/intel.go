@@ -183,9 +183,11 @@ func (what *Threagile) newIntelStatusCmd(cacheDir *string) *cobra.Command {
 					status = "STALE"
 				}
 
-				// Count entries if possible
+				// Count entries if possible; display-only so a parse failure is non-fatal.
 				var raw []json.RawMessage
-				_ = json.Unmarshal(entry.Payload, &raw)
+				if err := json.Unmarshal(entry.Payload, &raw); err != nil {
+					raw = nil
+				}
 				countStr := ""
 				if len(raw) > 0 {
 					countStr = fmt.Sprintf("(%d items)", len(raw))

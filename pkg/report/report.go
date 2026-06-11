@@ -1248,8 +1248,12 @@ func (r *pdfReporter) createRiskMitigationStatus(parsedModel *types.Model, tempF
 			},
 		}
 
-		_ = r.embedPieChart(pieChartRemainingRiskSeverity, 15.0, 216, tempFolder)
-		_ = r.embedPieChart(pieChartRemainingRisksByFunction, 110.0, 216, tempFolder)
+		if err := r.embedPieChart(pieChartRemainingRiskSeverity, 15.0, 216, tempFolder); err != nil {
+			return fmt.Errorf("embed risk severity chart: %w", err)
+		}
+		if err := r.embedPieChart(pieChartRemainingRisksByFunction, 110.0, 216, tempFolder); err != nil {
+			return fmt.Errorf("embed risk function chart: %w", err)
+		}
 
 		r.pdf.SetFont("Helvetica", "B", fontSizeBody)
 		r.pdf.Ln(8)
@@ -4497,7 +4501,7 @@ func getHeightWhenWidthIsFix(imageFullFilename string, width float64) (float64, 
 	return float64(img.Height) / (float64(img.Width) / width), nil
 }
 
-func (r *pdfReporter) embedDataFlowDiagram(diagramFilenamePNG string, tempFolder string) {
+func (r *pdfReporter) embedDataFlowDiagram(diagramFilenamePNG string, _ string) {
 	r.pdf.SetTextColor(0, 0, 0)
 	title := "Data-Flow Diagram"
 	r.addHeadline(title, false)
@@ -4523,7 +4527,6 @@ func (r *pdfReporter) embedDataFlowDiagram(diagramFilenamePNG string, tempFolder
 	muchWiderThanHigh := srcDimensions.Dx() > int(float64(srcDimensions.Dy())*1.25)
 	// fresh page (eventually landscape)?
 	r.isLandscapePage = false
-	_ = tempFolder
 	/*
 		pinnedWidth, pinnedHeight := 190.0, 210.0
 		if dataFlowDiagramFullscreen {
@@ -4585,7 +4588,7 @@ func (r *pdfReporter) embedDataFlowDiagram(diagramFilenamePNG string, tempFolder
 	}
 }
 
-func (r *pdfReporter) embedDataRiskMapping(diagramFilenamePNG string, tempFolder string) {
+func (r *pdfReporter) embedDataRiskMapping(diagramFilenamePNG string, _ string) {
 	r.pdf.SetTextColor(0, 0, 0)
 	title := "Data Mapping"
 	r.addHeadline(title, false)
@@ -4615,7 +4618,6 @@ func (r *pdfReporter) embedDataRiskMapping(diagramFilenamePNG string, tempFolder
 	pinnedWidth, pinnedHeight := 190.0, 195.0
 	// fresh page (eventually landscape)?
 	r.isLandscapePage = false
-	_ = tempFolder
 	/*
 		if dataFlowDiagramFullscreen {
 			pinnedHeight = 235.0

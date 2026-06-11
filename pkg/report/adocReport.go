@@ -226,7 +226,6 @@ func (adoc adocReport) WriteReport(model *types.Model,
 	if err != nil {
 		return err
 	}
-	// err = adoc.createDefaultTheme() FIXME
 	adoc.writeTitleAndPreamble()
 	err = adoc.writeManagementSummery()
 	if err != nil {
@@ -337,6 +336,7 @@ func (adoc adocReport) WriteReport(model *types.Model,
 }
 
 func (adoc *adocReport) initReport() error {
+	// Best-effort cleanup of a previous run; failure is non-fatal — MkdirAll below will catch real problems.
 	_ = os.RemoveAll(adoc.targetDirectory)
 	err := os.MkdirAll(adoc.targetDirectory, 0750)
 	if err != nil {

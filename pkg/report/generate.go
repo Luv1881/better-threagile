@@ -86,8 +86,12 @@ func Generate(config reportConfigReader, readResult *model.ReadResult, commands 
 	generateDataFlowDiagram := commands.DataFlowDiagram
 	generateDataAssetsDiagram := commands.DataAssetDiagram
 
-	_ = os.MkdirAll(filepath.Clean(config.GetOutputFolder()), 0750)
-	_ = os.MkdirAll(filepath.Clean(config.GetTempFolder()), 0700)
+	if err := os.MkdirAll(filepath.Clean(config.GetOutputFolder()), 0750); err != nil {
+		return fmt.Errorf("generate: create output folder: %w", err)
+	}
+	if err := os.MkdirAll(filepath.Clean(config.GetTempFolder()), 0700); err != nil {
+		return fmt.Errorf("generate: create temp folder: %w", err)
+	}
 
 	if commands.ReportPDF || commands.ReportADOC { // as the PDF report includes both diagrams
 		if !generateDataFlowDiagram {

@@ -102,51 +102,49 @@ func (s *server) streamResponse(ginContext *gin.Context, responseType responseTy
 		return
 	}
 	defer func() { _ = os.RemoveAll(tmpOutputDir) }()
-	err = os.WriteFile(tmpModelFile.Name(), []byte(yamlText), 0400)
+	if err = os.WriteFile(tmpModelFile.Name(), []byte(yamlText), 0400); err != nil {
+		handleErrorInServiceCall(err, ginContext)
+		return
+	}
+	methodology := ginContext.DefaultQuery("methodology", s.config.GetMethodology())
 	switch responseType {
 	case dataFlowDiagram:
-		s.doItViaRuntimeCall(tmpModelFile.Name(), tmpOutputDir, true, false, false, false, false, false, false, false, dpi, ginContext.DefaultQuery("methodology", s.config.GetMethodology()))
-		if err != nil {
+		if err = s.doItViaRuntimeCall(tmpModelFile.Name(), tmpOutputDir, true, false, false, false, false, false, false, false, dpi, methodology); err != nil {
 			handleErrorInServiceCall(err, ginContext)
 			return
 		}
 		ginContext.File(filepath.Clean(filepath.Join(tmpOutputDir, s.config.GetDataFlowDiagramFilenamePNG())))
 
 	case dataAssetDiagram:
-		s.doItViaRuntimeCall(tmpModelFile.Name(), tmpOutputDir, false, true, false, false, false, false, false, false, dpi, ginContext.DefaultQuery("methodology", s.config.GetMethodology()))
-		if err != nil {
+		if err = s.doItViaRuntimeCall(tmpModelFile.Name(), tmpOutputDir, false, true, false, false, false, false, false, false, dpi, methodology); err != nil {
 			handleErrorInServiceCall(err, ginContext)
 			return
 		}
 		ginContext.File(filepath.Clean(filepath.Join(tmpOutputDir, s.config.GetDataAssetDiagramFilenamePNG())))
 
 	case reportPDF:
-		s.doItViaRuntimeCall(tmpModelFile.Name(), tmpOutputDir, false, false, true, false, false, false, false, false, dpi, ginContext.DefaultQuery("methodology", s.config.GetMethodology()))
-		if err != nil {
+		if err = s.doItViaRuntimeCall(tmpModelFile.Name(), tmpOutputDir, false, false, true, false, false, false, false, false, dpi, methodology); err != nil {
 			handleErrorInServiceCall(err, ginContext)
 			return
 		}
 		ginContext.FileAttachment(filepath.Clean(filepath.Join(tmpOutputDir, s.config.GetReportFilename())), s.config.GetReportFilename())
 
 	case risksExcel:
-		s.doItViaRuntimeCall(tmpModelFile.Name(), tmpOutputDir, false, false, false, true, false, false, false, false, dpi, ginContext.DefaultQuery("methodology", s.config.GetMethodology()))
-		if err != nil {
+		if err = s.doItViaRuntimeCall(tmpModelFile.Name(), tmpOutputDir, false, false, false, true, false, false, false, false, dpi, methodology); err != nil {
 			handleErrorInServiceCall(err, ginContext)
 			return
 		}
 		ginContext.FileAttachment(filepath.Clean(filepath.Join(tmpOutputDir, s.config.GetExcelRisksFilename())), s.config.GetExcelRisksFilename())
 
 	case tagsExcel:
-		s.doItViaRuntimeCall(tmpModelFile.Name(), tmpOutputDir, false, false, false, false, true, false, false, false, dpi, ginContext.DefaultQuery("methodology", s.config.GetMethodology()))
-		if err != nil {
+		if err = s.doItViaRuntimeCall(tmpModelFile.Name(), tmpOutputDir, false, false, false, false, true, false, false, false, dpi, methodology); err != nil {
 			handleErrorInServiceCall(err, ginContext)
 			return
 		}
 		ginContext.FileAttachment(filepath.Clean(filepath.Join(tmpOutputDir, s.config.GetExcelTagsFilename())), s.config.GetExcelTagsFilename())
 
 	case risksJSON:
-		s.doItViaRuntimeCall(tmpModelFile.Name(), tmpOutputDir, false, false, false, false, false, true, false, false, dpi, ginContext.DefaultQuery("methodology", s.config.GetMethodology()))
-		if err != nil {
+		if err = s.doItViaRuntimeCall(tmpModelFile.Name(), tmpOutputDir, false, false, false, false, false, true, false, false, dpi, methodology); err != nil {
 			handleErrorInServiceCall(err, ginContext)
 			return
 		}
@@ -155,11 +153,10 @@ func (s *server) streamResponse(ginContext *gin.Context, responseType responseTy
 			handleErrorInServiceCall(err, ginContext)
 			return
 		}
-		ginContext.Data(http.StatusOK, "application/json", jsonData) // stream directly with JSON content-type in response instead of file download
+		ginContext.Data(http.StatusOK, "application/json", jsonData)
 
 	case technicalAssetsJSON:
-		s.doItViaRuntimeCall(tmpModelFile.Name(), tmpOutputDir, false, false, false, false, false, true, true, false, dpi, ginContext.DefaultQuery("methodology", s.config.GetMethodology()))
-		if err != nil {
+		if err = s.doItViaRuntimeCall(tmpModelFile.Name(), tmpOutputDir, false, false, false, false, false, true, true, false, dpi, methodology); err != nil {
 			handleErrorInServiceCall(err, ginContext)
 			return
 		}
@@ -168,11 +165,10 @@ func (s *server) streamResponse(ginContext *gin.Context, responseType responseTy
 			handleErrorInServiceCall(err, ginContext)
 			return
 		}
-		ginContext.Data(http.StatusOK, "application/json", jsonData) // stream directly with JSON content-type in response instead of file download
+		ginContext.Data(http.StatusOK, "application/json", jsonData)
 
 	case statsJSON:
-		s.doItViaRuntimeCall(tmpModelFile.Name(), tmpOutputDir, false, false, false, false, false, false, false, true, dpi, ginContext.DefaultQuery("methodology", s.config.GetMethodology()))
-		if err != nil {
+		if err = s.doItViaRuntimeCall(tmpModelFile.Name(), tmpOutputDir, false, false, false, false, false, false, false, true, dpi, methodology); err != nil {
 			handleErrorInServiceCall(err, ginContext)
 			return
 		}
@@ -181,6 +177,6 @@ func (s *server) streamResponse(ginContext *gin.Context, responseType responseTy
 			handleErrorInServiceCall(err, ginContext)
 			return
 		}
-		ginContext.Data(http.StatusOK, "application/json", jsonData) // stream directly with JSON content-type in response instead of file download
+		ginContext.Data(http.StatusOK, "application/json", jsonData)
 	}
 }

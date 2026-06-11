@@ -6,6 +6,7 @@ package types
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"slices"
 	"sort"
@@ -62,6 +63,11 @@ type Model struct {
 	ActiveMethodology                                     Methodology                     `json:"active_methodology,omitempty" yaml:"active_methodology,omitempty"`
 	ThreatScenarios                                       map[string]*ThreatScenario      `json:"threat_scenarios,omitempty" yaml:"threat_scenarios,omitempty"`
 	BusinessProcesses                                     map[string]*BusinessProcess     `json:"business_processes,omitempty" yaml:"business_processes,omitempty"`
+
+	// statusApplied is set true after GeneratedRisksByCategoryWithCurrentStatus has
+	// merged RiskTracking statuses into the risk objects — so subsequent calls skip
+	// the O(categories × risks) re-scan.
+	statusApplied bool
 }
 
 type ProgressReporter interface {
@@ -457,19 +463,12 @@ func (model *Model) FindParentTrustBoundary(tb *TrustBoundary) *TrustBoundary {
 // as in Go ranging over map is random order, range over them in sorted (hence reproducible) way:
 
 func (model *Model) SortedRiskCategories() []*RiskCategory {
-	categoryMap := make(map[string]*RiskCategory)
+	categories := make([]*RiskCategory, 0, len(model.GeneratedRisksByCategory))
 	for categoryId := range model.GeneratedRisksByCategory {
-		category := model.GetRiskCategory(categoryId)
-		if category != nil {
-			categoryMap[categoryId] = category
+		if category := model.GetRiskCategory(categoryId); category != nil {
+			categories = append(categories, category)
 		}
 	}
-
-	categories := make([]*RiskCategory, 0)
-	for categoryId := range categoryMap {
-		categories = append(categories, categoryMap[categoryId])
-	}
-
 	model.SortByRiskCategoryHighestContainingRiskSeveritySortStillAtRisk(categories)
 	return categories
 }
@@ -480,23 +479,44 @@ func (model *Model) SortedRisksOfCategory(category *RiskCategory) []*Risk {
 	return risks
 }
 
+// categorySortKey holds pre-computed sort values for a risk category so the
+// comparator does not call ReduceToOnlyStillAtRisk O(n log n) times.
+type categorySortKey struct {
+	cat     *RiskCategory
+	highest RiskSeverity
+	atRisk  int
+}
+
 func (model *Model) SortByRiskCategoryHighestContainingRiskSeveritySortStillAtRisk(riskCategories []*RiskCategory) {
-	sort.Slice(riskCategories, func(i, j int) bool {
-		risksLeft := ReduceToOnlyStillAtRisk(model.GeneratedRisksByCategory[riskCategories[i].ID])
-		risksRight := ReduceToOnlyStillAtRisk(model.GeneratedRisksByCategory[riskCategories[j].ID])
-		highestLeft := HighestSeverityStillAtRisk(risksLeft)
-		highestRight := HighestSeverityStillAtRisk(risksRight)
-		if highestLeft == highestRight {
-			if len(risksLeft) == 0 && len(risksRight) > 0 {
+	keys := make([]categorySortKey, len(riskCategories))
+	for i, cat := range riskCategories {
+		highest := LowSeverity
+		atRisk := 0
+		for _, r := range model.GeneratedRisksByCategory[cat.ID] {
+			if r.RiskStatus.IsStillAtRisk() {
+				atRisk++
+				if r.Severity > highest {
+					highest = r.Severity
+				}
+			}
+		}
+		keys[i] = categorySortKey{cat, highest, atRisk}
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		if keys[i].highest == keys[j].highest {
+			if keys[i].atRisk == 0 && keys[j].atRisk > 0 {
 				return false
 			}
-			if len(risksLeft) > 0 && len(risksRight) == 0 {
+			if keys[i].atRisk > 0 && keys[j].atRisk == 0 {
 				return true
 			}
-			return riskCategories[i].Title < riskCategories[j].Title
+			return keys[i].cat.Title < keys[j].cat.Title
 		}
-		return highestLeft > highestRight
+		return keys[i].highest > keys[j].highest
 	})
+	for i, k := range keys {
+		riskCategories[i] = k.cat
+	}
 }
 
 func (model *Model) GetRiskCategory(categoryID string) *RiskCategory {
@@ -520,7 +540,11 @@ func (model *Model) GetRiskCategory(categoryID string) *RiskCategory {
 }
 
 func (model *Model) AllRisks() []*Risk {
-	result := make([]*Risk, 0)
+	total := 0
+	for _, risks := range model.GeneratedRisksByCategory {
+		total += len(risks)
+	}
+	result := make([]*Risk, 0, total)
 	for _, risks := range model.GeneratedRisksByCategory {
 		result = append(result, risks...)
 	}
@@ -529,10 +553,13 @@ func (model *Model) AllRisks() []*Risk {
 
 func (model *Model) IdentifiedDataBreachProbability(what *DataAsset) DataBreachProbability {
 	highestProbability := Improbable
-	for _, risk := range model.AllRisks() {
-		for _, techAsset := range risk.DataBreachTechnicalAssetIDs {
-			if contains(model.TechnicalAssets[techAsset].DataAssetsProcessed, what.Id) {
-				if risk.DataBreachProbability > highestProbability {
+	for _, risks := range model.GeneratedRisksByCategory {
+		for _, risk := range risks {
+			if risk.DataBreachProbability <= highestProbability {
+				continue
+			}
+			for _, techAsset := range risk.DataBreachTechnicalAssetIDs {
+				if ta, ok := model.TechnicalAssets[techAsset]; ok && contains(ta.DataAssetsProcessed, what.Id) {
 					highestProbability = risk.DataBreachProbability
 					break
 				}
@@ -544,11 +571,13 @@ func (model *Model) IdentifiedDataBreachProbability(what *DataAsset) DataBreachP
 
 func (model *Model) IdentifiedDataBreachProbabilityRisks(what *DataAsset) []*Risk {
 	result := make([]*Risk, 0)
-	for _, risk := range model.AllRisks() {
-		for _, techAsset := range risk.DataBreachTechnicalAssetIDs {
-			if contains(model.TechnicalAssets[techAsset].DataAssetsProcessed, what.Id) {
-				result = append(result, risk)
-				break
+	for _, risks := range model.GeneratedRisksByCategory {
+		for _, risk := range risks {
+			for _, techAsset := range risk.DataBreachTechnicalAssetIDs {
+				if ta, ok := model.TechnicalAssets[techAsset]; ok && contains(ta.DataAssetsProcessed, what.Id) {
+					result = append(result, risk)
+					break
+				}
 			}
 		}
 	}
@@ -838,7 +867,7 @@ func (model *Model) HasDirectConnection(what *TechnicalAsset, otherAssetId strin
 func (model *Model) GeneratedRisks(what *TechnicalAsset) []*Risk {
 	resultingRisks := make([]*Risk, 0)
 	if len(model.SortedRiskCategories()) == 0 {
-		fmt.Println("Uh, strange, no risks generated (yet?) and asking for them by tech asset...")
+		log.Println("Uh, strange, no risks generated (yet?) and asking for them by tech asset...")
 	}
 	for _, category := range model.SortedRiskCategories() {
 		risks := model.SortedRisksOfCategory(category)
@@ -874,14 +903,15 @@ func (model *Model) IsRiskTracked(what *Risk) bool {
 }
 
 func (model *Model) GeneratedRisksByCategoryWithCurrentStatus() map[string][]*Risk {
-	generatedRisksByCategoryWithCurrentStatus := model.GeneratedRisksByCategory
-	for catId, risks := range generatedRisksByCategoryWithCurrentStatus {
-		for idx, risk := range risks {
-			riskTracked, ok := model.RiskTracking[risk.SyntheticId]
-			if ok {
-				generatedRisksByCategoryWithCurrentStatus[catId][idx].RiskStatus = riskTracked.Status
+	if !model.statusApplied {
+		for catId, risks := range model.GeneratedRisksByCategory {
+			for idx, risk := range risks {
+				if tracked, ok := model.RiskTracking[risk.SyntheticId]; ok {
+					model.GeneratedRisksByCategory[catId][idx].RiskStatus = tracked.Status
+				}
 			}
 		}
+		model.statusApplied = true
 	}
-	return generatedRisksByCategoryWithCurrentStatus
+	return model.GeneratedRisksByCategory
 }

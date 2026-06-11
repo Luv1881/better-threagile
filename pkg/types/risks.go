@@ -4,10 +4,13 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 
 package types
 
-import "sort"
+import (
+	"cmp"
+	"slices"
+)
 
 func ReduceToOnlyStillAtRisk(risks []*Risk) []*Risk {
-	filteredRisks := make([]*Risk, 0)
+	filteredRisks := make([]*Risk, 0, len(risks))
 	for _, risk := range risks {
 		if risk.RiskStatus.IsStillAtRisk() {
 			filteredRisks = append(filteredRisks, risk)
@@ -27,30 +30,20 @@ func HighestSeverityStillAtRisk(risks []*Risk) RiskSeverity {
 }
 
 func SortByRiskSeverity(risks []*Risk) {
-	sort.Slice(risks, func(i, j int) bool {
-		if risks[i].Severity == risks[j].Severity {
-			trackingStatusLeft := risks[i].RiskStatus
-			trackingStatusRight := risks[j].RiskStatus
-			if trackingStatusLeft == trackingStatusRight {
-				impactLeft := risks[i].ExploitationImpact
-				impactRight := risks[j].ExploitationImpact
-				if impactLeft == impactRight {
-					likelihoodLeft := risks[i].ExploitationLikelihood
-					likelihoodRight := risks[j].ExploitationLikelihood
-					if likelihoodLeft == likelihoodRight {
-						return risks[i].Title < risks[j].Title
-					} else {
-						return likelihoodLeft > likelihoodRight
-					}
-				} else {
-					return impactLeft > impactRight
-				}
-			} else {
-				return trackingStatusLeft < trackingStatusRight
-			}
+	slices.SortFunc(risks, func(a, b *Risk) int {
+		if n := cmp.Compare(b.Severity, a.Severity); n != 0 {
+			return n
 		}
-		return risks[i].Severity > risks[j].Severity
-
+		if n := cmp.Compare(a.RiskStatus, b.RiskStatus); n != 0 {
+			return n
+		}
+		if n := cmp.Compare(b.ExploitationImpact, a.ExploitationImpact); n != 0 {
+			return n
+		}
+		if n := cmp.Compare(b.ExploitationLikelihood, a.ExploitationLikelihood); n != 0 {
+			return n
+		}
+		return cmp.Compare(a.Title, b.Title)
 	})
 }
 

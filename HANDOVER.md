@@ -1,8 +1,8 @@
 # HANDOVER — better-threagile
 
-> Written 2026-06-11 at the end of a working session. This is the single document to read
-> before touching the repo. Full history and rationale live in `IMPROVEMENT_PLAN.md`
-> (the phased v2 plan, with per-phase "Results" sections, plus the new §8 v3 roadmap).
+> Updated 2026-06-12 at the end of the v3-features working session. This is the single
+> document to read before touching the repo. Full history and rationale live in
+> `IMPROVEMENT_PLAN.md` (phased v2 plan with per-phase "Results" sections + §8 v3 roadmap).
 
 ## 1. Current state (all verified at handover time)
 
@@ -11,85 +11,114 @@
 | `go build ./...` | clean |
 | `go vet ./...` | clean |
 | `golangci-lint run ./...` (v2.11, blocking config) | **0 issues** |
-| `go test -race ./...` | **1503 tests pass**, 30 packages |
-| Total coverage | **54.3%** (CI ratchet floor: 52.0%) |
+| `go test -race ./...` | **1535 tests pass**, 30 packages |
+| Total coverage | ≥ 54% (CI ratchet floor: 52.0%) |
 | `git status` | clean, everything committed on `master` |
 
-The repo is **not** a git remote-tracked fork in this working copy — no GitHub remote is
-configured. CI/release workflows exist in `.github/workflows/` but have never run; pushing
-to a GitHub repo is needed to exercise them (see §4).
+No GitHub remote is configured in this working copy. CI/release workflows exist in
+`.github/workflows/` but have never run (see §4 item 1).
 
-## 2. What has been done (Phases 0–13 of IMPROVEMENT_PLAN.md)
+## 2. What was done THIS session (2026-06-12, after Phase 13)
 
-Condensed; each phase has a detailed "Results" section in the plan.
+Three v3-roadmap features shipped, two real engine bugs found & fixed, and the fork was
+exercised end-to-end on the VaultNote reference model (`../Threat-model/threagile/`).
 
-- **0–4**: CI workflow, lint config, llm command-tree removal (owner decision: no LLM,
-  static analysis only), rule-pack embed migration, first test waves, baseline committed.
-- **5/5b**: hygiene — errcheck/noctx/gosec fixes, `fmt.Print*` cleanup in `pkg/`,
-  lint baseline recorded. (5b leftovers: TODO triage — see §3.)
-- **6**: golden/characterization tests for every report format (adoc, Excel, PDF smoke,
-  Markdown, JSON). Found and fixed **real nondeterminism bugs**: 2 data races in parallel
-  risk generation, 4 map-iteration ordering bugs. `pkg/report` ~1% → 76% coverage.
-- **7**: monster-file splits (report.go 4722→13 files, adocReport.go, server/model.go,
-  config.go, build-pipeline macro) — purely mechanical, goldens byte-identical.
-- **8**: dependency health — gofpdf→go-pdf/fpdf, go-chart→v2, mpvl/unique removed,
-  routine bumps. **gin pinned at v1.10.0** deliberately (v1.12 pulls in quic-go + mongo
-  driver; rejected). `go mod tidy` clean.
-- **9**: test gaps closed — zero untested packages; 4 fuzz targets (`pkg/input`,
-  `pkg/import/{terraform,openapi}`, `pkg/risks/script`); coverage → 52.7%.
-- **10**: dead-code sweep (deleted orphaned script-DSL property types; remaining
-  "deadcode" hits are deliberate API kept for symmetry — documented in plan).
-- **11**: performance — benchmarks + pprof; **the big win**: script rules used to
-  re-marshal the whole model to YAML per rule; now converted once and shared
-  (−68% time / −89% allocs on the heaviest pack). Known remaining hot spot: excelize
-  `GetCols` (56% of Excel render CPU) — documented, deliberately not fixed.
-- **12**: server hardening — explicit `http.Server` with timeouts, graceful shutdown,
-  gin release mode, `SetTrustedProxies(nil)`, zip decompression-bomb limits, auth
-  failure-branch tests, gosec clean on `pkg/server`.
-- **13 (mostly done)**:
-  - 13.2 lint **179 → 0 issues** and now **blocking** in CI (`.golangci.yml` has
-    documented policy decisions: gocritic typeSwitchVar/singleCaseSwitch/ifElseChain
-    disabled; gochecknoglobals not enabled — read the comments in that file before
-    "fixing" them).
-  - 13.3 coverage ratchet in `ci.yml` (fails < 52.0%).
-  - Fuzz smoke (4 × 10s) added to `ci.yml`.
-  - 13.4 release pipeline: `.goreleaser.yaml` (validated; snapshot build of all 6
-    OS/arch targets succeeded locally) + `Dockerfile.goreleaser` +
-    `.github/workflows/release.yml` (v* tags, security-gate job before goreleaser).
-  - 13.5 `docs/releases.md` refreshed.
-  - **13.1 docs reconciliation DONE (2026-06-12)** — see §3.
+### 2.1 New features (IMPROVEMENT_PLAN §8.3)
+
+- **R4 SARIF output — DONE (f3ab03d).** Every analysis now also writes `risks.sarif`
+  (SARIF 2.1.0) for GitHub/GitLab code-scanning upload. One rule per risk category
+  (CWE, STRIDE, security-severity in properties), one result per risk pointing at the
+  model YAML, `threagileSyntheticId` as partial fingerprint. Risks tracked as
+  mitigated/false-positive/accepted carry SARIF `suppressions` (justification = tracking
+  justification) so forges hide them. Flags: `--risks-sarif <name>` (default
+  `risks.sarif`), `--skip-risks-sarif`. Code: `pkg/report/sarif.go` (+golden &
+  structure tests); plumbing mirrors risks-json through consts/flags/config/root/generate.
+
+- **R1 `threagile quantify` — DONE (d5a8be0).** FAIR Monte-Carlo ALE over generated
+  risks. `--estimates <yaml>` maps **synthetic risk IDs (exact, wins) or category IDs**
+  to PERT `loss_event_frequency` (events/yr) + `loss_magnitude` (USD/event);
+  `--iterations`, `--output-json`. Deterministic per risk (RNG seeded from synthetic ID).
+  Prints table sorted by median ALE + portfolio sums (documented as sum-of-percentiles
+  approximation). Code: `pkg/risks/quant/quantify.go` (LoadEstimates validation +
+  Quantify), `internal/threagile/quantify.go`. Also extracted the analyze command's
+  rule loading into `Threagile.loadRiskRules()` (analyze.go) — reuse it for future
+  commands needing the full rule set.
+
+- **R2 risk-acceptance expiry — DONE (6017365).** Tracking entries with
+  `status: accepted` may carry `accepted_until: YYYY-MM-DD` + `accepted_by:`.
+  Once the date passes, **analyze/validate fail** listing the expired acceptances;
+  `--ignore-expired-risk-acceptance` downgrades to warnings. `accepted_until` on a
+  non-accepted status is a model error. Acceptance without expiry logs an info nudge.
+  Implementation: `pkg/input/risk-tracking.go` (+merge), `pkg/types/risk-tracking.go`
+  (`AcceptedUntil *Date` — pointer so YAML/JSON stays clean, `IsAcceptanceExpired`),
+  `pkg/model/parse.go`, `Model.CheckAcceptanceExpiry` in `pkg/types/model.go`, called
+  from `AnalyzeModel` via an **optional config interface assertion**
+  (`interface{ GetIgnoreExpiredRiskAcceptance() bool }`) so other configReader
+  implementations didn't need changes.
+
+### 2.2 Engine bugs found by real-world use (both fixed, regression-tested)
+
+- **Wildcard risk tracking was silently broken (4fa3ae1).** `applyRiskGeneration`
+  built `GeneratedRisksBySyntheticId` via `SortedRisksOfCategory`, which triggers the
+  one-shot `statusApplied` cache in `GeneratedRisksByCategoryWithCurrentStatus` —
+  BEFORE `ApplyWildcardRiskTrackingEvaluation` expanded `rule-id@*` entries. Net effect:
+  wildcard entries landed in `model.RiskTracking` but risks stayed "unchecked" in every
+  output. Fixed by building the map from the raw category map. **Gotcha:** the old
+  path's in-place sort was load-bearing for deterministic output — an explicit
+  `types.SortByRiskSeverity` per category slice now does that job; do not remove it.
+- **Same cache, second face (505b601):** with `--skip-report-pdf` etc., nothing ever
+  applied tracking statuses before `WriteRisksJSON`/SARIF, so skip-report runs emitted
+  all-unchecked output. `AnalyzeModel` now applies statuses once at its end (after
+  wildcard expansion + expiry check). Regression test:
+  `pkg/model/wildcard_tracking_test.go` asserts raw `GeneratedRisksByCategory` carries
+  statuses post-analysis.
+- **Duplicate synthetic IDs (in 4fa3ae1):** `push-instead-of-pull-deployment` keyed
+  risks as `category@buildpipeline`, colliding when one pipeline deploys to N targets —
+  broke per-risk tracking and even hid a finding (demo golden total 65→66). ID now
+  includes the target asset. If other rules have N-target patterns, audit their IDs the
+  same way.
+
+### 2.3 VaultNote application (../Threat-model — separate git repo, committed b932beb2)
+
+- All **9 methodology runs** green (stride, linddun, pasta, vast + cloud-native,
+  supply-chain, ai-ml, octave, trike packs), each emitting SARIF.
+- **Full triage of all 542 findings — 0 unchecked anywhere.** New include
+  `threagile/feature_risk_review.yaml` (wired into `threagile.yaml` includes): wildcard
+  + direct tracking entries; in-progress → tickets VAULT-145..172; intentional
+  misconfigurations (it's a deliberately-vulnerable training app — grep
+  `INTENTIONAL`) → **acceptances with `accepted_until: 2026-12-31`** so they must be
+  re-confirmed; analytically-wrong detections → false-positive with reasoning.
+- **Expiry verified end-to-end**: back-dating one acceptance makes analyze fail with
+  the expected message.
+- **`quantify` on real data**: `threagile/fair-estimates.yaml`; portfolio median ALE
+  ≈ **$787k/yr**, dominated by `exposed-default-credentials@minio-storage`
+  (median ≈ $450k/yr) — matches the qualitative "CRITICAL launch blocker" tracking.
+- **CLI wart (pre-existing, documented in the model header):** root persistent flags
+  must precede command-local flags (`pflag` stops at the first unknown flag), e.g.
+  `quantify --model … --ignore-orphaned-risk-tracking --estimates …` works;
+  `--estimates` first silently drops later root flags. Candidate small fix.
+- Note: `Threat-model/scripts/create-tickets.py` has pre-existing **uncommitted user
+  changes** (GitHub label-length handling) — deliberately left untouched/uncommitted.
 
 ## 3. Immediate next steps (in order)
 
-1. ~~Fix D1 — `Dockerfile` builds the wrong code.~~ **Done (2026-06-12).** Rewrote to
-   `COPY . /app`, builds `./cmd/threagile` + `./cmd/risk_demo`; verified via `docker build`
-   (runs `go test ./...` in-image) and `docker run ... list-methodologies` showing
-   fork-specific packs (octave/trike/cloud-native/ai-ml/supply-chain).
-2. ~~Fix D2 — pin `securego/gosec@master`~~ **Done (2026-06-12).** Pinned to commit SHA
-   `f1c81de5fcdf7b466b229fb24ca02d1a8406dd09` in `gosec-analysis.yml` and `release.yml`.
-   No other unpinned mutable-ref third-party actions found.
-3. ~~Finish 13.1 docs reconciliation.~~ **Done (2026-06-12).** Rewrote `docs/flags.md`
-   (double-dash names, correct defaults incl. `--temp-dir`/`--server-dir`, `--skip-*` as
-   primary with `--generate-*` deprecated, all 8 rule packs documented), `docs/config.md`
-   (single-dash flag refs → double-dash, removed broken "or `--v`" text), and
-   `docs/methodologies.md` (fixed false claim that OCTAVE/Trike ship no rule packs — both
-   have embedded 8-rule packs; removed bogus "Custom methodologies" section since
-   `--methodology custom` isn't valid; added cloud-native/supply-chain/ai-ml section).
-   Also updated `docs/asciidoctor-report.md` to use `--skip-report-pdf` instead of
-   deprecated `--generate-report-*` flags. Remaining 15 docs/README/SKILL.md spot-checked
-   clean (no stale `llm` command refs, no other single-dash flags).
-4. **Exercise one tagged release end-to-end** (Phase 13 exit criterion): push to GitHub,
-   tag `v1.0.0`, confirm the security gate + goreleaser produce binaries, archives, and
-   ghcr images. Note: `.goreleaser.yaml` hardcodes `ghcr.io/threagile/threagile` and
-   release owner `threagile` — change these to the actual GitHub org/repo before tagging.
-   **Blocked**: no GitHub remote configured in this working copy; requires user decision on
-   target org/repo before any tag is pushed.
-5. **Phase 5b leftovers**: 77 TODO/FIXME/HACK comments untriaged; 198 `_ =` discards
-   (mostly justified `Close()` patterns, never re-audited); 52 nolint/#nosec suppressions.
-6. Then start the **v3 roadmap** — `IMPROVEMENT_PLAN.md` §8. Recommended first features:
-   SARIF output (R4, highest leverage/effort), then `threagile quantify` (R1 — the FAIR
-   Monte-Carlo engine in `pkg/risks/quant` is implemented and tested but wired to no
-   command), then risk-acceptance expiry (R2).
+1. **Exercise one tagged release end-to-end** (Phase 13 exit criterion, still open):
+   push to GitHub, tag `v1.0.0`. `.goreleaser.yaml` hardcodes
+   `ghcr.io/threagile/threagile` + owner `threagile` — change to the real org/repo
+   first. **Blocked on user decision** (no remote configured).
+2. **Docs follow-ups for new features**: `docs/flags.md` + `docs/commands.md` updated
+   this session; consider a dedicated `docs/quantify.md` and SARIF upload example in
+   `docs/cli-cookbook.md` / `generate-ci` templates (natural follow-on: R5 PR-bot).
+3. **Fix the root-persistent-flag ordering wart** (see §2.3) — small, real UX win.
+4. **Audit other rules for duplicate synthetic IDs** (same class as the
+   push-instead-of-pull bug): any rule that loops over multiple targets but keys the
+   ID on a single asset.
+5. **Phase 5b leftovers** (unchanged): ~77 TODO/FIXME/HACK; 198 `_ =` discards;
+   52 nolint/#nosec suppressions.
+6. **Next roadmap items** (IMPROVEMENT_PLAN §8.3, in suggested order): R5/R6 (PR-bot +
+   policy gate — `diff` engine exists, SARIF now exists), R7 k8s importer, R11 ATT&CK
+   mapping, R9 SBOM+intel correlation. D3 is resolved (quantify shipped); D6 (CLI layer
+   least tested) improved slightly via quantify tests.
 
 ## 4. How to build / test / release
 
@@ -102,45 +131,48 @@ UPDATE_GOLDEN=1 go test ./pkg/report/...         # regenerate report goldens (de
 go run github.com/goreleaser/goreleaser/v2@v2.5.1 release --snapshot --clean --skip=docker,publish  # local release dry-run
 ```
 
-CI (`.github/workflows/ci.yml`): build → vet → race tests → coverage ratchet (≥52%) →
-fuzz smoke → lint (blocking). Release (`release.yml`): on `v*` tag, security gate
-(build/vet/race/lint/gosec) → goreleaser (6 binaries + multi-arch ghcr image).
+CI (`ci.yml`): build → vet → race tests → coverage ratchet (≥52%) → fuzz smoke →
+lint (blocking). Release (`release.yml`): on `v*` tag, security gate → goreleaser.
+
+VaultNote model runs: see the command catalogue in
+`../Threat-model/threagile/threagile.yaml` header (all 9 methodologies + quantify).
 
 ## 5. Gotchas & conventions (learned the hard way)
 
 - **Goldens are the safety net.** Never change report output and regenerate goldens in
-  the same commit as a refactor. Regeneration is its own commit with a reason.
+  the same commit as a refactor; regeneration needs a stated reason. (This session's
+  golden change was a deliberate bug-fix consequence, documented in 4fa3ae1.)
 - **Determinism matters.** Risk generation runs rules in parallel; never sort or mutate
-  shared model slices in place inside a rule (caused real races, fixed in Phase 6).
-  When building ID lists from maps, always sort.
-- **`.golangci.yml` is policy, not accident.** The disabled gocritic checks and absent
-  gochecknoglobals each have justification comments. Lint must stay at 0 — CI blocks.
-- **gin stays at v1.10.0** unless someone consciously accepts the quic-go/mongo-driver
-  dependency surface (documented in Phase 8 results).
-- **Root persistent flags** (e.g. `--model`) only reach subcommand config via the
-  `processSystemArgs(os.Args[1:])` pass in `Init()` — in tests use
-  `newTestAppWithArgs(...)` (see `internal/threagile/cli_commands_test.go`), not
-  `cmd.SetArgs` alone.
-- **Script-rule model map**: `applyRiskGeneration` converts the model to a map once and
-  shares it read-only across rule workers (Phase 11 perf fix). Rules must never write to it.
-- `pkg/server` zip limits (`maxUnzipFiles`, `maxUnzipTotalSize`) are package vars so
-  tests can lower them — keep it that way.
-- Owner decisions on record: **no LLM features ever** (static analysis only); **upstream
-  mergeability is a non-goal** (refactor/delete freely).
+  shared model slices in place inside a rule. When building ID lists from maps, sort.
+  `applyRiskGeneration` now owns the explicit per-category `SortByRiskSeverity` — it is
+  load-bearing for byte-identical reports.
+- **The `statusApplied` cache bites.** `GeneratedRisksByCategoryWithCurrentStatus()` is
+  one-shot; anything that calls it (incl. `SortedRisksOfCategory`) before tracking is
+  fully populated freezes statuses. `AnalyzeModel` is the only place that should
+  trigger the first application.
+- **`.golangci.yml` is policy, not accident** (documented disabled checks). Lint stays 0.
+- **gin stays at v1.10.0** (quic-go/mongo-driver surface rejected — Phase 8).
+- **Root persistent flags** only reach subcommand config via
+  `processSystemArgs(os.Args[1:])` in `Init()` — in tests use `newTestAppWithArgs(...)`;
+  on the CLI, root flags must come before command-local flags.
+- **Script-rule model map** is converted once and shared read-only across workers
+  (Phase 11); rules must never write to it.
+- `pkg/server` zip limits are package vars so tests can lower them — keep it that way.
+- Owner decisions: **no LLM features ever** (static analysis only); **upstream
+  mergeability is a non-goal**.
 
 ## 6. Key file map
 
 | Path | What it is |
 |------|------------|
-| `IMPROVEMENT_PLAN.md` | The full phased plan: Phases 0–13 with results + §8 v3 roadmap |
-| `internal/threagile/` | CLI layer (cobra commands, config) — least-tested area (37.5%) |
-| `pkg/model/` | parse + analyze pipeline (incl. `synthetic.go` benchmark model builder) |
-| `pkg/risks/builtin/` | Go-native risk rules |
-| `pkg/risks/script/` | YAML risk-rule DSL engine (fuzzed) |
-| `pkg/risks/quant/` | FAIR Monte-Carlo — **implemented, tested, unwired** (roadmap R1) |
+| `IMPROVEMENT_PLAN.md` | Phases 0–13 with results + §8 v3 roadmap (R1/R2/R4 done) |
+| `internal/threagile/` | CLI layer; `quantify.go` new; `loadRiskRules()` in analyze.go |
+| `pkg/model/read.go` | analyze pipeline: parallel rules, wildcard tracking, expiry check, status application (ORDER MATTERS — see §5) |
+| `pkg/risks/quant/` | FAIR Monte-Carlo engine + estimates loading (now CLI-wired) |
+| `pkg/report/sarif.go` | SARIF 2.1.0 writer (golden-tested) |
+| `pkg/types/risk-tracking.go` | tracking incl. `AcceptedUntil`/`IsAcceptanceExpired` |
 | `pkg/report/` | all report formats, golden tests in `testdata/` |
 | `pkg/server/` | REST server (hardened Phase 12) |
-| `pkg/intel/` | KEV/EPSS threat-intel feeds with caching |
-| `pkg/sync/github/` | findings↔tickets sync (only backend so far) |
-| `.golangci.yml` | blocking lint policy (read comments before editing) |
-| `.goreleaser.yaml`, `Dockerfile.goreleaser`, `.github/workflows/release.yml` | release pipeline |
+| `pkg/intel/`, `pkg/sync/github/` | KEV/EPSS feeds; findings↔tickets sync |
+| `.goreleaser.yaml`, `release.yml` | release pipeline (never exercised — §3.1) |
+| `../Threat-model/threagile/` | VaultNote reference model: 9 methodologies, `feature_risk_review.yaml` triage, `fair-estimates.yaml` |

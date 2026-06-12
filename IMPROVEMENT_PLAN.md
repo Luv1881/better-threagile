@@ -678,6 +678,15 @@ reduction (abandoned PDF engine under the flagship report; unhardened HTTP serve
 
 ### 8.3 Strategic feature roadmap
 
+> **Status update 2026-06-12:** R4 (SARIF), R1 (`quantify`), and R2
+> (acceptance expiry) are **DONE** — see commits f3ab03d, d5a8be0, 6017365.
+> Applying the fork to the VaultNote reference model also surfaced and fixed
+> two real engine bugs (4fa3ae1, 505b601): wildcard risk-tracking statuses
+> never reached generated risks (premature `statusApplied` cache), and
+> skip-report runs wrote risks.json/SARIF without any statuses applied; plus
+> a duplicate-synthetic-ID bug in push-instead-of-pull-deployment that hid a
+> finding. D3 is resolved by R1. Details in HANDOVER.md.
+
 **Theme A — Trust the numbers (quantification & calibration)**
 
 - R1 **`threagile quantify`**: wire `pkg/risks/quant` into the CLI. Per-risk FAIR estimates

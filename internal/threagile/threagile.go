@@ -54,6 +54,7 @@ func (what *Threagile) Init(buildTimestamp string) *Threagile {
 		initCoverage().
 		initIntel().
 		initCalibrate().
+		initQuantify().
 		initSeverityProfile().
 		initDrift().
 		initSync().

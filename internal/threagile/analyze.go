@@ -8,6 +8,7 @@ import (
 	"github.com/threagile/threagile/pkg/model"
 	"github.com/threagile/threagile/pkg/report"
 	"github.com/threagile/threagile/pkg/risks"
+	"github.com/threagile/threagile/pkg/types"
 )
 
 func (what *Threagile) initAnalyze() *Threagile {
@@ -22,56 +23,7 @@ func (what *Threagile) initAnalyze() *Threagile {
 			commands := what.readCommands()
 			progressReporter := DefaultProgressReporter{Verbose: what.config.GetVerbose()}
 
-			builtinRules := risks.GetBuiltInRiskRules()
-
-			if dir := what.config.GetRulesDir(); dir != "" {
-				extRules, extErr := risks.LoadExternalScriptRiskRules(dir)
-				if extErr != nil {
-					progressReporter.Warnf("Failed to load external rules from %q: %v", dir, extErr)
-				} else {
-					builtinRules = builtinRules.Merge(extRules)
-				}
-			}
-
-			rulesURLs := append([]string{}, what.config.GetRulesURLs()...)
-			if urlFile := what.config.GetRulesURLFile(); urlFile != "" {
-				fileURLs, fileErr := risks.ReadRulesURLFile(urlFile)
-				if fileErr != nil {
-					progressReporter.Warnf("Failed to read rules URL file %q: %v", urlFile, fileErr)
-				} else {
-					rulesURLs = append(rulesURLs, fileURLs...)
-				}
-			}
-
-			if len(rulesURLs) > 0 {
-				cacheDir := filepath.Join(what.config.GetAppFolder(), "rules-cache")
-				fetchOptions := risks.FetchOptions{
-					TrustedKeys:   what.config.GetRulesTrustedKeys(),
-					RequireSigned: what.config.GetRulesRequireSigned(),
-				}
-				localDirs, fetchErr := risks.FetchAndCacheRuleSources(rulesURLs, cacheDir, fetchOptions)
-				if fetchErr != nil {
-					progressReporter.Warnf("Failed to fetch remote rules: %v", fetchErr)
-				}
-				for _, localDir := range localDirs {
-					remoteRules, remoteErr := risks.LoadExternalScriptRiskRules(localDir)
-					if remoteErr != nil {
-						progressReporter.Warnf("Failed to load cached remote rules from %q: %v", localDir, remoteErr)
-					} else {
-						builtinRules = builtinRules.Merge(remoteRules)
-					}
-				}
-			}
-
-			if pack := what.config.GetRulePack(); pack != "" {
-				packRules, packErr := risks.LoadRulePack(pack)
-				if packErr != nil {
-					progressReporter.Warnf("Failed to load rule pack %q: %v", pack, packErr)
-				} else {
-					progressReporter.Infof("Loaded rule pack %q (%d rules)", pack, len(packRules))
-					builtinRules = builtinRules.Merge(packRules)
-				}
-			}
+			builtinRules := what.loadRiskRules(progressReporter)
 
 			r, err := model.ReadAndAnalyzeModel(what.config, builtinRules, progressReporter)
 			if err != nil {
@@ -98,4 +50,62 @@ func (what *Threagile) initAnalyze() *Threagile {
 	what.rootCmd.AddCommand(analyze)
 
 	return what
+}
+
+// loadRiskRules assembles the full active rule set: built-in rules, external
+// rules from --rules-dir, remote rule archives from --rules-url/--rules-url-file,
+// and the embedded methodology pack selected via --rule-pack.
+func (what *Threagile) loadRiskRules(progressReporter DefaultProgressReporter) types.RiskRules {
+	builtinRules := risks.GetBuiltInRiskRules()
+
+	if dir := what.config.GetRulesDir(); dir != "" {
+		extRules, extErr := risks.LoadExternalScriptRiskRules(dir)
+		if extErr != nil {
+			progressReporter.Warnf("Failed to load external rules from %q: %v", dir, extErr)
+		} else {
+			builtinRules = builtinRules.Merge(extRules)
+		}
+	}
+
+	rulesURLs := append([]string{}, what.config.GetRulesURLs()...)
+	if urlFile := what.config.GetRulesURLFile(); urlFile != "" {
+		fileURLs, fileErr := risks.ReadRulesURLFile(urlFile)
+		if fileErr != nil {
+			progressReporter.Warnf("Failed to read rules URL file %q: %v", urlFile, fileErr)
+		} else {
+			rulesURLs = append(rulesURLs, fileURLs...)
+		}
+	}
+
+	if len(rulesURLs) > 0 {
+		cacheDir := filepath.Join(what.config.GetAppFolder(), "rules-cache")
+		fetchOptions := risks.FetchOptions{
+			TrustedKeys:   what.config.GetRulesTrustedKeys(),
+			RequireSigned: what.config.GetRulesRequireSigned(),
+		}
+		localDirs, fetchErr := risks.FetchAndCacheRuleSources(rulesURLs, cacheDir, fetchOptions)
+		if fetchErr != nil {
+			progressReporter.Warnf("Failed to fetch remote rules: %v", fetchErr)
+		}
+		for _, localDir := range localDirs {
+			remoteRules, remoteErr := risks.LoadExternalScriptRiskRules(localDir)
+			if remoteErr != nil {
+				progressReporter.Warnf("Failed to load cached remote rules from %q: %v", localDir, remoteErr)
+			} else {
+				builtinRules = builtinRules.Merge(remoteRules)
+			}
+		}
+	}
+
+	if pack := what.config.GetRulePack(); pack != "" {
+		packRules, packErr := risks.LoadRulePack(pack)
+		if packErr != nil {
+			progressReporter.Warnf("Failed to load rule pack %q: %v", pack, packErr)
+		} else {
+			progressReporter.Infof("Loaded rule pack %q (%d rules)", pack, len(packRules))
+			builtinRules = builtinRules.Merge(packRules)
+		}
+	}
+
+	return builtinRules
 }

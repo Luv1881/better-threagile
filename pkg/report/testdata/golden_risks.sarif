@@ -1,0 +1,2600 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Threagile",
+          "informationUri": "https://threagile.io",
+          "version": "test",
+          "rules": [
+            {
+              "id": "accidental-secret-leak",
+              "name": "Accidental Secret Leak",
+              "shortDescription": {
+                "text": "Sourcecode repositories (including their histories) as well as artifact registries can accidentally contain secrets like checked-in or packaged-in passwords, API tokens, certificates, crypto keys, etc."
+              },
+              "fullDescription": {
+                "text": "If this risk is unmitigated, attackers which have access to affected sourcecode repositories or artifact registries might find secrets accidentally checked-in.\n\nMitigation: Establish measures preventing accidental check-in or package-in of secrets into sourcecode repositories and artifact registries. This starts by using good .gitignore and .dockerignore files, but does not stop there. See for example tools like \u003ci\u003e\\\"git-secrets\\\"\u003c/i\u003e or \u003ci\u003e\\\"Talisman\\\"\u003c/i\u003e to have check-in preventive measures for secrets. Consider also to regularly scan your repositories for secrets accidentally checked-in using scanning tools like \u003ci\u003e\"gitleaks\"\u003c/i\u003e or \u003ci\u003e\"gitrob\"\u003c/i\u003e."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-200",
+                "function": "operations",
+                "security-severity": "5.0",
+                "stride": "information-disclosure"
+              }
+            },
+            {
+              "id": "code-backdooring",
+              "name": "Code Backdooring",
+              "shortDescription": {
+                "text": "For each build pipeline component Code Backdooring risks might arise where attackers compromise the build pipeline in order to let backdoored artifacts be shipped into production. Aside from direct code backdooring this includes backdooring of dependencies and even of more lower-level build infrastructure, like backdooring compilers (similar to what the XcodeGhost malware did) or dependencies."
+              },
+              "fullDescription": {
+                "text": "If this risk remains unmitigated, attackers might be able to execute code on and completely takeover production environments.\n\nMitigation: Reduce the attack surface of backdooring the build pipeline by not directly exposing the build pipeline components on the public internet and also not exposing it in front of unmanaged (out-of-scope) developer clients.Also consider the use of code signing to prevent code modifications."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-912",
+                "function": "operations",
+                "security-severity": "5.0",
+                "stride": "tampering"
+              }
+            },
+            {
+              "id": "container-baseimage-backdooring",
+              "name": "Container Base Image Backdooring",
+              "shortDescription": {
+                "text": "When a technical asset is built using container technologies, Base Image Backdooring risks might arise where base images and other layers used contain vulnerable components or backdoors.\u003cbr\u003e\u003cbr\u003eSee for example: \u003ca href=\"https://techcrunch.com/2018/06/15/tainted-crypto-mining-containers-pulled-from-docker-hub/\"\u003ehttps://techcrunch.com/2018/06/15/tainted-crypto-mining-containers-pulled-from-docker-hub/\u003c/a\u003e"
+              },
+              "fullDescription": {
+                "text": "If this risk is unmitigated, attackers might be able to deeply persist in the target system by executing code in deployed containers.\n\nMitigation: Apply hardening of all container infrastructures (see for example the \u003ci\u003eCIS-Benchmarks for Docker and Kubernetes\u003c/i\u003e and the \u003ci\u003eDocker Bench for Security\u003c/i\u003e). Use only trusted base images of the original vendors, verify digital signatures and apply image creation best practices. Also consider using Google's \u003ci\u003eDistroless\u003c/i\u003e base images or otherwise very small base images. Regularly execute container image scans with tools checking the layers for vulnerable components."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS/CSVS applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-912",
+                "function": "operations",
+                "security-severity": "5.0",
+                "stride": "tampering"
+              }
+            },
+            {
+              "id": "dos-risky-access-across-trust-boundary",
+              "name": "DoS-risky Access Across Trust-Boundary",
+              "shortDescription": {
+                "text": "Assets accessed across trust boundaries with critical or mission-critical availability rating are more prone to Denial-of-Service (DoS) risks."
+              },
+              "fullDescription": {
+                "text": "If this risk remains unmitigated, attackers might be able to disturb the availability of important parts of the system.\n\nMitigation: Apply anti-DoS techniques like throttling and/or per-client load blocking with quotas. Also for maintenance access routes consider applying a VPN instead of public reachable interfaces. Generally applying redundancy on the targeted technical asset reduces the risk of DoS."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-400",
+                "function": "operations",
+                "security-severity": "2.0",
+                "stride": "denial-of-service"
+              }
+            },
+            {
+              "id": "lateral-movement-credential-reuse",
+              "name": "Lateral Movement via Credential Reuse Across Trust Boundaries",
+              "shortDescription": {
+                "text": "Technical assets that authenticate via the same credential type (credentials, tokens) to targets in multiple distinct trust zones enable lateral movement: compromise of one credential grants access across zone boundaries without additional authentication."
+              },
+              "fullDescription": {
+                "text": "Stolen credentials can be replayed to access assets in higher-trust zones, bypassing the intended trust boundary controls.\n\nMitigation: Use distinct credentials / service accounts per trust zone. Apply credential rotation and short-lived tokens (OIDC/mTLS) so that credential reuse across zones is impossible by design."
+              },
+              "help": {
+                "text": "Are separate credentials used for assets in each trust zone?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html",
+              "properties": {
+                "function": "architecture",
+                "security-severity": "6.5",
+                "stride": "lateral-movement"
+              }
+            },
+            {
+              "id": "lateral-movement-shared-runtime",
+              "name": "Lateral Movement via Shared Runtime",
+              "shortDescription": {
+                "text": "Technical assets from different trust zones co-located on the same shared runtime (e.g. container platform, VM host, shared Kubernetes namespace) create a lateral movement path: a compromised low-trust asset on the runtime can escalate to high-trust neighbours without traversing a network boundary."
+              },
+              "fullDescription": {
+                "text": "An attacker who compromises any asset on the shared runtime may pivot to other co-located assets, including those in higher trust zones.\n\nMitigation: Separate assets from different trust zones onto dedicated runtimes (separate node pools, dedicated VMs, distinct container namespaces with NetworkPolicy). Apply seccomp/AppArmor profiles and disable privilege escalation."
+              },
+              "help": {
+                "text": "Are high-trust and low-trust assets co-located on the same shared runtime?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html",
+              "properties": {
+                "function": "architecture",
+                "security-severity": "6.5",
+                "stride": "lateral-movement"
+              }
+            },
+            {
+              "id": "lateral-movement-transitive-access",
+              "name": "Lateral Movement via Transitive Data Flow Across Trust Boundaries",
+              "shortDescription": {
+                "text": "An asset in a low-trust zone communicates to a bridging asset, which in turn communicates to an asset in a high-trust zone. The bridging asset creates a transitive path that can be abused for lateral movement without the attacker ever directly connecting to the high-trust target."
+              },
+              "fullDescription": {
+                "text": "An attacker who compromises the bridging asset or injects malicious data into the first hop can influence or extract data from the high-trust target.\n\nMitigation: Remove unnecessary transitive paths. Introduce a DMZ or API gateway for unavoidable bridging. Apply strict input validation and output encoding in the bridging component. Log and alert on data flowing from low-trust sources that reaches high-trust destinations."
+              },
+              "help": {
+                "text": "Does any asset bridge traffic from low-trust to high-trust zones without validation or separation?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Network_Segmentation_Cheat_Sheet.html",
+              "properties": {
+                "function": "architecture",
+                "security-severity": "5.0",
+                "stride": "lateral-movement"
+              }
+            },
+            {
+              "id": "ldap-injection",
+              "name": "LDAP-Injection",
+              "shortDescription": {
+                "text": "When an LDAP server is accessed LDAP-Injection risks might arise. The risk rating depends on the sensitivity of the LDAP server itself and of the data assets processed."
+              },
+              "fullDescription": {
+                "text": "If this risk remains unmitigated, attackers might be able to modify LDAP queries and access more data from the LDAP server than allowed.\n\nMitigation: Try to use libraries that properly encode LDAP meta characters in searches and queries to access the LDAP server in order to stay safe from LDAP-Injection vulnerabilities. When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-90",
+                "function": "development",
+                "security-severity": "6.5",
+                "stride": "tampering"
+              }
+            },
+            {
+              "id": "missing-authentication",
+              "name": "Missing Authentication",
+              "shortDescription": {
+                "text": "Technical assets (especially multi-tenant systems) should authenticate incoming requests when the asset processes sensitive data. "
+              },
+              "fullDescription": {
+                "text": "If this risk is unmitigated, attackers might be able to access or modify sensitive data in an unauthenticated way.\n\nMitigation: Apply an authentication method to the technical asset. To protect highly sensitive data consider the use of two-factor authentication for human users."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-306",
+                "function": "architecture",
+                "security-severity": "6.5",
+                "stride": "elevation-of-privilege"
+              }
+            },
+            {
+              "id": "missing-authentication-second-factor",
+              "name": "Missing Two-Factor Authentication (2FA)",
+              "shortDescription": {
+                "text": "Technical assets (especially multi-tenant systems) should authenticate incoming requests with two-factor (2FA) authentication when the asset processes or stores highly sensitive data (in terms of confidentiality, integrity, and availability) and is accessed by humans."
+              },
+              "fullDescription": {
+                "text": "If this risk is unmitigated, attackers might be able to access or modify highly sensitive data without strong authentication.\n\nMitigation: Apply an authentication method to the technical asset protecting highly sensitive data via two-factor authentication for human users."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-308",
+                "function": "business-side",
+                "security-severity": "5.0",
+                "stride": "elevation-of-privilege"
+              }
+            },
+            {
+              "id": "missing-cloud-hardening",
+              "name": "Missing Cloud Hardening",
+              "shortDescription": {
+                "text": "Cloud components should be hardened according to the cloud vendor best practices. This affects their configuration, auditing, and further areas."
+              },
+              "fullDescription": {
+                "text": "If this risk is unmitigated, attackers might access cloud components in an unintended way.\n\nMitigation: Apply hardening of all cloud components and services, taking special care to follow the individual risk descriptions (which depend on the cloud provider tags in the model). \u003cbr\u003e\u003cbr\u003eFor \u003cb\u003eAmazon Web Services (AWS)\u003c/b\u003e: Follow the \u003ci\u003eCIS Benchmark for Amazon Web Services\u003c/i\u003e (see also the automated checks of cloud audit tools like \u003ci\u003e\"PacBot\", \"CloudSploit\", \"CloudMapper\", \"ScoutSuite\", or \"Prowler AWS CIS Benchmark Tool\"\u003c/i\u003e). \u003cbr\u003eFor EC2 and other servers running Amazon Linux, follow the \u003ci\u003eCIS Benchmark for Amazon Linux\u003c/i\u003e and switch to IMDSv2. \u003cbr\u003eFor S3 buckets follow the \u003ci\u003eSecurity Best Practices for Amazon S3\u003c/i\u003e at \u003ca href=\"https://docs.aws.amazon.com/AmazonS3/latest/dev/security-best-practices.html\"\u003ehttps://docs.aws.amazon.com/AmazonS3/latest/dev/security-best-practices.html\u003c/a\u003e to avoid accidental leakage. \u003cbr\u003eAlso take a look at some of these tools: \u003ca href=\"https://github.com/toniblyx/my-arsenal-of-aws-security-tools\"\u003ehttps://github.com/toniblyx/my-arsenal-of-aws-security-tools\u003c/a\u003e \u003cbr\u003e\u003cbr\u003eFor \u003cb\u003eMicrosoft Azure\u003c/b\u003e: Follow the \u003ci\u003eCIS Benchmark for Microsoft Azure\u003c/i\u003e (see also the automated checks of cloud audit tools like \u003ci\u003e\"CloudSploit\" or \"ScoutSuite\"\u003c/i\u003e).\u003cbr\u003e\u003cbr\u003eFor \u003cb\u003eGoogle Cloud Platform\u003c/b\u003e: Follow the \u003ci\u003eCIS Benchmark for Google Cloud Computing Platform\u003c/i\u003e (see also the automated checks of cloud audit tools like \u003ci\u003e\"CloudSploit\" or \"ScoutSuite\"\u003c/i\u003e). \u003cbr\u003e\u003cbr\u003eFor \u003cb\u003eOracle Cloud Platform\u003c/b\u003e: Follow the hardening best practices (see also the automated checks of cloud audit tools like \u003ci\u003e\"CloudSploit\"\u003c/i\u003e)."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-1008",
+                "function": "operations",
+                "security-severity": "6.5",
+                "stride": "tampering"
+              }
+            },
+            {
+              "id": "missing-file-validation",
+              "name": "Missing File Validation",
+              "shortDescription": {
+                "text": "When a technical asset accepts files, these input files should be strictly validated about filename and type."
+              },
+              "fullDescription": {
+                "text": "If this risk is unmitigated, attackers might be able to provide malicious files to the application.\n\nMitigation: Filter by file extension and discard (if feasible) the name provided. Whitelist the accepted file types and determine the mime-type on the server-side (for example via \"Apache Tika\" or similar checks). If the file is retrievable by end users and/or backoffice employees, consider performing scans for popular malware (if the files can be retrieved much later than they were uploaded, also apply a fresh malware scan during retrieval to scan with newer signatures of popular malware). Also enforce limits on maximum file size to avoid denial-of-service like scenarios."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-434",
+                "function": "development",
+                "security-severity": "6.5",
+                "stride": "spoofing"
+              }
+            },
+            {
+              "id": "missing-hardening",
+              "name": "Missing Hardening",
+              "shortDescription": {
+                "text": "Technical assets with a Relative Attacker Attractiveness (RAA) value of 55 % or higher should be explicitly hardened taking best practices and vendor hardening guides into account."
+              },
+              "fullDescription": {
+                "text": "If this risk remains unmitigated, attackers might be able to easier attack high-value targets.\n\nMitigation: Try to apply all hardening best practices (like CIS benchmarks, OWASP recommendations, vendor recommendations, DevSec Hardening Framework, DBSAT for Oracle databases, and others)."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-16",
+                "function": "operations",
+                "security-severity": "6.5",
+                "stride": "tampering"
+              }
+            },
+            {
+              "id": "missing-identity-propagation",
+              "name": "Missing Identity Propagation",
+              "shortDescription": {
+                "text": "Technical assets (especially multi-tenant systems), which usually process data for end users should authorize every request based on the identity of the end user when the data flow is authenticated (i.e. non-public). For DevOps usages at least a technical-user authorization is required."
+              },
+              "fullDescription": {
+                "text": "If this risk is unmitigated, attackers might be able to access or modify foreign data after a successful compromise of a component within the system due to missing resource-based authorization checks.\n\nMitigation: When processing requests for end users if possible authorize in the backend against the propagated identity of the end user. This can be achieved in passing JWTs or similar tokens and checking them in the backend services. For DevOps usages apply at least a technical-user authorization."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-284",
+                "function": "architecture",
+                "security-severity": "5.0",
+                "stride": "elevation-of-privilege"
+              }
+            },
+            {
+              "id": "missing-vault",
+              "name": "Missing Vault (Secret Storage)",
+              "shortDescription": {
+                "text": "In order to avoid the risk of secret leakage via config files (when attacked through vulnerabilities being able to read files like Path-Traversal and others), it is best practice to use a separate hardened process with proper authentication, authorization, and audit logging to access config secrets (like credentials, private keys, client certificates, etc.). This component is usually some kind of Vault."
+              },
+              "fullDescription": {
+                "text": "If this risk is unmitigated, attackers might be able to easier steal config secrets (like credentials, private keys, client certificates, etc.) once a vulnerability to access files is present and exploited.\n\nMitigation: Consider using a Vault (Secret Storage) to securely store and access config secrets (like credentials, private keys, client certificates, etc.)."
+              },
+              "help": {
+                "text": "GetAttribute a Vault (Secret Storage) in place?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-522",
+                "function": "architecture",
+                "security-severity": "5.0",
+                "stride": "information-disclosure"
+              }
+            },
+            {
+              "id": "mixed-targets-on-shared-runtime",
+              "name": "Mixed Targets on Shared Runtime",
+              "shortDescription": {
+                "text": "Different attacker targets (like frontend and backend/datastore components) should not be running on the same shared (underlying) runtime."
+              },
+              "fullDescription": {
+                "text": "If this risk is unmitigated, attackers successfully attacking other components of the system might have an easy path towards more valuable targets, as they are running on the same shared runtime.\n\nMitigation: Use separate runtime environments for running different target components or apply similar separation styles to prevent load- or breach-related problems originating from one more attacker-facing asset impacts also the other more critical rated backend/datastore assets."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-1008",
+                "function": "operations",
+                "security-severity": "5.0",
+                "stride": "elevation-of-privilege"
+              }
+            },
+            {
+              "id": "path-traversal",
+              "name": "Path-Traversal",
+              "shortDescription": {
+                "text": "When a filesystem is accessed Path-Traversal or Local-File-Inclusion (LFI) risks might arise. The risk rating depends on the sensitivity of the technical asset itself and of the data assets processed."
+              },
+              "fullDescription": {
+                "text": "If this risk is unmitigated, attackers might be able to read sensitive files (configuration data, key/credential files, deployment files, business data files, etc.) from the filesystem of affected components.\n\nMitigation: Before accessing the file cross-check that it resides in the expected folder and is of the expected type and filename/suffix. Try to use a mapping if possible instead of directly accessing by a filename which is (partly or fully) provided by the caller. When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-22",
+                "function": "development",
+                "security-severity": "6.5",
+                "stride": "information-disclosure"
+              }
+            },
+            {
+              "id": "push-instead-of-pull-deployment",
+              "name": "Push instead of Pull Deployment",
+              "shortDescription": {
+                "text": "When comparing push-based vs. pull-based deployments from a security perspective, pull-based deployments improve the overall security of the deployment targets. Every exposed interface of a production system to accept a deployment increases the attack surface of the production system, thus a pull-based approach exposes less attack surface relevant interfaces."
+              },
+              "fullDescription": {
+                "text": "If this risk is unmitigated, attackers might have more potential target vectors for attacks, as the overall attack surface is unnecessarily increased.\n\nMitigation: Try to prefer pull-based deployments (like GitOps scenarios offer) over push-based deployments to reduce the attack surface of the production system."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-1127",
+                "function": "architecture",
+                "security-severity": "5.0",
+                "stride": "tampering"
+              }
+            },
+            {
+              "id": "server-side-request-forgery",
+              "name": "Server-Side Request Forgery (SSRF)",
+              "shortDescription": {
+                "text": "When a server system (i.e. not a client) is accessing other server systems via typical web protocols Server-Side Request Forgery (SSRF) or Local-File-Inclusion (LFI) or Remote-File-Inclusion (RFI) risks might arise. "
+              },
+              "fullDescription": {
+                "text": "If this risk is unmitigated, attackers might be able to access sensitive services or files of network-reachable components by modifying outgoing calls of affected components.\n\nMitigation: Try to avoid constructing the outgoing target URL with caller controllable values. Alternatively use a mapping (whitelist) when accessing outgoing URLs instead of creating them including caller controllable values. When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-918",
+                "function": "development",
+                "security-severity": "6.5",
+                "stride": "information-disclosure"
+              }
+            },
+            {
+              "id": "sql-nosql-injection",
+              "name": "SQL/NoSQL-Injection",
+              "shortDescription": {
+                "text": "When a database is accessed via database access protocols SQL/NoSQL-Injection risks might arise. The risk rating depends on the sensitivity technical asset itself and of the data assets processed."
+              },
+              "fullDescription": {
+                "text": "If this risk is unmitigated, attackers might be able to modify SQL/NoSQL queries to steal and modify data and eventually further escalate towards a deeper system penetration via code executions.\n\nMitigation: Try to use parameter binding to be safe from injection vulnerabilities. When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-89",
+                "function": "development",
+                "security-severity": "8.0",
+                "stride": "tampering"
+              }
+            },
+            {
+              "id": "unchecked-deployment",
+              "name": "Unchecked Deployment",
+              "shortDescription": {
+                "text": "For each build-pipeline component Unchecked Deployment risks might arise when the build-pipeline does not include established DevSecOps best-practices. DevSecOps best-practices scan as part of CI/CD pipelines for vulnerabilities in source- or byte-code, dependencies, container layers, and dynamically against running test systems. There are several open-source and commercial tools existing in the categories DAST, SAST, and IAST."
+              },
+              "fullDescription": {
+                "text": "If this risk remains unmitigated, vulnerabilities in custom-developed software or their dependencies might not be identified during continuous deployment cycles.\n\nMitigation: Apply DevSecOps best-practices and use scanning tools to identify vulnerabilities in source- or byte-code,dependencies, container layers, and optionally also via dynamic scans against running test systems."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-1127",
+                "function": "architecture",
+                "security-severity": "5.0",
+                "stride": "tampering"
+              }
+            },
+            {
+              "id": "unencrypted-asset",
+              "name": "Unencrypted Technical Assets",
+              "shortDescription": {
+                "text": "Due to the confidentiality rating of the technical asset itself and/or the stored data assets this technical asset must be encrypted. The risk rating depends on the sensitivity technical asset itself and of the data assets stored."
+              },
+              "fullDescription": {
+                "text": "If this risk is unmitigated, attackers might be able to access unencrypted data when successfully compromising sensitive components.\n\nMitigation: Apply encryption to the technical asset."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-311",
+                "function": "operations",
+                "security-severity": "5.0",
+                "stride": "information-disclosure"
+              }
+            },
+            {
+              "id": "unencrypted-communication",
+              "name": "Unencrypted Communication",
+              "shortDescription": {
+                "text": "Due to the confidentiality and/or integrity rating of the data assets transferred over the communication link this connection must be encrypted."
+              },
+              "fullDescription": {
+                "text": "If this risk is unmitigated, network attackers might be able to to eavesdrop on unencrypted sensitive data sent between components.\n\nMitigation: Apply transport layer encryption to the communication link."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-319",
+                "function": "operations",
+                "security-severity": "6.5",
+                "stride": "information-disclosure"
+              }
+            },
+            {
+              "id": "unguarded-access-from-internet",
+              "name": "Unguarded Access From Internet",
+              "shortDescription": {
+                "text": "Internet-exposed assets must be guarded by a protecting service, application, or reverse-proxy."
+              },
+              "fullDescription": {
+                "text": "If this risk is unmitigated, attackers might be able to directly attack sensitive systems without any hardening components in-between due to them being directly exposed on the internet.\n\nMitigation: Encapsulate the asset behind a guarding service, application, or reverse-proxy. For admin maintenance a bastion-host should be used as a jump-server. For file transfer a store-and-forward-host should be used as an indirect file exchange platform."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-501",
+                "function": "architecture",
+                "security-severity": "6.5",
+                "stride": "elevation-of-privilege"
+              }
+            },
+            {
+              "id": "untrusted-deserialization",
+              "name": "Untrusted Deserialization",
+              "shortDescription": {
+                "text": "When a technical asset accepts data in a specific serialized form (like Java or .NET serialization), Untrusted Deserialization risks might arise.\u003cbr\u003e\u003cbr\u003eSee \u003ca href=\"https://christian-schneider.net/JavaDeserializationSecurityFAQ.html\"\u003ehttps://christian-schneider.net/JavaDeserializationSecurityFAQ.html\u003c/a\u003e for more details."
+              },
+              "fullDescription": {
+                "text": "If this risk is unmitigated, attackers might be able to execute code on target systems by exploiting untrusted deserialization endpoints.\n\nMitigation: Try to avoid the deserialization of untrusted data (even of data within the same trust-boundary as long as it is sent across a remote connection) in order to stay safe from Untrusted Deserialization vulnerabilities. Alternatively a strict whitelisting approach of the classes/types/values to deserialize might help as well. When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-502",
+                "function": "architecture",
+                "security-severity": "6.5",
+                "stride": "tampering"
+              }
+            },
+            {
+              "id": "xml-external-entity",
+              "name": "XML External Entity (XXE)",
+              "shortDescription": {
+                "text": "When a technical asset accepts data in XML format, XML External Entity (XXE) risks might arise."
+              },
+              "fullDescription": {
+                "text": "If this risk is unmitigated, attackers might be able to read sensitive files (configuration data, key/credential files, deployment files, business data files, etc.) form the filesystem of affected components and/or access sensitive services or files of other components.\n\nMitigation: Apply hardening of all XML parser instances in order to stay safe from XML External Entity (XXE) vulnerabilities. When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level."
+              },
+              "help": {
+                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html",
+              "properties": {
+                "cwe": "CWE-611",
+                "function": "development",
+                "security-severity": "8.0",
+                "stride": "information-disclosure"
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "accidental-secret-leak",
+          "ruleIndex": 0,
+          "level": "warning",
+          "message": {
+            "text": "Accidental Secret Leak(Git) risk at Git Repository: Git Leak Prevention"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "accidental-secret-leak@git-repo"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "probable",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "git-repo",
+            "severity": "medium",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "code-backdooring",
+          "ruleIndex": 1,
+          "level": "warning",
+          "message": {
+            "text": "Code Backdooring risk at Git Repository"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "code-backdooring@git-repo"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "probable",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "git-repo",
+            "severity": "medium",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "code-backdooring",
+          "ruleIndex": 1,
+          "level": "warning",
+          "message": {
+            "text": "Code Backdooring risk at Jenkins Build Server"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "code-backdooring@jenkins-build-server"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "probable",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "jenkins-build-server",
+            "severity": "medium",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "container-baseimage-backdooring",
+          "ruleIndex": 2,
+          "level": "warning",
+          "message": {
+            "text": "Container Base Image Backdooring risk at Apache Webserver"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "container-baseimage-backdooring@apache-webserver"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "probable",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "apache-webserver",
+            "severity": "medium",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "container-baseimage-backdooring",
+          "ruleIndex": 2,
+          "level": "warning",
+          "message": {
+            "text": "Container Base Image Backdooring risk at Marketing CMS"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "container-baseimage-backdooring@marketing-cms"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "probable",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "marketing-cms",
+            "severity": "medium",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "dos-risky-access-across-trust-boundary",
+          "ruleIndex": 3,
+          "level": "note",
+          "message": {
+            "text": "Denial-of-Service risky access of Backoffice ERP System by Apache Webserver via ERP System Traffic"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "dos-risky-access-across-trust-boundary@erp-system@apache-webserver@apache-webserver\u003eerp-system-traffic-\u003e"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "low",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "erp-system",
+            "severity": "low",
+            "status": "in-progress"
+          }
+        },
+        {
+          "ruleId": "dos-risky-access-across-trust-boundary",
+          "ruleIndex": 3,
+          "level": "note",
+          "message": {
+            "text": "Denial-of-Service risky access of Backoffice ERP System by Backoffice Client via ERP Internal Access"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "dos-risky-access-across-trust-boundary@erp-system@backoffice-client@backoffice-client\u003eerp-internal-access-\u003e"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "low",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "erp-system",
+            "severity": "low",
+            "status": "in-progress"
+          }
+        },
+        {
+          "ruleId": "dos-risky-access-across-trust-boundary",
+          "ruleIndex": 3,
+          "level": "note",
+          "message": {
+            "text": "Denial-of-Service risky access of Marketing CMS by Backoffice Client via Marketing CMS Editing"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "dos-risky-access-across-trust-boundary@marketing-cms@backoffice-client@backoffice-client\u003emarketing-cms-editing-\u003e"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "low",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "marketing-cms",
+            "severity": "low",
+            "status": "in-progress"
+          }
+        },
+        {
+          "ruleId": "lateral-movement-credential-reuse",
+          "ruleIndex": 4,
+          "level": "warning",
+          "message": {
+            "text": "Lateral Movement via Credential Reuse from Jenkins Build Server authenticating across 2 trust zones"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "lateral-movement-credential-reuse@jenkins-build-server"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "likely",
+            "mostRelevantAsset": "jenkins-build-server",
+            "severity": "elevated",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "lateral-movement-shared-runtime",
+          "ruleIndex": 5,
+          "level": "warning",
+          "message": {
+            "text": "Lateral Movement via Shared Runtime on WebApp and Backoffice Virtualization: assets from 2 trust zones co-located"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "lateral-movement-shared-runtime@webapp-virtualization"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "likely",
+            "mostRelevantAsset": "erp-system",
+            "severity": "elevated",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "lateral-movement-transitive-access",
+          "ruleIndex": 6,
+          "level": "warning",
+          "message": {
+            "text": "Transitive Lateral Movement via bridge Apache Webserver → high-trust target Backoffice ERP System"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "lateral-movement-transitive-access@apache-webserver@erp-system"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "apache-webserver",
+            "severity": "medium",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "ldap-injection",
+          "ruleIndex": 7,
+          "level": "warning",
+          "message": {
+            "text": "LDAP-Injection risk at Identity Provider against LDAP server LDAP Auth Server via LDAP Credential Check Traffic"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "ldap-injection@identity-provider@ldap-auth-server@identity-provider\u003eldap-credential-check-traffic"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "probable",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "likely",
+            "mostRelevantAsset": "identity-provider",
+            "severity": "elevated",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "ldap-injection",
+          "ruleIndex": 7,
+          "level": "warning",
+          "message": {
+            "text": "LDAP-Injection risk at Marketing CMS against LDAP server LDAP Auth Server via Auth Traffic"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "ldap-injection@marketing-cms@ldap-auth-server@marketing-cms\u003eauth-traffic"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "probable",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "likely",
+            "mostRelevantAsset": "marketing-cms",
+            "severity": "elevated",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "missing-authentication",
+          "ruleIndex": 8,
+          "level": "warning",
+          "message": {
+            "text": "Missing Authentication covering communication link NFS Filesystem Access from Backoffice ERP System to Contract File Server"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-authentication@erp-system\u003enfs-filesystem-access@erp-system@contract-file-server"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "likely",
+            "mostRelevantAsset": "contract-file-server",
+            "severity": "elevated",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "missing-authentication",
+          "ruleIndex": 8,
+          "level": "warning",
+          "message": {
+            "text": "Missing Authentication covering communication link CMS Content Traffic from Load Balancer to Marketing CMS"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-authentication@load-balancer\u003ecms-content-traffic@load-balancer@marketing-cms"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "likely",
+            "mostRelevantAsset": "marketing-cms",
+            "severity": "elevated",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "missing-authentication-second-factor",
+          "ruleIndex": 9,
+          "level": "warning",
+          "message": {
+            "text": "Missing Two-Factor Authentication covering communication link DB Update Access from Backend Admin Client to Customer Contract Database"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-authentication-second-factor@backend-admin-client\u003edb-update-access@backend-admin-client@sql-database"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "sql-database",
+            "severity": "medium",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "missing-authentication-second-factor",
+          "ruleIndex": 9,
+          "level": "warning",
+          "message": {
+            "text": "Missing Two-Factor Authentication covering communication link ERP Web Access from Backend Admin Client to Backoffice ERP System"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-authentication-second-factor@backend-admin-client\u003eerp-web-access@backend-admin-client@erp-system"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "erp-system",
+            "severity": "medium",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "missing-authentication-second-factor",
+          "ruleIndex": 9,
+          "level": "warning",
+          "message": {
+            "text": "Missing Two-Factor Authentication covering communication link User Management Access from Backend Admin Client to LDAP Auth Server"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-authentication-second-factor@backend-admin-client\u003euser-management-access@backend-admin-client@ldap-auth-server"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "ldap-auth-server",
+            "severity": "medium",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "missing-authentication-second-factor",
+          "ruleIndex": 9,
+          "level": "warning",
+          "message": {
+            "text": "Missing Two-Factor Authentication covering communication link ERP Internal Access from Backoffice Client to Backoffice ERP System"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-authentication-second-factor@backoffice-client\u003eerp-internal-access@backoffice-client@erp-system"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "erp-system",
+            "severity": "medium",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "missing-authentication-second-factor",
+          "ruleIndex": 9,
+          "level": "warning",
+          "message": {
+            "text": "Missing Two-Factor Authentication covering communication link Git-Repo Code Write Access from External Development Client to Git Repository"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-authentication-second-factor@external-dev-client\u003egit-repo-code-write-access@external-dev-client@git-repo"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "git-repo",
+            "severity": "medium",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "missing-authentication-second-factor",
+          "ruleIndex": 9,
+          "level": "warning",
+          "message": {
+            "text": "Missing Two-Factor Authentication covering communication link Git-Repo Web-UI Access from External Development Client to Git Repository"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-authentication-second-factor@external-dev-client\u003egit-repo-web-ui-access@external-dev-client@git-repo"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "git-repo",
+            "severity": "medium",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "missing-authentication-second-factor",
+          "ruleIndex": 9,
+          "level": "warning",
+          "message": {
+            "text": "Missing Two-Factor Authentication covering communication link Jenkins Web-UI Access from External Development Client to Jenkins Build Server"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-authentication-second-factor@external-dev-client\u003ejenkins-web-ui-access@external-dev-client@jenkins-build-server"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "jenkins-build-server",
+            "severity": "medium",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "missing-authentication-second-factor",
+          "ruleIndex": 9,
+          "level": "warning",
+          "message": {
+            "text": "Missing Two-Factor Authentication covering communication link CMS Content Traffic from Customer Web Client forwarded via Load Balancer to Marketing CMS"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-authentication-second-factor@load-balancer\u003ecms-content-traffic@load-balancer@marketing-cms"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "marketing-cms",
+            "severity": "medium",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "missing-authentication-second-factor",
+          "ruleIndex": 9,
+          "level": "warning",
+          "message": {
+            "text": "Missing Two-Factor Authentication covering communication link Web Application Traffic from Customer Web Client forwarded via Load Balancer to Apache Webserver"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-authentication-second-factor@load-balancer\u003eweb-application-traffic@load-balancer@apache-webserver"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "apache-webserver",
+            "severity": "medium",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "missing-cloud-hardening",
+          "ruleIndex": 10,
+          "level": "warning",
+          "message": {
+            "text": "Missing Cloud Hardening (EC2) risk at Apache Webserver: CIS Benchmark for Amazon Linux"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-cloud-hardening@apache-webserver@ec2"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "probable",
+            "exploitationImpact": "very-high",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "",
+            "severity": "elevated",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "missing-cloud-hardening",
+          "ruleIndex": 10,
+          "level": "warning",
+          "message": {
+            "text": "Missing Cloud Hardening (AWS) risk at Application Network: CIS Benchmark for AWS"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-cloud-hardening@application-network@aws"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "probable",
+            "exploitationImpact": "very-high",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "",
+            "severity": "elevated",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "missing-cloud-hardening",
+          "ruleIndex": 10,
+          "level": "warning",
+          "message": {
+            "text": "Missing Cloud Hardening (S3) risk at Contract File Server: Security Best Practices for AWS S3"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-cloud-hardening@contract-file-server@s3"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "probable",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "",
+            "severity": "medium",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "missing-cloud-hardening",
+          "ruleIndex": 10,
+          "level": "warning",
+          "message": {
+            "text": "Missing Cloud Hardening risk at ERP DMZ"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-cloud-hardening@erp-dmz"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "probable",
+            "exploitationImpact": "very-high",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "",
+            "severity": "elevated",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "missing-cloud-hardening",
+          "ruleIndex": 10,
+          "level": "warning",
+          "message": {
+            "text": "Missing Cloud Hardening risk at Web DMZ"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-cloud-hardening@web-dmz"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "probable",
+            "exploitationImpact": "very-high",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "",
+            "severity": "elevated",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "missing-cloud-hardening",
+          "ruleIndex": 10,
+          "level": "warning",
+          "message": {
+            "text": "Missing Cloud Hardening risk at WebApp and Backoffice Virtualization"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-cloud-hardening@webapp-virtualization"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "probable",
+            "exploitationImpact": "very-high",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "",
+            "severity": "elevated",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "missing-file-validation",
+          "ruleIndex": 11,
+          "level": "warning",
+          "message": {
+            "text": "Missing File Validation risk at Apache Webserver"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-file-validation@apache-webserver"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "probable",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "very-likely",
+            "mostRelevantAsset": "apache-webserver",
+            "severity": "elevated",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "missing-hardening",
+          "ruleIndex": 12,
+          "level": "warning",
+          "message": {
+            "text": "Missing Hardening risk at Apache Webserver"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-hardening@apache-webserver"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "likely",
+            "mostRelevantAsset": "apache-webserver",
+            "severity": "elevated",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "missing-hardening",
+          "ruleIndex": 12,
+          "level": "warning",
+          "message": {
+            "text": "Missing Hardening risk at Backoffice ERP System"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-hardening@erp-system"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "likely",
+            "mostRelevantAsset": "erp-system",
+            "severity": "elevated",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "missing-hardening",
+          "ruleIndex": 12,
+          "level": "warning",
+          "message": {
+            "text": "Missing Hardening risk at Identity Provider"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-hardening@identity-provider"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "likely",
+            "mostRelevantAsset": "identity-provider",
+            "severity": "elevated",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "missing-hardening",
+          "ruleIndex": 12,
+          "level": "warning",
+          "message": {
+            "text": "Missing Hardening risk at Jenkins Build Server"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-hardening@jenkins-build-server"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "likely",
+            "mostRelevantAsset": "jenkins-build-server",
+            "severity": "elevated",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "missing-hardening",
+          "ruleIndex": 12,
+          "level": "warning",
+          "message": {
+            "text": "Missing Hardening risk at LDAP Auth Server"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-hardening@ldap-auth-server"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "likely",
+            "mostRelevantAsset": "ldap-auth-server",
+            "severity": "elevated",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "missing-hardening",
+          "ruleIndex": 12,
+          "level": "warning",
+          "message": {
+            "text": "Missing Hardening risk at Customer Contract Database"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-hardening@sql-database"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "likely",
+            "mostRelevantAsset": "sql-database",
+            "severity": "elevated",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "missing-identity-propagation",
+          "ruleIndex": 13,
+          "level": "warning",
+          "message": {
+            "text": "Missing End User Identity Propagation over communication link ERP System Traffic from Apache Webserver to Backoffice ERP System"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-identity-propagation@apache-webserver\u003eerp-system-traffic@apache-webserver@erp-system"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "erp-system",
+            "severity": "medium",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "missing-vault",
+          "ruleIndex": 14,
+          "level": "warning",
+          "message": {
+            "text": "Missing Vault (Secret Storage) in the threat model (referencing asset Backoffice ERP System as an example)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "missing-vault@erp-system"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "erp-system",
+            "severity": "medium",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "mixed-targets-on-shared-runtime",
+          "ruleIndex": 15,
+          "level": "warning",
+          "message": {
+            "text": "Mixed Targets on Shared Runtime named WebApp and Backoffice Virtualization might enable attackers moving from one less valuable target to a more valuable one"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "mixed-targets-on-shared-runtime@webapp-virtualization"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "",
+            "severity": "medium",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "path-traversal",
+          "ruleIndex": 16,
+          "level": "warning",
+          "message": {
+            "text": "Path-Traversal risk at Backoffice ERP System against filesystem Contract File Server via NFS Filesystem Access"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "path-traversal@erp-system@contract-file-server@erp-system\u003enfs-filesystem-access"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "probable",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "very-likely",
+            "mostRelevantAsset": "erp-system",
+            "severity": "elevated",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "push-instead-of-pull-deployment",
+          "ruleIndex": 17,
+          "level": "warning",
+          "message": {
+            "text": "Push instead of Pull Deployment at Apache Webserver via build pipeline asset Jenkins Build Server"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "push-instead-of-pull-deployment@jenkins-build-server"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "apache-webserver",
+            "severity": "medium",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "push-instead-of-pull-deployment",
+          "ruleIndex": 17,
+          "level": "warning",
+          "message": {
+            "text": "Push instead of Pull Deployment at Marketing CMS via build pipeline asset Jenkins Build Server"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "push-instead-of-pull-deployment@jenkins-build-server"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "marketing-cms",
+            "severity": "medium",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "server-side-request-forgery",
+          "ruleIndex": 18,
+          "level": "warning",
+          "message": {
+            "text": "Server-Side Request Forgery (SSRF) risk at Apache Webserver server-side web-requesting the target Backoffice ERP System via ERP System Traffic"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "server-side-request-forgery@apache-webserver@erp-system@apache-webserver\u003eerp-system-traffic"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "likely",
+            "mostRelevantAsset": "apache-webserver",
+            "severity": "elevated",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "server-side-request-forgery",
+          "ruleIndex": 18,
+          "level": "warning",
+          "message": {
+            "text": "Server-Side Request Forgery (SSRF) risk at Apache Webserver server-side web-requesting the target Identity Provider via Auth Credential Check Traffic"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "server-side-request-forgery@apache-webserver@identity-provider@apache-webserver\u003eauth-credential-check-traffic"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "likely",
+            "mostRelevantAsset": "apache-webserver",
+            "severity": "elevated",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "sql-nosql-injection",
+          "ruleIndex": 19,
+          "level": "error",
+          "message": {
+            "text": "SQL/NoSQL-Injection risk at Backoffice ERP System against database Customer Contract Database via Database Traffic"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "sql-nosql-injection@erp-system@sql-database@erp-system\u003edatabase-traffic"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "probable",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "very-likely",
+            "mostRelevantAsset": "erp-system",
+            "severity": "high",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "unchecked-deployment",
+          "ruleIndex": 20,
+          "level": "warning",
+          "message": {
+            "text": "Unchecked Deployment risk at External Development Client"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "unchecked-deployment@external-dev-client"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "external-dev-client",
+            "severity": "medium",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "unchecked-deployment",
+          "ruleIndex": 20,
+          "level": "note",
+          "message": {
+            "text": "Unchecked Deployment risk at Git Repository"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "unchecked-deployment@git-repo"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "low",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "git-repo",
+            "severity": "low",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "unchecked-deployment",
+          "ruleIndex": 20,
+          "level": "warning",
+          "message": {
+            "text": "Unchecked Deployment risk at Jenkins Build Server"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "unchecked-deployment@jenkins-build-server"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "jenkins-build-server",
+            "severity": "medium",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "unencrypted-asset",
+          "ruleIndex": 21,
+          "level": "warning",
+          "message": {
+            "text": "Unencrypted Technical Asset named Apache Webserver"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "unencrypted-asset@apache-webserver"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "apache-webserver",
+            "severity": "medium",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "unencrypted-asset",
+          "ruleIndex": 21,
+          "level": "warning",
+          "message": {
+            "text": "Unencrypted Technical Asset named Contract File Server"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "unencrypted-asset@contract-file-server"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "contract-file-server",
+            "severity": "medium",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "unencrypted-asset",
+          "ruleIndex": 21,
+          "level": "warning",
+          "message": {
+            "text": "Unencrypted Technical Asset named Backoffice ERP System missing end user individual encryption with data-with-end-user-individual-key"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "unencrypted-asset@erp-system"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "erp-system",
+            "severity": "medium",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "unencrypted-asset",
+          "ruleIndex": 21,
+          "level": "warning",
+          "message": {
+            "text": "Unencrypted Technical Asset named Git Repository"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "unencrypted-asset@git-repo"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "git-repo",
+            "severity": "medium",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "unencrypted-asset",
+          "ruleIndex": 21,
+          "level": "warning",
+          "message": {
+            "text": "Unencrypted Technical Asset named Jenkins Build Server"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "unencrypted-asset@jenkins-build-server"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "jenkins-build-server",
+            "severity": "medium",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "unencrypted-asset",
+          "ruleIndex": 21,
+          "level": "warning",
+          "message": {
+            "text": "Unencrypted Technical Asset named Marketing CMS"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "unencrypted-asset@marketing-cms"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "marketing-cms",
+            "severity": "medium",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "unencrypted-asset",
+          "ruleIndex": 21,
+          "level": "warning",
+          "message": {
+            "text": "Unencrypted Technical Asset named Customer Contract Database missing end user individual encryption with data-with-end-user-individual-key"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "unencrypted-asset@sql-database"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "The hardening measures were implemented and checked"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "improbable",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "sql-database",
+            "severity": "medium",
+            "status": "mitigated"
+          }
+        },
+        {
+          "ruleId": "unencrypted-communication",
+          "ruleIndex": 22,
+          "level": "warning",
+          "message": {
+            "text": "Unencrypted Communication named Database Traffic between Backoffice ERP System and Customer Contract Database transferring authentication data (like credentials, token, session-id, etc.)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "unencrypted-communication@erp-system\u003edatabase-traffic@erp-system@sql-database"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "erp-system",
+            "severity": "medium",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "unencrypted-communication",
+          "ruleIndex": 22,
+          "level": "warning",
+          "message": {
+            "text": "Unencrypted Communication named NFS Filesystem Access between Backoffice ERP System and Contract File Server"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "unencrypted-communication@erp-system\u003enfs-filesystem-access@erp-system@contract-file-server"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "unlikely",
+            "mostRelevantAsset": "erp-system",
+            "severity": "medium",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "unencrypted-communication",
+          "ruleIndex": 22,
+          "level": "warning",
+          "message": {
+            "text": "Unencrypted Communication named Web Application Traffic between Load Balancer and Apache Webserver transferring authentication data (like credentials, token, session-id, etc.)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "unencrypted-communication@load-balancer\u003eweb-application-traffic@load-balancer@apache-webserver"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "likely",
+            "mostRelevantAsset": "load-balancer",
+            "severity": "elevated",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "unencrypted-communication",
+          "ruleIndex": 22,
+          "level": "warning",
+          "message": {
+            "text": "Unencrypted Communication named Auth Traffic between Marketing CMS and LDAP Auth Server transferring authentication data (like credentials, token, session-id, etc.)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "unencrypted-communication@marketing-cms\u003eauth-traffic@marketing-cms@ldap-auth-server"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "likely",
+            "mostRelevantAsset": "marketing-cms",
+            "severity": "elevated",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "unguarded-access-from-internet",
+          "ruleIndex": 23,
+          "level": "warning",
+          "message": {
+            "text": "Unguarded Access from Internet of Git Repository by External Development Client via Git-Repo Code Write Access"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "unguarded-access-from-internet@git-repo@external-dev-client@external-dev-client\u003egit-repo-code-write-access"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "very-likely",
+            "mostRelevantAsset": "git-repo",
+            "severity": "elevated",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "unguarded-access-from-internet",
+          "ruleIndex": 23,
+          "level": "warning",
+          "message": {
+            "text": "Unguarded Access from Internet of Git Repository by External Development Client via Git-Repo Web-UI Access"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "unguarded-access-from-internet@git-repo@external-dev-client@external-dev-client\u003egit-repo-web-ui-access"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "very-likely",
+            "mostRelevantAsset": "git-repo",
+            "severity": "elevated",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "unguarded-access-from-internet",
+          "ruleIndex": 23,
+          "level": "warning",
+          "message": {
+            "text": "Unguarded Access from Internet of Jenkins Build Server by External Development Client via Jenkins Web-UI Access"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "unguarded-access-from-internet@jenkins-build-server@external-dev-client@external-dev-client\u003ejenkins-web-ui-access"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "possible",
+            "exploitationImpact": "medium",
+            "exploitationLikelihood": "very-likely",
+            "mostRelevantAsset": "jenkins-build-server",
+            "severity": "elevated",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "untrusted-deserialization",
+          "ruleIndex": 24,
+          "level": "warning",
+          "message": {
+            "text": "Untrusted Deserialization risk at Backoffice ERP System"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "untrusted-deserialization@erp-system"
+          },
+          "suppressions": [
+            {
+              "kind": "external",
+              "justification": "Risk accepted as tolerable"
+            }
+          ],
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "probable",
+            "exploitationImpact": "very-high",
+            "exploitationLikelihood": "likely",
+            "mostRelevantAsset": "erp-system",
+            "severity": "elevated",
+            "status": "accepted"
+          }
+        },
+        {
+          "ruleId": "untrusted-deserialization",
+          "ruleIndex": 24,
+          "level": "warning",
+          "message": {
+            "text": "Untrusted Deserialization risk at Jenkins Build Server"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "untrusted-deserialization@jenkins-build-server"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "probable",
+            "exploitationImpact": "very-high",
+            "exploitationLikelihood": "likely",
+            "mostRelevantAsset": "jenkins-build-server",
+            "severity": "elevated",
+            "status": "unchecked"
+          }
+        },
+        {
+          "ruleId": "xml-external-entity",
+          "ruleIndex": 25,
+          "level": "error",
+          "message": {
+            "text": "XML External Entity (XXE) risk at Backoffice ERP System"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "threagile.yaml"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "threagileSyntheticId": "xml-external-entity@erp-system"
+          },
+          "properties": {
+            "confidence": 0,
+            "dataBreachProbability": "probable",
+            "exploitationImpact": "high",
+            "exploitationLikelihood": "very-likely",
+            "mostRelevantAsset": "erp-system",
+            "severity": "high",
+            "status": "unchecked"
+          }
+        }
+      ]
+    }
+  ]
+}

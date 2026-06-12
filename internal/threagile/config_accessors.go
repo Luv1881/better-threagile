@@ -131,6 +131,10 @@ func (c *Config) GetJsonRisksFilename() string {
 	return c.JsonRisksFilenameValue
 }
 
+func (c *Config) GetSarifRisksFilename() string {
+	return c.SarifRisksFilenameValue
+}
+
 func (c *Config) GetJsonTechnicalAssetsFilename() string {
 	return c.JsonTechnicalAssetsFilenameValue
 }
@@ -325,6 +329,10 @@ func (c *Config) GetSkipDataAssetDiagram() bool {
 
 func (c *Config) GetSkipRisksJSON() bool {
 	return c.SkipRisksJSONValue
+}
+
+func (c *Config) GetSkipRisksSARIF() bool {
+	return c.SkipRisksSARIFValue
 }
 
 func (c *Config) GetSkipTechnicalAssetsJSON() bool {

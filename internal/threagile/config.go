@@ -42,6 +42,7 @@ type Config struct {
 	ExcelRisksFilenameValue          string `json:"ExcelRisksFilename,omitempty" yaml:"ExcelRisksFilename"`
 	ExcelTagsFilenameValue           string `json:"ExcelTagsFilename,omitempty" yaml:"ExcelTagsFilename"`
 	JsonRisksFilenameValue           string `json:"JsonRisksFilename,omitempty" yaml:"JsonRisksFilename"`
+	SarifRisksFilenameValue          string `json:"SarifRisksFilename,omitempty" yaml:"SarifRisksFilename"`
 	JsonTechnicalAssetsFilenameValue string `json:"JsonTechnicalAssetsFilename,omitempty" yaml:"JsonTechnicalAssetsFilename"`
 	JsonStatsFilenameValue           string `json:"JsonStatsFilename,omitempty" yaml:"JsonStatsFilename"`
 	TemplateFilenameValue            string `json:"TemplateFilename,omitempty" yaml:"TemplateFilename"`
@@ -77,6 +78,7 @@ type Config struct {
 	SkipDataFlowDiagramValue     bool `json:"SkipDataFlowDiagram,omitempty" yaml:"SkipDataFlowDiagram"`
 	SkipDataAssetDiagramValue    bool `json:"SkipDataAssetDiagram,omitempty" yaml:"SkipDataAssetDiagram"`
 	SkipRisksJSONValue           bool `json:"SkipRisksJSON,omitempty" yaml:"SkipRisksJSON"`
+	SkipRisksSARIFValue          bool `json:"SkipRisksSARIF,omitempty" yaml:"SkipRisksSARIF"`
 	SkipTechnicalAssetsJSONValue bool `json:"SkipTechnicalAssetsJSON,omitempty" yaml:"SkipTechnicalAssetsJSON"`
 	SkipStatsJSONValue           bool `json:"SkipStatsJSON,omitempty" yaml:"SkipStatsJSON"`
 	SkipRisksExcelValue          bool `json:"SkipRisksExcel,omitempty" yaml:"SkipRisksExcel"`
@@ -110,6 +112,7 @@ type ConfigGetter interface {
 	GetExcelRisksFilename() string
 	GetExcelTagsFilename() string
 	GetJsonRisksFilename() string
+	GetSarifRisksFilename() string
 	GetJsonTechnicalAssetsFilename() string
 	GetJsonStatsFilename() string
 	GetReportLogoImagePath() string
@@ -145,6 +148,7 @@ type ConfigGetter interface {
 	GetSkipDataFlowDiagram() bool
 	GetSkipDataAssetDiagram() bool
 	GetSkipRisksJSON() bool
+	GetSkipRisksSARIF() bool
 	GetSkipTechnicalAssetsJSON() bool
 	GetSkipStatsJSON() bool
 	GetSkipRisksExcel() bool
@@ -198,6 +202,7 @@ func (c *Config) Defaults(buildTimestamp string) *Config {
 		ExcelRisksFilenameValue:          ExcelRisksFilename,
 		ExcelTagsFilenameValue:           ExcelTagsFilename,
 		JsonRisksFilenameValue:           JsonRisksFilename,
+		SarifRisksFilenameValue:          SarifRisksFilename,
 		JsonTechnicalAssetsFilenameValue: JsonTechnicalAssetsFilename,
 		JsonStatsFilenameValue:           JsonStatsFilename,
 		TemplateFilenameValue:            TemplateFilename,
@@ -421,6 +426,12 @@ func (c *Config) Merge(config Config, values map[string]any) {
 
 		case strings.ToLower("JsonRisksFilename"):
 			c.JsonRisksFilenameValue = config.JsonRisksFilenameValue
+
+		case strings.ToLower("SarifRisksFilename"):
+			c.SarifRisksFilenameValue = config.SarifRisksFilenameValue
+
+		case strings.ToLower("SkipRisksSARIF"):
+			c.SkipRisksSARIFValue = config.SkipRisksSARIFValue
 
 		case strings.ToLower("JsonTechnicalAssetsFilename"):
 			c.JsonTechnicalAssetsFilenameValue = config.JsonTechnicalAssetsFilenameValue

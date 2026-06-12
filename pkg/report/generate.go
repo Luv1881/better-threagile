@@ -17,6 +17,7 @@ type GenerateCommands struct {
 	DataFlowDiagram     bool
 	DataAssetDiagram    bool
 	RisksJSON           bool
+	RisksSARIF          bool
 	TechnicalAssetsJSON bool
 	StatsJSON           bool
 	RisksExcel          bool
@@ -30,6 +31,7 @@ func (c *GenerateCommands) Defaults() *GenerateCommands {
 		DataFlowDiagram:     true,
 		DataAssetDiagram:    true,
 		RisksJSON:           true,
+		RisksSARIF:          true,
 		TechnicalAssetsJSON: true,
 		StatsJSON:           true,
 		RisksExcel:          true,
@@ -57,6 +59,7 @@ type reportConfigReader interface {
 	GetExcelRisksFilename() string
 	GetExcelTagsFilename() string
 	GetJsonRisksFilename() string
+	GetSarifRisksFilename() string
 	GetJsonTechnicalAssetsFilename() string
 	GetJsonStatsFilename() string
 	GetTemplateFilename() string
@@ -166,6 +169,16 @@ func Generate(config reportConfigReader, readResult *model.ReadResult, commands 
 		err := WriteRisksJSON(readResult.ParsedModel, filepath.Join(config.GetOutputFolder(), config.GetJsonRisksFilename()))
 		if err != nil {
 			return fmt.Errorf("error while writing risks json: %w", err)
+		}
+	}
+
+	// risks as SARIF (for code-scanning upload in CI)
+	if commands.RisksSARIF {
+		progressReporter.Info("Writing risks sarif")
+		err := WriteRisksSARIF(readResult.ParsedModel, config.GetInputFile(), config.GetThreagileVersion(),
+			filepath.Join(config.GetOutputFolder(), config.GetSarifRisksFilename()))
+		if err != nil {
+			return fmt.Errorf("error while writing risks sarif: %w", err)
 		}
 	}
 

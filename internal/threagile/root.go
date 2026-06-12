@@ -80,6 +80,7 @@ func (what *Threagile) initFlags() *Threagile {
 	what.rootCmd.PersistentFlags().StringVar(&what.flags.ExcelRisksFilenameValue, risksExcelFileFlagName, what.config.GetExcelRisksFilename(), "risks Excel file")
 	what.rootCmd.PersistentFlags().StringVar(&what.flags.ExcelTagsFilenameValue, tagsExcelFileFlagName, what.config.GetExcelTagsFilename(), "tags Excel file")
 	what.rootCmd.PersistentFlags().StringVar(&what.flags.JsonRisksFilenameValue, risksJsonFileFlagName, what.config.GetJsonRisksFilename(), "risks JSON file")
+	what.rootCmd.PersistentFlags().StringVar(&what.flags.SarifRisksFilenameValue, risksSarifFileFlagName, what.config.GetSarifRisksFilename(), "risks SARIF file")
 	what.rootCmd.PersistentFlags().StringVar(&what.flags.JsonTechnicalAssetsFilenameValue, technicalAssetsJsonFileFlagName, what.config.GetJsonTechnicalAssetsFilename(), "technical assets JSON file")
 	what.rootCmd.PersistentFlags().StringVar(&what.flags.JsonStatsFilenameValue, statsJsonFileFlagName, what.config.GetJsonStatsFilename(), "stats JSON file")
 	what.rootCmd.PersistentFlags().StringVar(&what.flags.TemplateFilenameValue, templateFileNameFlagName, what.config.GetTemplateFilename(), "template pdf file")
@@ -105,6 +106,7 @@ func (what *Threagile) initFlags() *Threagile {
 	what.rootCmd.PersistentFlags().BoolVar(&what.flags.SkipDataFlowDiagramValue, skipDataFlowDiagramFlagName, what.config.GetSkipDataFlowDiagram(), "skip generating data flow diagram")
 	what.rootCmd.PersistentFlags().BoolVar(&what.flags.SkipDataAssetDiagramValue, skipDataAssetDiagramFlagName, what.config.GetSkipDataAssetDiagram(), "skip generating data asset diagram")
 	what.rootCmd.PersistentFlags().BoolVar(&what.flags.SkipRisksJSONValue, skipRisksJSONFlagName, what.config.GetSkipRisksJSON(), "skip generating risks json")
+	what.rootCmd.PersistentFlags().BoolVar(&what.flags.SkipRisksSARIFValue, skipRisksSARIFFlagName, what.config.GetSkipRisksSARIF(), "skip generating risks sarif")
 	what.rootCmd.PersistentFlags().BoolVar(&what.flags.SkipTechnicalAssetsJSONValue, skipTechnicalAssetsJSONFlagName, what.config.GetSkipTechnicalAssetsJSON(), "skip generating technical assets json")
 	what.rootCmd.PersistentFlags().BoolVar(&what.flags.SkipStatsJSONValue, skipStatsJSONFlagName, what.config.GetSkipStatsJSON(), "skip generating stats json")
 	what.rootCmd.PersistentFlags().BoolVar(&what.flags.SkipRisksExcelValue, skipRisksExcelFlagName, what.config.GetSkipRisksExcel(), "skip generating risks excel")
@@ -266,6 +268,7 @@ func (what *Threagile) readCommands() *report.GenerateCommands {
 	commands.DataFlowDiagram = !what.flags.SkipDataFlowDiagramValue
 	commands.DataAssetDiagram = !what.flags.SkipDataAssetDiagramValue
 	commands.RisksJSON = !what.flags.SkipRisksJSONValue
+	commands.RisksSARIF = !what.flags.SkipRisksSARIFValue
 	commands.StatsJSON = !what.flags.SkipStatsJSONValue
 	commands.TechnicalAssetsJSON = !what.flags.SkipTechnicalAssetsJSONValue
 	commands.RisksExcel = !what.flags.SkipRisksExcelValue
@@ -365,6 +368,10 @@ func (what *Threagile) processArgs(cmd *cobra.Command, args []string) bool {
 
 	if what.isFlagOverridden(cmd, risksJsonFileFlagName) {
 		what.config.JsonRisksFilenameValue = what.config.CleanPath(what.flags.JsonRisksFilenameValue)
+	}
+
+	if what.isFlagOverridden(cmd, risksSarifFileFlagName) {
+		what.config.SarifRisksFilenameValue = what.config.CleanPath(what.flags.SarifRisksFilenameValue)
 	}
 
 	if what.isFlagOverridden(cmd, technicalAssetsJsonFileFlagName) {
@@ -474,6 +481,10 @@ func (what *Threagile) processArgs(cmd *cobra.Command, args []string) bool {
 
 	if what.isFlagOverridden(cmd, skipRisksJSONFlagName) {
 		what.config.SkipRisksJSONValue = what.flags.SkipRisksJSONValue
+	}
+
+	if what.isFlagOverridden(cmd, skipRisksSARIFFlagName) {
+		what.config.SkipRisksSARIFValue = what.flags.SkipRisksSARIFValue
 	}
 
 	if what.isFlagOverridden(cmd, skipTechnicalAssetsJSONFlagName) {

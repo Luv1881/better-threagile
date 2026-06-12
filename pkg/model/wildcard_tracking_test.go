@@ -46,9 +46,11 @@ func TestWildcardRiskTracking_StatusReachesRisks(t *testing.T) {
 	result, err = model.AnalyzeModel(modelInput, cfg, risks.GetBuiltInRiskRules(), make(types.RiskRules), server.DefaultProgressReporter{})
 	require.NoError(t, err)
 
-	withStatus := result.ParsedModel.GeneratedRisksByCategoryWithCurrentStatus()
-	require.NotEmpty(t, withStatus[categoryID])
-	for _, risk := range withStatus[categoryID] {
+	// The raw generated risks (what WriteRisksJSON/AllRisks consume) must
+	// already carry the status after AnalyzeModel — without requiring callers
+	// to invoke GeneratedRisksByCategoryWithCurrentStatus themselves.
+	require.NotEmpty(t, result.ParsedModel.GeneratedRisksByCategory[categoryID])
+	for _, risk := range result.ParsedModel.GeneratedRisksByCategory[categoryID] {
 		require.Equal(t, types.Accepted, risk.RiskStatus,
 			"wildcard tracking entry %s@* must set the risk status of %s", categoryID, risk.SyntheticId)
 	}

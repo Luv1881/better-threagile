@@ -134,6 +134,11 @@ func AnalyzeModel(modelInput *input.Model, config configReader, builtinRiskRules
 		return nil, fmt.Errorf("risk acceptance expiry check failed: %w", err)
 	}
 
+	// Merge tracking statuses into the generated risks now that all tracking
+	// entries (incl. wildcard-expanded ones) exist — downstream consumers
+	// (risks JSON/SARIF/reports) must all see the same current statuses.
+	parsedModel.GeneratedRisksByCategoryWithCurrentStatus()
+
 	return &ReadResult{
 		ModelInput:       modelInput,
 		ParsedModel:      parsedModel,

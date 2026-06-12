@@ -36,7 +36,7 @@ jobs:
           version: v2.11
 
       - name: Run Gosec
-        uses: securego/gosec@master
+        uses: securego/gosec@f1c81de5fcdf7b466b229fb24ca02d1a8406dd09 # master, pinned 2026-06-12
         with:
           args: ./...
 

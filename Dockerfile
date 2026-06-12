@@ -1,18 +1,5 @@
-
-
 ######
-## Stage 1: Clone the Git repository
-######
-FROM alpine/git AS clone
-WORKDIR /app
-
-RUN git clone https://github.com/threagile/threagile.git
-
-
-
-
-######
-## Stage 2: Build application with Go's build tools
+## Stage 1: Build application with Go's build tools
 ######
 FROM golang AS build
 WORKDIR /app
@@ -21,12 +8,12 @@ ENV GO111MODULE=on
 
 # https://stackoverflow.com/questions/36279253/go-compiled-binary-wont-run-in-an-alpine-docker-container-on-ubuntu-host
 #ENV CGO_ENABLED=0 # cannot be set as otherwise plugins don't run
-COPY --from=clone /app/threagile /app
+COPY . /app
 
 RUN go version
 RUN go test ./...
-RUN GOOS=linux go build -ldflags="-X main.buildTimestamp=$(date '+%Y%m%d%H%M%S')" -o risk_demo_rule cmd/risk_demo/main.go
-RUN GOOS=linux go build -ldflags="-X main.buildTimestamp=$(date '+%Y%m%d%H%M%S')" -o threagile
+RUN GOOS=linux go build -ldflags="-X main.buildTimestamp=$(date '+%Y%m%d%H%M%S')" -o risk_demo_rule ./cmd/risk_demo
+RUN GOOS=linux go build -ldflags="-X main.buildTimestamp=$(date '+%Y%m%d%H%M%S')" -o threagile ./cmd/threagile
 # add the -race parameter to go build call in order to instrument with race condition detector: https://blog.golang.org/race-detector
 # NOTE: copy files with final name to send to final build
 RUN cp /app/demo/example/threagile.yaml /app/demo/example/threagile-example-model.yaml
@@ -36,7 +23,7 @@ RUN cp /app/demo/stub/threagile.yaml /app/demo/stub/threagile-stub-model.yaml
 
 
 ######
-## Stage 3: Make final small image
+## Stage 2: Make final small image
 ######
 FROM alpine AS deploy
 WORKDIR /app

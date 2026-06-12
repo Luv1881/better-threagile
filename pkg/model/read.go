@@ -252,6 +252,9 @@ func applyRiskGeneration(parsedModel *types.Model, rules types.RiskRules,
 		}
 	}
 	for id, riskList := range collected {
+		// Rules may emit risks in map-iteration order; sort each category's
+		// slice so generated output is deterministic across runs.
+		types.SortByRiskSeverity(riskList)
 		parsedModel.GeneratedRisksByCategory[id] = riskList
 	}
 
@@ -265,10 +268,12 @@ func applyRiskGeneration(parsedModel *types.Model, rules types.RiskRules,
 		}
 	}
 
-	// save also in map keyed by synthetic risk-id
-	for _, category := range parsedModel.SortedRiskCategories() {
-		someRisks := parsedModel.SortedRisksOfCategory(category)
-		for _, risk := range someRisks {
+	// save also in map keyed by synthetic risk-id; iterate the raw category map
+	// directly — going through SortedRisksOfCategory here would trigger the
+	// one-shot status-application cache (statusApplied) before wildcard
+	// risk-tracking entries are expanded, silently dropping their statuses.
+	for _, generatedRisks := range parsedModel.GeneratedRisksByCategory {
+		for _, risk := range generatedRisks {
 			parsedModel.GeneratedRisksBySyntheticId[strings.ToLower(risk.SyntheticId)] = risk
 		}
 	}

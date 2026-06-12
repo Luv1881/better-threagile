@@ -12,9 +12,9 @@
 |---|---|
 | 🟠 High | 2 |
 | 🟡 Elevated | 28 |
-| 🔵 Medium | 31 |
+| 🔵 Medium | 32 |
 | ⚪ Low | 4 |
-| **Total** | **65** |
+| **Total** | **66** |
 
 ## Findings
 
@@ -451,9 +451,18 @@
 - **Likelihood:** unlikely
 - **Data Breach Scope:** Apache Webserver, Marketing CMS, Backoffice ERP System, Contract File Server, Customer Contract Database
 
+### [MEDIUM] Push instead of Pull Deployment at Apache Webserver via build pipeline asset Jenkins Build Server
+
+- **ID:** `push-instead-of-pull-deployment@apache-webserver@jenkins-build-server`
+- **Category:** `push-instead-of-pull-deployment`
+- **Impact:** medium
+- **Likelihood:** unlikely
+- **Asset:** Apache Webserver
+- **Data Breach Scope:** Apache Webserver
+
 ### [MEDIUM] Push instead of Pull Deployment at Marketing CMS via build pipeline asset Jenkins Build Server
 
-- **ID:** `push-instead-of-pull-deployment@jenkins-build-server`
+- **ID:** `push-instead-of-pull-deployment@marketing-cms@jenkins-build-server`
 - **Category:** `push-instead-of-pull-deployment`
 - **Impact:** medium
 - **Likelihood:** unlikely

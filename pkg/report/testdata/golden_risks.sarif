@@ -1838,7 +1838,7 @@
             }
           ],
           "partialFingerprints": {
-            "threagileSyntheticId": "push-instead-of-pull-deployment@jenkins-build-server"
+            "threagileSyntheticId": "push-instead-of-pull-deployment@apache-webserver@jenkins-build-server"
           },
           "properties": {
             "confidence": 0,
@@ -1867,7 +1867,7 @@
             }
           ],
           "partialFingerprints": {
-            "threagileSyntheticId": "push-instead-of-pull-deployment@jenkins-build-server"
+            "threagileSyntheticId": "push-instead-of-pull-deployment@marketing-cms@jenkins-build-server"
           },
           "properties": {
             "confidence": 0,

@@ -137,7 +137,12 @@ func BuildSarif(parsedModel *types.Model, modelFileURI string, version string) (
 	for _, categoryID := range categoryIDs {
 		risks := make([]*types.Risk, len(parsedModel.GeneratedRisksByCategory[categoryID]))
 		copy(risks, parsedModel.GeneratedRisksByCategory[categoryID])
-		sort.Slice(risks, func(i, j int) bool { return risks[i].SyntheticId < risks[j].SyntheticId })
+		sort.Slice(risks, func(i, j int) bool {
+			if risks[i].SyntheticId != risks[j].SyntheticId {
+				return risks[i].SyntheticId < risks[j].SyntheticId
+			}
+			return risks[i].Title < risks[j].Title
+		})
 		for _, risk := range risks {
 			status := risk.RiskStatus
 			if tracking, ok := parsedModel.RiskTracking[risk.SyntheticId]; ok {

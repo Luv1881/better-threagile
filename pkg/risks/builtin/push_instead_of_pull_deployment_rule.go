@@ -83,6 +83,9 @@ func (r *PushInsteadPullDeploymentRule) createRisk(buildPipeline *types.Technica
 		DataBreachProbability:           types.Improbable,
 		DataBreachTechnicalAssetIDs:     []string{deploymentTarget.Id},
 	}
-	risk.SyntheticId = risk.CategoryId + "@" + buildPipeline.Id
+	// include the deployment target: one build pipeline can push to many
+	// targets, and omitting it produced colliding synthetic IDs (breaking
+	// per-risk tracking and deterministic ordering)
+	risk.SyntheticId = risk.CategoryId + "@" + deploymentTarget.Id + "@" + buildPipeline.Id
 	return risk
 }

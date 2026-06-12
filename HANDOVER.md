@@ -57,26 +57,33 @@ Condensed; each phase has a detailed "Results" section in the plan.
     OS/arch targets succeeded locally) + `Dockerfile.goreleaser` +
     `.github/workflows/release.yml` (v* tags, security-gate job before goreleaser).
   - 13.5 `docs/releases.md` refreshed.
-  - **13.1 docs reconciliation is INCOMPLETE** — see §3.
+  - **13.1 docs reconciliation DONE (2026-06-12)** — see §3.
 
 ## 3. Immediate next steps (in order)
 
-1. **Fix D1 — `Dockerfile` builds the wrong code.** Stage 1 runs
-   `git clone https://github.com/threagile/threagile.git`, so a `docker build` of this
-   repo produces *upstream* Threagile with none of this fork's work. Replace the clone
-   stage with `COPY . .` (mirror `Dockerfile.goreleaser`). Half an hour, real defect.
-2. **Fix D2 — pin `securego/gosec@master`** (in `gosec-analysis.yml` and `release.yml`)
-   to a commit SHA; ideally pin all third-party actions. A mutable ref inside the release
-   security gate is a supply-chain hole.
-3. **Finish 13.1 docs reconciliation.** `docs/commands.md` is verified accurate against
-   the built binary (all 30 commands). Still to check: `flags.md`, `config.md`,
-   `methodologies.md`, the other 15 `docs/*.md`, `README.md`, `SKILL.md`. Method: build
-   the binary (`go build -o /tmp/threagile ./cmd/threagile`), diff each doc against
-   `--help` output per command/flag.
+1. ~~Fix D1 — `Dockerfile` builds the wrong code.~~ **Done (2026-06-12).** Rewrote to
+   `COPY . /app`, builds `./cmd/threagile` + `./cmd/risk_demo`; verified via `docker build`
+   (runs `go test ./...` in-image) and `docker run ... list-methodologies` showing
+   fork-specific packs (octave/trike/cloud-native/ai-ml/supply-chain).
+2. ~~Fix D2 — pin `securego/gosec@master`~~ **Done (2026-06-12).** Pinned to commit SHA
+   `f1c81de5fcdf7b466b229fb24ca02d1a8406dd09` in `gosec-analysis.yml` and `release.yml`.
+   No other unpinned mutable-ref third-party actions found.
+3. ~~Finish 13.1 docs reconciliation.~~ **Done (2026-06-12).** Rewrote `docs/flags.md`
+   (double-dash names, correct defaults incl. `--temp-dir`/`--server-dir`, `--skip-*` as
+   primary with `--generate-*` deprecated, all 8 rule packs documented), `docs/config.md`
+   (single-dash flag refs → double-dash, removed broken "or `--v`" text), and
+   `docs/methodologies.md` (fixed false claim that OCTAVE/Trike ship no rule packs — both
+   have embedded 8-rule packs; removed bogus "Custom methodologies" section since
+   `--methodology custom` isn't valid; added cloud-native/supply-chain/ai-ml section).
+   Also updated `docs/asciidoctor-report.md` to use `--skip-report-pdf` instead of
+   deprecated `--generate-report-*` flags. Remaining 15 docs/README/SKILL.md spot-checked
+   clean (no stale `llm` command refs, no other single-dash flags).
 4. **Exercise one tagged release end-to-end** (Phase 13 exit criterion): push to GitHub,
    tag `v1.0.0`, confirm the security gate + goreleaser produce binaries, archives, and
    ghcr images. Note: `.goreleaser.yaml` hardcodes `ghcr.io/threagile/threagile` and
    release owner `threagile` — change these to the actual GitHub org/repo before tagging.
+   **Blocked**: no GitHub remote configured in this working copy; requires user decision on
+   target org/repo before any tag is pushed.
 5. **Phase 5b leftovers**: 77 TODO/FIXME/HACK comments untriaged; 198 `_ =` discards
    (mostly justified `Close()` patterns, never re-audited); 52 nolint/#nosec suppressions.
 6. Then start the **v3 roadmap** — `IMPROVEMENT_PLAN.md` §8. Recommended first features:

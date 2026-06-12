@@ -266,15 +266,89 @@ The VAST report has two chapters: **Application Threat Model** and **Operational
 
 ---
 
-## OCTAVE and Trike
+## OCTAVE Allegro (information asset focused)
 
-OCTAVE and Trike are recognised as valid `--methodology` values and can be used with custom rule packs loaded via `--rules-url` or `--rules-dir`. No built-in rule packs ship for these methodologies; use `--methodology octave --rules-dir ./my-octave-rules` with custom YAML script rules that declare `octave:` classifications.
+OCTAVE Allegro organises findings around **information asset containers** — where information
+assets live, how they're protected, and what happens if a container is compromised.
+
+**Rule pack:** `octave` (embedded, 8 rules)
+
+```bash
+threagile analyze-model --methodology octave --rule-pack octave --model threagile.yaml
+```
+
+### Schema additions
+
+```yaml
+information_assets:
+  Customer PII:
+    id: customer-pii
+    title: "Customer PII"
+    criticality: critical
+    containers:
+      - customer-database
+```
+
+### Included rule themes
+
+Access control, backup, logging, transport encryption, third-party exposure, insider threat,
+recovery, and cross-zone storage of information-asset containers.
 
 ---
 
-## Custom methodologies
+## Trike (rights-based)
 
-Set `--methodology custom` and supply rules via `--rules-dir` or `--rules-url`. Custom rules that do not declare a known methodology classification will still run — their findings appear under the generic "custom" category in reports.
+Trike evaluates threats in terms of **actor trust levels** and an **actor × action matrix**
+(who is allowed to do what to which asset).
+
+**Rule pack:** `trike` (embedded, 8 rules)
+
+```bash
+threagile analyze-model --methodology trike --rule-pack trike --model threagile.yaml
+```
+
+### Schema additions
+
+```yaml
+trike_actors:
+  admin:
+    id: admin
+    trust_level: 5
+
+trike_matrix:
+  - actor: admin
+    asset: customer-database
+    create: true
+    read: true
+    update: true
+    delete: true
+```
+
+### Included rule themes
+
+Actor trust levels, action-matrix coverage gaps, unauthorised read/write, high-trust actor
+monitoring, privilege accumulation, and residual risk acceptance.
+
+---
+
+## Cloud-native, Supply-chain, and AI/ML packs
+
+These packs use the `stride` and `cloud-native` methodology classifications and are aimed at
+specific architectures rather than alternate threat-modeling frameworks:
+
+- **`cloud-native`** (17 rules, methodology `cloud-native`) — IAM, object storage, managed
+  databases, serverless, containers, and API gateways in cloud-hosted architectures.
+- **`supply-chain`** (10 rules, methodology `stride`) — SBOM, dependency scanning, build
+  provenance, image signing, branch protection, and SAST (SLSA/CRA aligned).
+- **`ai-ml`** (18 rules, methodology `stride`) — LLM inference, RAG pipelines, vector stores,
+  training data, model weights, prompt injection, and multi-tenant inference isolation
+  (MITRE ATLAS aligned).
+
+```bash
+threagile analyze-model --rule-pack cloud-native --model threagile.yaml
+threagile analyze-model --rule-pack supply-chain --model threagile.yaml
+threagile analyze-model --rule-pack ai-ml --model threagile.yaml
+```
 
 ---
 

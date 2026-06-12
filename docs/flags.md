@@ -1,58 +1,93 @@
 # Flags
 
-## Common flags
+All flags are GNU-style double-dash flags (`--flag value` or `--flag=value`), provided by
+[cobra](https://github.com/spf13/cobra)/[pflag](https://github.com/spf13/pflag). Run
+`threagile --help` or `threagile <command> --help` for the authoritative, up-to-date list —
+this page is a curated overview grouped by purpose.
 
-| Flag                             | Type                           | Description                                                                                 | Default Value  |
-|----------------------------------|--------------------------------|---------------------------------------------------------------------------------------------| ---------------|
-| `-config`                        | string(path to file)           | path to config file (more details [here](./config.md))                                      | ""             |
-| `-model`                         | string(path to file)           | path to threagile model (more details [here](./model.md))                                   | threagile.yaml |
-| `-interactive` or `--i`          | bool                           | turn on [interactive mode](./mode-interactive.md)                                           | false          |
-| `-app-dir`                       | string(path to directory)      | path to directory where all support files (example models, license, schema etc) are located | /app           |
-| `-output`                        | string(path to directory)      | path to directory where generated results will be saved                                     | ""             |
-| `-tmp-dir`                       | string(path to directory)      | path to directory where temporary files will be created                                     | dev/shm        |
-| `-ignore-orphaned-risk-tracking` | bool                           | do not fail the application when risk tracking does not match any risk id                   | false          |
-| `-skip-risk-rules`               | string (comma separated array) | allow to ignore certain rules                                                               | ""             |
-| `-custom-risk-rules-plugin`      | string (comma separated array) | comma-separated list of plugins file names with custom risk rules to load                   | ""             |
-| `-verbose` or `--v`              | bool                           | add more verbosity in output, perfect for debugging and troubleshooting                     | false          |
+## Common flags (root, inherited by subcommands)
+
+| Flag                                | Type                            | Description                                                                | Default Value     |
+|--------------------------------------|---------------------------------|-----------------------------------------------------------------------------|--------------------|
+| `--config`                           | string(path to file)            | path to config file (more details [here](./config.md))                      | `""`               |
+| `--model`                            | string(path to file)            | input model yaml file (more details [here](./model.md))                     | `threagile.yaml`   |
+| `-i`, `--interactive`                | bool                             | turn on [interactive mode](./mode-interactive.md)                           | `false`            |
+| `--app-dir`                          | string(path to directory)       | app folder (support files: example models, license, schema, etc.)          | `/app`             |
+| `--data-dir`                         | string(path to directory)       | data directory                                                               | `/data`            |
+| `--output`                           | string(path to directory)       | output directory for generated results                                      | `.`                |
+| `--temp-dir`                         | string(path to directory)       | temporary folder location                                                    | `/dev/shm`         |
+| `--key-dir`                          | string(path to directory)       | key folder location (server mode)                                            | `keys`             |
+| `--plugin-dir`                       | string(path to directory)       | plugin directory                                                             | `/app`             |
+| `--ignore-orphaned-risk-tracking`    | bool                             | do not fail when risk tracking entries don't match any risk id              | `false`            |
+| `--skip-risk-rules`                  | string (comma-separated)        | comma-separated list of risk rules (by ID) to skip                          | `""`               |
+| `--custom-risk-rules-plugin`         | string (comma-separated)        | comma-separated list of plugin file names with custom risk rules to load    | `""`               |
+| `--technology`                       | string                           | file name of additional technologies                                        | `""`               |
+| `--imported-model`                   | string                           | imported input model yaml file                                              | `""`               |
+| `--add-model-title`                  | bool                             | add model title                                                              | `false`            |
+| `--backup-history-files-to-keep`     | int                              | number of backup history files to keep                                       | `50`               |
+| `--keep-diagram-source-files`        | bool                             | keep diagram (.gv) source files alongside generated PNGs                    | `false`            |
+| `-v`, `--verbose`                    | bool                             | verbose output, useful for debugging                                        | `false`            |
+| `--version`                          | bool                             | print version                                                                | `false`            |
 
 ## Analyze flags
 
-This flags is used when application run in [analyze mode](./mode-analyze.md)
+Used by [`analyze-model`](./mode-analyze.md) (and shared by `diff`, `watch`, `lint`,
+`validate`, `test-rules` where applicable):
 
-| Flag                              | Type                 | Description                                                        | Default Value             |
-|-----------------------------------|----------------------|--------------------------------------------------------------------| --------------------------|
-| `-diagram-dpi`                    | int                  | [GraphViz dpi](https://graphviz.org/docs/attrs/dpi/)               | 100                       |
-| `-background`                     | string(path to file) | path to pdf which will be used as background during pdf generation | background.pdf            |
-| `-reportLogoImagePath`            | string(path to file) | path to logo image file which will be used in adoc report          | report/threagile-logo.png |
-| `-generate-data-flow-diagram`     | bool                 | specify if data flow diagram shall be generated                    | true                      |
-| `-generate-data-asset-diagram`    | bool                 | specify if data asset diagram shall be generated                   | true                      |
-| `-generate-risks-json`            | bool                 | specify if JSON with risks shall be generated                      | true                      |
-| `-generate-technical-assets-json` | bool                 | specify if JSON with technical assets shall be generated           | true                      |
-| `-generate-stats-json`            | bool                 | specify if JSON with risk statistic shall be generated             | true                      |
-| `-generate-risks-excel`           | bool                 | specify if Excel with risks shall be generated                     | true                      |
-| `-generate-tags-excel`            | bool                 | specify if Excel with tags shall be generated                      | true                      |
-| `-generate-report-pdf`            | bool                 | specify if PDF with the analyse report shall be generated          | true                      |
-| `-generate-report-adoc`           | bool                 | specify if adoc report with the analysis  shall be generated       | true                      |
+| Flag                              | Type                 | Description                                                              | Default Value               |
+|------------------------------------|----------------------|----------------------------------------------------------------------------|-------------------------------|
+| `--diagram-dpi`                   | int                  | DPI used to render diagrams (maximum 300)                                | `100`                          |
+| `--background`                    | string(path to file) | template PDF used as background for PDF generation                       | `background.pdf`               |
+| `--reportLogoImagePath`           | string(path to file) | logo image used in the adoc report                                       | `report/threagile-logo.png`    |
+| `--data-flow-diagram-dot`         | string               | data-flow diagram DOT file name                                           | `data-flow-diagram.gv`          |
+| `--data-flow-diagram-png`         | string               | data-flow diagram PNG file name                                           | `data-flow-diagram.png`         |
+| `--data-asset-diagram-dot`        | string               | data-asset diagram DOT file name                                          | `data-asset-diagram.gv`         |
+| `--data-asset-diagram-png`        | string               | data-asset diagram PNG file name                                          | `data-asset-diagram.png`        |
+| `--report`                        | string               | PDF report file name                                                      | `report.pdf`                    |
+| `--risks-json`                    | string               | risks JSON file name                                                      | `risks.json`                    |
+| `--technical-assets-json`         | string               | technical assets JSON file name                                           | `technical-assets.json`         |
+| `--stats-json`                    | string               | risk statistics JSON file name                                            | `stats.json`                    |
+| `--risks-excel`                   | string               | risks Excel file name                                                     | `risks.xlsx`                    |
+| `--tags-excel`                    | string               | tags Excel file name                                                      | `tags.xlsx`                     |
+| `--skip-data-flow-diagram`        | bool                 | skip generating the data-flow diagram                                    | `false`                         |
+| `--skip-data-asset-diagram`       | bool                 | skip generating the data-asset diagram                                   | `false`                         |
+| `--skip-report-pdf`               | bool                 | skip generating the PDF report (including diagrams)                     | `false`                         |
+| `--skip-report-adoc`              | bool                 | skip generating the adoc report (including diagrams)                    | `false`                         |
+| `--skip-risks-json`               | bool                 | skip generating the risks JSON                                           | `false`                         |
+| `--skip-technical-assets-json`    | bool                 | skip generating the technical-assets JSON                                | `false`                         |
+| `--skip-stats-json`               | bool                 | skip generating the risk-statistics JSON                                 | `false`                         |
+| `--skip-risks-excel`              | bool                 | skip generating the risks Excel                                          | `false`                         |
+| `--skip-tags-excel`               | bool                 | skip generating the tags Excel                                           | `false`                         |
+
+> The older `--generate-*` boolean flags (`--generate-data-flow-diagram`,
+> `--generate-report-pdf`, etc., all defaulting to `true`) are **deprecated** in favour of
+> the `--skip-*` flags above, but still accepted for backward compatibility.
 
 ## Server flags
 
-This flags is used when application run in [server mode](./mode-server.md)
+Used by [`server`](./mode-server.md):
 
-| Flag           | Type                      | Description                                             | Default Value  |
-|----------------|---------------------------|---------------------------------------------------------| ---------------|
-| `-server-dir`  | string(path to directory) | path to directory where static server files are located | /server        |
-| `-server-port` | int                       | which port will be used to run the server               | 8080           |
+| Flag             | Type                       | Description                                       | Default Value |
+|-------------------|-----------------------------|-----------------------------------------------------|------------------|
+| `--server-dir`   | string(path to directory)  | base folder for server mode                       | `/data`          |
+| `--server-port`  | int                        | server port                                       | `8080`           |
+
+## Macro flags
+
+| Flag                       | Type   | Description                              | Default Value |
+|------------------------------|--------|---------------------------------------------|------------------|
+| `--execute-model-macro`     | string | ID of the [macro](./macros.md) to execute   | `""`             |
 
 ## Methodology and rule-pack flags
 
-These flags are accepted by `analyze-model`, `diff`, `watch`, `lint`, `validate`, and `test-rules`.
+Accepted by `analyze-model`, `diff`, `watch`, `lint`, `validate`, and `test-rules`:
 
-| Flag                     | Type                           | Description                                                                                         | Default Value |
-|--------------------------|--------------------------------|-----------------------------------------------------------------------------------------------------|---------------|
-| `--methodology`          | string                         | Active threat modeling methodology: `stride`, `linddun`, `pasta`, `vast`, `octave`, `trike`, `custom` | `stride`    |
-| `--rule-pack`            | string                         | Load a built-in methodology rule pack by name (`linddun`, `pasta`, `vast`)                          | `""`          |
-| `--rules-dir`            | string(path to directory)      | Directory containing additional YAML script risk rules to load                                      | `""`          |
-| `--rules-url`            | string (repeatable)            | URL of a rules archive (`.tar.gz` or `.zip`); supports `#sha256=` and `#ttl=` fragments             | `""`          |
-| `--rules-url-file`       | string(path to file)           | Newline-delimited file of rules archive URLs (blank lines and `#` comments ignored)                 | `""`          |
-| `--rules-trusted-key`    | string (repeatable, base64)    | Ed25519 public key for verifying `.sig` sidecar signatures on rule archives                         | `""`          |
-| `--rules-require-signed` | bool                           | Reject any remote rule archive that lacks a valid signature from a trusted key                      | `false`       |
+| Flag                     | Type                          | Description                                                                                                   | Default Value |
+|--------------------------|--------------------------------|------------------------------------------------------------------------------------------------------------------|---------------|
+| `--methodology`         | string                         | active threat-modeling methodology: `stride`, `linddun`, `pasta`, `vast`, `octave`, `trike`                      | `stride`      |
+| `--rule-pack`           | string                         | load a built-in methodology rule pack by name — see `threagile rule-pack list` for all packs (`linddun`, `pasta`, `vast`, `octave`, `trike`, `cloud-native`, `supply-chain`, `ai-ml`) | `""`          |
+| `--rules-dir`           | string(path to directory)      | directory of extra YAML risk rule files to load at runtime                                                       | `""`          |
+| `--rules-url`           | string (repeatable)            | URL to fetch extra YAML risk rules (`.tar.gz` or `.zip`); repeatable; supports `#sha256=...` and `#ttl=24h`      | `""`          |
+| `--rules-url-file`      | string(path to file)           | file containing rules URLs to fetch, one per line                                                                | `""`          |
+| `--rules-trusted-key`   | string (repeatable)            | trusted Ed25519 public key for remote rule signatures; repeatable                                                | `""`          |
+| `--rules-require-signed`| bool                            | require remote rule archives to have a valid `.sig` sidecar signature                                            | `false`       |

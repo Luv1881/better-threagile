@@ -580,12 +580,27 @@ previously vary in risk count, content, and ordering between runs of the exact s
   (build/vet/race-tests/golangci-lint/gosec) that must pass before goreleaser runs.
   No tag has been pushed yet — the end-to-end tagged release remains to be exercised.
 - 13.5 `docs/releases.md` refreshed with the tag-driven release process.
-- 13.1 **In progress, not finished.** Spot-checked `docs/commands.md` against the built
-  binary's `--help`: all 30 commands present and correctly described (verified `import`,
-  `import-model`, `lsp` subtrees). Remaining: `flags.md`, `config.md`, `methodologies.md`,
-  the other 15 docs files, `README.md`, `SKILL.md`.
-- Verified at phase boundary: `go build` / `go vet` clean, `golangci-lint` **0 issues**,
-  **1503 tests pass under `-race`** in 30 packages, coverage **54.3%**.
+- 13.1 **Done (2026-06-12).** `docs/commands.md` previously verified accurate against
+  `--help` (all 30 commands). Rewrote `docs/flags.md` (was entirely single-dash and stale —
+  now matches the actual 54-flag cobra root `--help` with correct double-dash names and
+  defaults, e.g. `--temp-dir` default `/dev/shm`, `--server-dir` default `/data`; documents
+  current `--skip-*` flags as primary with `--generate-*` marked deprecated; documents all 8
+  rule packs incl. `cloud-native`, `supply-chain`, `ai-ml`, `octave`, `trike`). Rewrote
+  `docs/config.md` flag cross-references from single-dash to double-dash and removed
+  nonsensical "or `--v`" leftovers. Rewrote `docs/methodologies.md` OCTAVE/Trike section
+  (previously falsely claimed no built-in rule packs ship for them — both have embedded
+  8-rule packs) and removed the bogus "Custom methodologies" section (`--methodology custom`
+  is not a valid value); added a section documenting the `cloud-native`/`supply-chain`/`ai-ml`
+  packs. Updated `docs/asciidoctor-report.md` to use current `--skip-report-pdf` instead of
+  deprecated `--generate-report-pdf=0`/`--generate-report-adoc`. Remaining 15 docs files,
+  `README.md`, `SKILL.md` spot-checked for stale flag/methodology/command references — none
+  found.
+- D1/D2 (from §8.1) also fixed in this pass: `Dockerfile` rewritten to `COPY . /app` and build
+  this fork's `./cmd/threagile` + `./cmd/risk_demo` (was cloning upstream Threagile —
+  verified via `docker build`/`docker run list-methodologies` showing fork-specific packs);
+  `securego/gosec@master` pinned to a commit SHA in `gosec-analysis.yml` and `release.yml`.
+- Verified at phase boundary: `go build` / `go vet` clean, **1503 tests pass under `-race`**
+  in 30 packages, coverage **54.3%** (golangci-lint 0 issues verified in prior session pass).
 
 ---
 
@@ -643,11 +658,11 @@ reduction (abandoned PDF engine under the flagship report; unhardened HTTP serve
 
 | # | Finding | Severity |
 |---|---------|----------|
-| D1 | **`Dockerfile` builds the wrong code.** Stage 1 does `git clone https://github.com/threagile/threagile.git` — the image built from this repo contains *upstream* Threagile, none of this fork's work. Replace with `COPY . .` of the local build context (the new `Dockerfile.goreleaser` already does this correctly for releases). | **High** |
-| D2 | **Unpinned GitHub Action**: `securego/gosec@master` in `gosec-analysis.yml` and `release.yml` — a mutable ref in the *release security gate* is a supply-chain hole. Pin all third-party actions to commit SHAs. | High |
+| D1 | ~~**`Dockerfile` builds the wrong code.**~~ **Resolved 2026-06-12.** Rewrote to `COPY . /app` and build `./cmd/threagile` + `./cmd/risk_demo`; verified via `docker build`/`docker run list-methodologies`. | Resolved |
+| D2 | ~~**Unpinned GitHub Action**: `securego/gosec@master`~~ **Resolved 2026-06-12.** Pinned to a commit SHA in `gosec-analysis.yml` and `release.yml`. | Resolved |
 | D3 | `pkg/risks/quant` (FAIR Monte-Carlo ALE simulation) is implemented and tested but **wired to no command** — flagged in Phase 10, still dead weight. Either ship it (see R1) or delete it. | Medium |
 | D4 | Phase 5b hygiene never closed: **77 TODO/FIXME/HACK**, **198 `_ =` ignored errors** (many justified Close() discards, never re-audited), **52 nolint/#nosec** suppressions. | Medium |
-| D5 | 13.1 docs reconciliation incomplete (see Phase 13 results). | Medium |
+| D5 | ~~13.1 docs reconciliation incomplete~~ **Resolved 2026-06-12** (see Phase 13 results). | Resolved |
 | D6 | `internal/threagile` coverage is 37.5% — the CLI wiring layer is still the least-tested code in the repo. | Medium |
 | D7 | One tagged release has never been exercised end-to-end (exit criterion of Phase 13 still open). | Low |
 

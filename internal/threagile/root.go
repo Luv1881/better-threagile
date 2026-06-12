@@ -102,6 +102,7 @@ func (what *Threagile) initFlags() *Threagile {
 	what.rootCmd.PersistentFlags().BoolVar(&what.flags.AddModelTitleValue, addModelTitleFlagName, what.config.GetAddModelTitle(), "add model title")
 	what.rootCmd.PersistentFlags().BoolVar(&what.flags.KeepDiagramSourceFilesValue, keepDiagramSourceFilesFlagName, what.config.GetKeepDiagramSourceFiles(), "keep diagram source files")
 	what.rootCmd.PersistentFlags().BoolVar(&what.flags.IgnoreOrphanedRiskTrackingValue, ignoreOrphanedRiskTrackingFlagName, what.config.GetIgnoreOrphanedRiskTracking(), "ignore orphaned risk tracking (just log them) not matching a concrete risk")
+	what.rootCmd.PersistentFlags().BoolVar(&what.flags.IgnoreExpiredRiskAcceptanceValue, ignoreExpiredRiskAcceptanceFlagName, what.config.GetIgnoreExpiredRiskAcceptance(), "ignore expired risk acceptances (just warn) instead of failing the analysis")
 
 	what.rootCmd.PersistentFlags().BoolVar(&what.flags.SkipDataFlowDiagramValue, skipDataFlowDiagramFlagName, what.config.GetSkipDataFlowDiagram(), "skip generating data flow diagram")
 	what.rootCmd.PersistentFlags().BoolVar(&what.flags.SkipDataAssetDiagramValue, skipDataAssetDiagramFlagName, what.config.GetSkipDataAssetDiagram(), "skip generating data asset diagram")
@@ -469,6 +470,10 @@ func (what *Threagile) processArgs(cmd *cobra.Command, args []string) bool {
 
 	if what.isFlagOverridden(cmd, ignoreOrphanedRiskTrackingFlagName) {
 		what.config.IgnoreOrphanedRiskTrackingValue = what.flags.IgnoreOrphanedRiskTrackingValue
+	}
+
+	if what.isFlagOverridden(cmd, ignoreExpiredRiskAcceptanceFlagName) {
+		what.config.IgnoreExpiredRiskAcceptanceValue = what.flags.IgnoreExpiredRiskAcceptanceValue
 	}
 
 	if what.isFlagOverridden(cmd, skipDataFlowDiagramFlagName) {

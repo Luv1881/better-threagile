@@ -58,9 +58,10 @@ const (
 	graphvizDpiFlagName              = "graphviz-dpi"
 	backupHistoryFilesToKeepFlagName = "backup-history-files-to-keep"
 
-	addModelTitleFlagName              = "add-model-title"
-	keepDiagramSourceFilesFlagName     = "keep-diagram-source-files"
-	ignoreOrphanedRiskTrackingFlagName = "ignore-orphaned-risk-tracking"
+	addModelTitleFlagName               = "add-model-title"
+	keepDiagramSourceFilesFlagName      = "keep-diagram-source-files"
+	ignoreOrphanedRiskTrackingFlagName  = "ignore-orphaned-risk-tracking"
+	ignoreExpiredRiskAcceptanceFlagName = "ignore-expired-risk-acceptance"
 
 	skipDataFlowDiagramFlagName     = "skip-data-flow-diagram"
 	skipDataAssetDiagramFlagName    = "skip-data-asset-diagram"

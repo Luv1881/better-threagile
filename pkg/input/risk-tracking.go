@@ -8,6 +8,11 @@ type RiskTracking struct {
 	Ticket        string `yaml:"ticket,omitempty" json:"ticket,omitempty"`
 	Date          string `yaml:"date,omitempty" json:"date,omitempty"`
 	CheckedBy     string `yaml:"checked_by,omitempty" json:"checked_by,omitempty"`
+	// AcceptedUntil (YYYY-MM-DD) makes an "accepted" status expire: once the
+	// date passes, analyze/validate fail until the acceptance is renewed.
+	AcceptedUntil string `yaml:"accepted_until,omitempty" json:"accepted_until,omitempty"`
+	// AcceptedBy records who signed off on the acceptance (governance trail).
+	AcceptedBy string `yaml:"accepted_by,omitempty" json:"accepted_by,omitempty"`
 }
 
 func (what *RiskTracking) Merge(other RiskTracking) error {
@@ -35,6 +40,16 @@ func (what *RiskTracking) Merge(other RiskTracking) error {
 	what.CheckedBy, mergeError = new(Strings).MergeSingleton(what.CheckedBy, other.CheckedBy)
 	if mergeError != nil {
 		return fmt.Errorf("failed to merge checked_by: %w", mergeError)
+	}
+
+	what.AcceptedUntil, mergeError = new(Strings).MergeSingleton(what.AcceptedUntil, other.AcceptedUntil)
+	if mergeError != nil {
+		return fmt.Errorf("failed to merge accepted_until: %w", mergeError)
+	}
+
+	what.AcceptedBy, mergeError = new(Strings).MergeSingleton(what.AcceptedBy, other.AcceptedBy)
+	if mergeError != nil {
+		return fmt.Errorf("failed to merge accepted_by: %w", mergeError)
 	}
 
 	return nil

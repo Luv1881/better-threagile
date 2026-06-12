@@ -136,6 +136,8 @@ func (model *Model) ApplyWildcardRiskTrackingEvaluation(ignoreOrphanedRiskTracki
 					Ticket:          riskTracking.Ticket,
 					Status:          riskTracking.Status,
 					Date:            riskTracking.Date,
+					AcceptedUntil:   riskTracking.AcceptedUntil,
+					AcceptedBy:      riskTracking.AcceptedBy,
 				}
 
 				progressReporter.Infof("  => %v", syntheticRiskId)
@@ -151,6 +153,35 @@ func (model *Model) ApplyWildcardRiskTrackingEvaluation(ignoreOrphanedRiskTracki
 		}
 	}
 	return nil
+}
+
+// CheckAcceptanceExpiry fails when any accepted risk-tracking entry's
+// accepted_until date has passed (relative to now). With ignoreExpired set,
+// expired acceptances are only logged as warnings. Acceptances without an
+// expiry date are reported as info — acceptance without expiry is how threat
+// models rot — but never fail the run.
+func (model *Model) CheckAcceptanceExpiry(now Date, ignoreExpired bool, progressReporter ProgressReporter) error {
+	expired := make([]string, 0)
+	for _, tracking := range model.RiskTracking {
+		if tracking.IsAcceptanceExpired(now) {
+			expired = append(expired, fmt.Sprintf("%v (accepted until %v, accepted by %q)",
+				tracking.SyntheticRiskId, tracking.AcceptedUntil.Format("2006-01-02"), tracking.AcceptedBy))
+		} else if tracking.Status == Accepted && tracking.AcceptedUntil == nil {
+			progressReporter.Infof("Risk acceptance without expiry date (consider adding 'accepted_until'): %v", tracking.SyntheticRiskId)
+		}
+	}
+	if len(expired) == 0 {
+		return nil
+	}
+	sort.Strings(expired)
+	if ignoreExpired {
+		for _, entry := range expired {
+			progressReporter.Warnf("Risk acceptance EXPIRED: %v", entry)
+		}
+		return nil
+	}
+	return fmt.Errorf("%d risk acceptance(s) expired — renew 'accepted_until' or change the tracking status:\n  %v",
+		len(expired), strings.Join(expired, "\n  "))
 }
 
 func (model *Model) CheckRiskTracking(ignoreOrphanedRiskTracking bool, progressReporter ProgressReporter) error {

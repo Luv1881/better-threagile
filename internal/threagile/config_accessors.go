@@ -315,6 +315,10 @@ func (c *Config) GetIgnoreOrphanedRiskTracking() bool {
 	return c.IgnoreOrphanedRiskTrackingValue
 }
 
+func (c *Config) GetIgnoreExpiredRiskAcceptance() bool {
+	return c.IgnoreExpiredRiskAcceptanceValue
+}
+
 func (c *Config) SetIgnoreOrphanedRiskTracking(ignoreOrphanedRiskTracking bool) {
 	c.IgnoreOrphanedRiskTrackingValue = ignoreOrphanedRiskTracking
 }

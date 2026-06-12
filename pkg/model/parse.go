@@ -737,6 +737,18 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 			return nil, fmt.Errorf("unknown 'status' value of risk tracking %q: %v", syntheticRiskId, riskTracking.Status)
 		}
 
+		var acceptedUntil *types.Date
+		if len(riskTracking.AcceptedUntil) > 0 {
+			acceptedUntilDate, parseError := time.Parse("2006-01-02", riskTracking.AcceptedUntil)
+			if parseError != nil {
+				return nil, fmt.Errorf("unable to parse 'accepted_until' of risk tracking %q: %v", syntheticRiskId, riskTracking.AcceptedUntil)
+			}
+			if status != types.Accepted {
+				return nil, fmt.Errorf("risk tracking %q has 'accepted_until' but status is %q (only valid with status 'accepted')", syntheticRiskId, status)
+			}
+			acceptedUntil = &types.Date{Time: acceptedUntilDate}
+		}
+
 		tracking := &types.RiskTracking{
 			SyntheticRiskId: strings.TrimSpace(syntheticRiskId),
 			Justification:   justification,
@@ -744,6 +756,8 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 			Ticket:          ticket,
 			Date:            types.Date{Time: date},
 			Status:          status,
+			AcceptedUntil:   acceptedUntil,
+			AcceptedBy:      strings.TrimSpace(riskTracking.AcceptedBy),
 		}
 
 		parsedModel.RiskTracking[syntheticRiskId] = tracking

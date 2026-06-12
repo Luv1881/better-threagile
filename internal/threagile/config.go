@@ -70,10 +70,11 @@ type Config struct {
 	MaxGraphvizDPIValue           int  `json:"MaxGraphvizDPI,omitempty" yaml:"MaxGraphvizDPI"`
 	BackupHistoryFilesToKeepValue int  `json:"BackupHistoryFilesToKeep,omitempty" yaml:"BackupHistoryFilesToKeep"`
 
-	AddModelTitleValue              bool `json:"AddModelTitle,omitempty" yaml:"AddModelTitle"`
-	AddLegendValue                  bool `json:"AddLegend,omitempty" yaml:"AddLegend"`
-	KeepDiagramSourceFilesValue     bool `json:"KeepDiagramSourceFiles,omitempty" yaml:"KeepDiagramSourceFiles"`
-	IgnoreOrphanedRiskTrackingValue bool `json:"IgnoreOrphanedRiskTracking,omitempty" yaml:"IgnoreOrphanedRiskTracking"`
+	AddModelTitleValue               bool `json:"AddModelTitle,omitempty" yaml:"AddModelTitle"`
+	AddLegendValue                   bool `json:"AddLegend,omitempty" yaml:"AddLegend"`
+	KeepDiagramSourceFilesValue      bool `json:"KeepDiagramSourceFiles,omitempty" yaml:"KeepDiagramSourceFiles"`
+	IgnoreOrphanedRiskTrackingValue  bool `json:"IgnoreOrphanedRiskTracking,omitempty" yaml:"IgnoreOrphanedRiskTracking"`
+	IgnoreExpiredRiskAcceptanceValue bool `json:"IgnoreExpiredRiskAcceptance,omitempty" yaml:"IgnoreExpiredRiskAcceptance"`
 
 	SkipDataFlowDiagramValue     bool `json:"SkipDataFlowDiagram,omitempty" yaml:"SkipDataFlowDiagram"`
 	SkipDataAssetDiagramValue    bool `json:"SkipDataAssetDiagram,omitempty" yaml:"SkipDataAssetDiagram"`
@@ -145,6 +146,7 @@ type ConfigGetter interface {
 	GetAddLegend() bool
 	GetKeepDiagramSourceFiles() bool
 	GetIgnoreOrphanedRiskTracking() bool
+	GetIgnoreExpiredRiskAcceptance() bool
 	GetSkipDataFlowDiagram() bool
 	GetSkipDataAssetDiagram() bool
 	GetSkipRisksJSON() bool
@@ -432,6 +434,9 @@ func (c *Config) Merge(config Config, values map[string]any) {
 
 		case strings.ToLower("SkipRisksSARIF"):
 			c.SkipRisksSARIFValue = config.SkipRisksSARIFValue
+
+		case strings.ToLower("IgnoreExpiredRiskAcceptance"):
+			c.IgnoreExpiredRiskAcceptanceValue = config.IgnoreExpiredRiskAcceptanceValue
 
 		case strings.ToLower("JsonTechnicalAssetsFilename"):
 			c.JsonTechnicalAssetsFilenameValue = config.JsonTechnicalAssetsFilenameValue

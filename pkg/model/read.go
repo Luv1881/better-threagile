@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"time"
 
 	"gopkg.in/yaml.v3"
 	"os"
@@ -119,6 +120,18 @@ func AnalyzeModel(modelInput *input.Model, config configReader, builtinRiskRules
 	err = parsedModel.CheckRiskTracking(config.GetIgnoreOrphanedRiskTracking(), progressReporter)
 	if err != nil {
 		return nil, fmt.Errorf("unable to check risk tracking: %w", err)
+	}
+
+	// Acceptance expiry: fail (or warn, with --ignore-expired-risk-acceptance)
+	// when an accepted risk's accepted_until date has passed. Config support is
+	// optional so existing configReader implementations keep working.
+	ignoreExpired := false
+	if expiryConfig, ok := config.(interface{ GetIgnoreExpiredRiskAcceptance() bool }); ok {
+		ignoreExpired = expiryConfig.GetIgnoreExpiredRiskAcceptance()
+	}
+	err = parsedModel.CheckAcceptanceExpiry(types.Date{Time: time.Now()}, ignoreExpired, progressReporter)
+	if err != nil {
+		return nil, fmt.Errorf("risk acceptance expiry check failed: %w", err)
 	}
 
 	return &ReadResult{

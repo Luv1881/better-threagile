@@ -11,6 +11,7 @@
 | `explain risk <id>`      | Print full explanation of a specific risk by synthetic ID                           |                                              |
 | `watch`                  | Watch the model directory and re-analyze on every save                              |                                              |
 | `fmt [files...]`         | Canonicalise YAML whitespace and field ordering                                     |                                              |
+| `quantify`               | FAIR Monte-Carlo ALE simulation over generated risks (`--estimates` YAML file; `--output-json` for full result) |                  |
 
 ## Scaffolding
 

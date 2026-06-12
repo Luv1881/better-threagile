@@ -19,6 +19,7 @@ this page is a curated overview grouped by purpose.
 | `--key-dir`                          | string(path to directory)       | key folder location (server mode)                                            | `keys`             |
 | `--plugin-dir`                       | string(path to directory)       | plugin directory                                                             | `/app`             |
 | `--ignore-orphaned-risk-tracking`    | bool                             | do not fail when risk tracking entries don't match any risk id              | `false`            |
+| `--ignore-expired-risk-acceptance`   | bool                             | only warn (instead of failing) when an accepted risk's `accepted_until` date has passed | `false`            |
 | `--skip-risk-rules`                  | string (comma-separated)        | comma-separated list of risk rules (by ID) to skip                          | `""`               |
 | `--custom-risk-rules-plugin`         | string (comma-separated)        | comma-separated list of plugin file names with custom risk rules to load    | `""`               |
 | `--technology`                       | string                           | file name of additional technologies                                        | `""`               |
@@ -45,6 +46,7 @@ Used by [`analyze-model`](./mode-analyze.md) (and shared by `diff`, `watch`, `li
 | `--data-asset-diagram-png`        | string               | data-asset diagram PNG file name                                          | `data-asset-diagram.png`        |
 | `--report`                        | string               | PDF report file name                                                      | `report.pdf`                    |
 | `--risks-json`                    | string               | risks JSON file name                                                      | `risks.json`                    |
+| `--risks-sarif`                   | string               | risks SARIF 2.1.0 file name (for code-scanning upload)                    | `risks.sarif`                   |
 | `--technical-assets-json`         | string               | technical assets JSON file name                                           | `technical-assets.json`         |
 | `--stats-json`                    | string               | risk statistics JSON file name                                            | `stats.json`                    |
 | `--risks-excel`                   | string               | risks Excel file name                                                     | `risks.xlsx`                    |
@@ -54,6 +56,7 @@ Used by [`analyze-model`](./mode-analyze.md) (and shared by `diff`, `watch`, `li
 | `--skip-report-pdf`               | bool                 | skip generating the PDF report (including diagrams)                     | `false`                         |
 | `--skip-report-adoc`              | bool                 | skip generating the adoc report (including diagrams)                    | `false`                         |
 | `--skip-risks-json`               | bool                 | skip generating the risks JSON                                           | `false`                         |
+| `--skip-risks-sarif`              | bool                 | skip generating the risks SARIF                                          | `false`                         |
 | `--skip-technical-assets-json`    | bool                 | skip generating the technical-assets JSON                                | `false`                         |
 | `--skip-stats-json`               | bool                 | skip generating the risk-statistics JSON                                 | `false`                         |
 | `--skip-risks-excel`              | bool                 | skip generating the risks Excel                                          | `false`                         |

@@ -4,21 +4,28 @@
 
 ## Agile Threat Modeling Toolkit — Multi-Methodology Fork
 
-`better-threagile` is an enhanced fork of [Threagile](https://threagile.io) that extends the original STRIDE-only engine with support for multiple threat modeling methodologies selectable at runtime. The same YAML model can be analyzed through different lenses without any model changes.
+`better-threagile` is an enhanced fork of [Threagile](https://threagile.io) that turns the
+original STRIDE-only engine into a multi-methodology, enterprise-grade threat-model-as-code
+platform. The **same YAML model** can be analyzed through nine different methodologies, scored
+with FAIR Monte-Carlo loss estimates, exported as SARIF for code scanning, and governed with
+expiring risk acceptances — without any model changes.
 
-### What's different from upstream Threagile
+> **What's different from upstream, in one page:** see **[IMPROVEMENTS.md](./IMPROVEMENTS.md)**.
+> For the detailed file-level history see [`docs/CHANGES.md`](./docs/CHANGES.md),
+> [`IMPROVEMENT_PLAN.md`](./IMPROVEMENT_PLAN.md), and [`HANDOVER.md`](./HANDOVER.md).
 
-| Feature | Upstream Threagile | better-threagile |
+### Highlights over upstream Threagile
+
+| Area | Upstream Threagile | better-threagile |
 |---|---|---|
-| Methodologies | STRIDE only | STRIDE · LINDDUN · PASTA · VAST · OCTAVE · Trike |
-| Rule packs | Built-in Go rules | Built-in Go + embedded YAML packs (LINDDUN/PASTA/VAST) |
-| Remote rule packs | `--rules-url` (broken upstream) | Fixed — 24 h TTL cache, SHA256-keyed |
-| False positives fixed | — | S3/file-store SQL injection; reverse-proxy SSRF |
-| Container likelihood | Same as physical | Elevated — container-to-container sniffing risk |
-| New built-in rules | — | `missing-csp-header`, `exposed-default-credentials` |
-| New LINDDUN rules | — | `pii-client-side-storage` |
-| New PASTA rules | — | `per-operation-rate-limiting-missing` |
-| Model features | Core YAML | `pii_categories`, `has_pii`, `rate_limited`, `audit_logged`, `cross_border`, LINDDUN/PASTA/VAST fields |
+| Methodologies | STRIDE only | STRIDE · LINDDUN · PASTA · VAST · OCTAVE · Trike · Cloud-Native · Supply-Chain · AI/ML |
+| Rule packs | Built-in Go rules | Built-in Go + 8 embedded YAML packs (`//go:embed` directories) |
+| Risk quantification | — | `quantify` — FAIR Monte-Carlo ALE (p10/p50/p90) + portfolio summary |
+| CI / code-scanning output | — | SARIF 2.1.0 (`risks.sarif`), suppressions from tracking status |
+| Risk governance | Tracking status only | `accepted_until` / `accepted_by` — analysis fails on expired acceptances |
+| Remote rule packs | `--rules-url` (broken upstream) | Fixed — 24 h TTL cache, SHA256-keyed, optional Ed25519 signatures |
+| Correctness | Ships injection/SSRF false positives | Fixed; plus data-race, nondeterminism & duplicate-ID fixes in the engine |
+| Engineering | Prototype | Blocking lint (0 issues), 1535 race-tested cases, coverage ratchet, fuzzing, hardened server, GoReleaser pipeline |
 
 ---
 
@@ -28,45 +35,68 @@
 git clone <this-repo>
 cd better-threagile
 go build -o bin/threagile ./cmd/threagile/
-./bin/threagile --version
+./bin/threagile --version          # threagile version 1.0.0
 ```
 
-Requires Go 1.22+. The binary embeds all rule packs and report templates — no Docker needed for analysis.
-
-### Rebuilding rule packs after editing YAML rules
-
-The LINDDUN, PASTA, and VAST rule sets ship as embedded tarballs. After editing any `.yaml` file under `pkg/risks/methodologies/`, rebuild the affected pack before compiling:
-
-```shell
-# From the repo root
-cd pkg/risks/methodologies
-tar -czf linddun.tar.gz linddun/   # after editing linddun rules
-tar -czf pasta.tar.gz   pasta/     # after editing pasta rules
-tar -czf vast.tar.gz    vast/      # after editing vast rules
-cd ../../..
-go build -o bin/threagile ./cmd/threagile/
-```
+Requires **Go 1.26+** (see `go.mod`). The binary embeds all rule packs and report templates —
+no Docker needed for analysis. Editing a rule under `pkg/risks/methodologies/<pack>/` only
+requires a rebuild; the packs are embedded **directories** (`//go:embed`), not tarballs.
 
 ---
 
 ## Supported methodologies and rule packs
 
-| Flag value | Rules | Pack source |
-|---|---|---|
-| `stride` (default) | ~40 built-in Go rules | Embedded in binary |
-| `linddun` | 9 rules | `pkg/risks/methodologies/linddun.tar.gz` |
-| `pasta` | 10 rules | `pkg/risks/methodologies/pasta.tar.gz` |
-| `vast` | 8 rules | `pkg/risks/methodologies/vast.tar.gz` |
-| `octave` | 0 (planned) | — |
-| `trike` | 0 (planned) | — |
+| Pack | Methodology | Rules | Focus |
+|---|---|---:|---|
+| `stride` (default) | stride | 62¹ | Security across the six STRIDE categories |
+| `linddun` | linddun | 8 | Privacy / data-protection threats |
+| `pasta` | pasta | 9 | Attack-centric, seven-stage decomposition |
+| `vast` | vast | 8 | Operational & business-process risk |
+| `octave` | octave | 8 | Information-asset-centric org risk |
+| `trike` | trike | 8 | Rights / actor-matrix analysis |
+| `cloud-native` | stride | 17 | IAM, object storage, managed DBs, serverless, containers, API gateways |
+| `supply-chain` | stride | 10 | SBOM, dependency scanning, provenance, signing, SAST (SLSA/CRA) |
+| `ai-ml` | stride | 18 | LLM inference, RAG, vector stores, prompt injection (MITRE ATLAS) |
 
-Use `bin/threagile rule-pack list` to list all available packs at runtime.
+¹ Combined built-in Go rules + embedded STRIDE script rules reported by `list-risk-rules`.
+
+```shell
+./bin/threagile rule-pack list            # every pack, with description + rule count
+./bin/threagile rule-pack show linddun    # details for one pack
+./bin/threagile list-methodologies        # methodology ↔ rule coverage matrix
+```
 
 ---
 
-## Running the VaultNote threat model (Threat-model demo)
+## Enterprise workflows
 
-The `../Threat-model/` directory contains a complete multi-layer threat model for **VaultNote** — a deliberately-misconfigured Node.js/Express note-taking application. The model is split into feature files and annotated for all four active methodologies.
+```shell
+# FAIR Monte-Carlo risk quantification (estimates keyed by synthetic-ID or category-ID).
+# NOTE: root flags (--model, --ignore-orphaned-risk-tracking) must come BEFORE --estimates.
+./bin/threagile quantify \
+  --model model.yaml --ignore-orphaned-risk-tracking \
+  --estimates fair-estimates.yaml --output-json output/quantify.json
+
+# SARIF is written on every analyze-model run as output/risks.sarif.
+# Upload it in a GitHub Action for native code-scanning alerts:
+#   - uses: github/codeql-action/upload-sarif@v3
+#     with: { sarif_file: output/risks.sarif }
+
+# Risk-acceptance expiry: an accepted risk with a past accepted_until date fails analysis.
+# Downgrade to a warning with:
+./bin/threagile analyze-model --model model.yaml --ignore-expired-risk-acceptance
+```
+
+See [IMPROVEMENTS.md §2](./IMPROVEMENTS.md#2-new-enterprise-workflows-v3) for the estimates and
+tracking YAML formats.
+
+---
+
+## Running the VaultNote reference threat model
+
+The `../Threat-model/` directory contains a complete multi-layer threat model for
+**VaultNote** — a deliberately-misconfigured Node.js/Express note-taking application — modeled
+across **all nine methodologies** and fully triaged (0 unchecked findings).
 
 ### Prerequisites
 
@@ -78,158 +108,104 @@ which dot || sudo pacman -S graphviz   # Arch
 # or: sudo apt install graphviz        # Debian/Ubuntu
 ```
 
-### Repository layout
+### Run all nine methodologies
 
-```
-Threat-model/threagile/
-├── threagile.yaml                  # entry point — includes all feature files
-├── meta.yaml                       # title, author, business criticality
-├── overview.yaml                   # management summary
-├── tags.yaml                       # tag registry
-├── feature_frontend.yaml           # Browser SPA + Nginx | Internet / DMZ
-├── feature_api.yaml                # Node.js/Express API | App Network | auth data
-├── feature_datastores.yaml         # PostgreSQL + Redis + MinIO | Data Tier | Docker runtime
-├── feature_threats.yaml            # PASTA threat scenarios
-├── feature_business_processes.yaml # VAST business processes
-└── output/
-    ├── stride/                     # STRIDE analysis outputs
-    ├── linddun/                    # LINDDUN privacy analysis outputs
-    ├── pasta/                      # PASTA attack-surface analysis outputs
-    └── vast/                       # VAST operational analysis outputs
-```
-
-### Run all four methodologies
-
-Run each command from the **repo root** (`better-threagile/`). Output goes into separate subdirectories so runs don't overwrite each other.
+Run from the **repo root** (`better-threagile/`). Output goes to separate subdirectories.
+`--ignore-orphaned-risk-tracking` is required because the model annotates `risk_tracking`
+entries for all methodologies at once, so each single-methodology run sees the others'
+entries as orphans (a warning, not a real finding).
 
 ```shell
-THREAGILE=./bin/threagile
-MODEL=../Threat-model/threagile/threagile.yaml
-APP=.
+B=./bin/threagile
+M=../Threat-model/threagile/threagile.yaml
+OUT=../Threat-model/threagile/output
 
-# ── STRIDE (default — 40+ built-in rules) ────────────────────────────────────
-$THREAGILE analyze-model \
-  --app-dir "$APP" \
-  --background "report/template/background.pdf" \
-  --reportLogoImagePath "report/threagile-logo.png" \
-  --model "$MODEL" \
-  --output ../Threat-model/threagile/output/stride \
-  --methodology stride \
-  --ignore-orphaned-risk-tracking
+# STRIDE (default) — full report with PDF + diagrams
+$B analyze-model --app-dir . --background report/template/background.pdf \
+  --model "$M" --ignore-orphaned-risk-tracking --output "$OUT/stride" --methodology stride
 
-# ── LINDDUN (privacy — 9 rules) ───────────────────────────────────────────────
-$THREAGILE analyze-model \
-  --app-dir "$APP" \
-  --background "report/template/background.pdf" \
-  --reportLogoImagePath "report/threagile-logo.png" \
-  --model "$MODEL" \
-  --output ../Threat-model/threagile/output/linddun \
-  --methodology linddun \
-  --rule-pack linddun \
-  --ignore-orphaned-risk-tracking
+# Embedded packs (add --rule-pack; methodology packs also take --methodology)
+$B analyze-model --app-dir . --model "$M" --ignore-orphaned-risk-tracking \
+  --output "$OUT/linddun" --methodology linddun --rule-pack linddun
+$B analyze-model --app-dir . --model "$M" --ignore-orphaned-risk-tracking \
+  --output "$OUT/pasta"   --methodology pasta   --rule-pack pasta
+$B analyze-model --app-dir . --model "$M" --ignore-orphaned-risk-tracking \
+  --output "$OUT/vast"    --methodology vast    --rule-pack vast
 
-# ── PASTA (attack-centric — 10 rules) ────────────────────────────────────────
-$THREAGILE analyze-model \
-  --app-dir "$APP" \
-  --background "report/template/background.pdf" \
-  --reportLogoImagePath "report/threagile-logo.png" \
-  --model "$MODEL" \
-  --output ../Threat-model/threagile/output/pasta \
-  --methodology pasta \
-  --rule-pack pasta \
-  --ignore-orphaned-risk-tracking
-
-# ── VAST (operational — 8 rules) ──────────────────────────────────────────────
-$THREAGILE analyze-model \
-  --app-dir "$APP" \
-  --background "report/template/background.pdf" \
-  --reportLogoImagePath "report/threagile-logo.png" \
-  --model "$MODEL" \
-  --output ../Threat-model/threagile/output/vast \
-  --methodology vast \
-  --rule-pack vast \
-  --ignore-orphaned-risk-tracking
+# Cross-cutting packs (run under the default STRIDE methodology)
+for P in cloud-native supply-chain ai-ml octave trike; do
+  $B analyze-model --model "$M" --ignore-orphaned-risk-tracking \
+    --output "$OUT/$P" --rule-pack "$P"
+done
 ```
 
-> **`--ignore-orphaned-risk-tracking`** is required because the model annotates `risk_tracking` entries for all four methodologies simultaneously. Each single-methodology run only evaluates its own rule set, so the other methodologies' tracking entries appear as orphans. The flag downgrades these to warnings instead of errors.
+### Outputs per run
 
-### Expected output per run
+Each directory receives `report.pdf`, `risks.json`, **`risks.sarif`**, `risks.xlsx`,
+`tags.xlsx`, `technical-assets.json`, `stats.json`, the two diagram PNGs, and `adocReport/`
+(raw AsciiDoc). Diagrams/PDF can be skipped with `--skip-report-pdf --skip-report-adoc
+--skip-data-flow-diagram --skip-data-asset-diagram` for fast JSON/SARIF-only runs.
 
-Each methodology directory receives:
+### Verified risk counts (VaultNote, 2026-06-13)
 
-| File | Description |
-|---|---|
-| `report.pdf` | Full threat model report (AsciiDoc → PDF) |
-| `risks.json` | Machine-readable risk register |
-| `risks.xlsx` | Risk register as spreadsheet |
-| `data-flow-diagram.png` | Architecture data-flow diagram |
-| `data-asset-diagram.png` | Data asset diagram |
-| `technical-assets.json` | All technical assets with computed RAA scores |
-| `stats.json` | Summary statistics |
-| `tags.xlsx` | Tag usage matrix |
-| `adocReport/` | Raw AsciiDoc source for the report |
+| Methodology | Risks | High | Elevated | Status |
+|---|---:|---:|---:|---|
+| STRIDE | 67 | 2 | 21 | 0 unchecked |
+| LINDDUN | 28 | 0 | 16 | 0 unchecked |
+| PASTA | 12 | 0 | 11 | 0 unchecked |
+| VAST | 10 | 0 | 10 | 0 unchecked |
+| Cloud-Native | 83 | 2 | 35 | 0 unchecked |
+| Supply-Chain | 79 | 2 | 30 | 0 unchecked |
+| AI/ML | 75 | 2 | 29 | 0 unchecked |
+| OCTAVE | 99 | 2 | 53 | 0 unchecked |
+| Trike | 89 | 2 | 37 | 0 unchecked |
 
-### Expected risk counts (VaultNote)
-
-| Methodology | Risks | Focus areas |
-|---|---|---|
-| STRIDE | 35 | Crypto gaps, injection, missing hardening, default credentials, missing CSP |
-| LINDDUN | 12 | PII on unencrypted links, no audit logging, no consent management, browser-side PII storage |
-| PASTA | 5 | Missing SAST, no rate limiting (global + per-operation) |
-| VAST | 11 | No redundancy, shared runtime, secrets in env vars, no monitoring |
-
-### Risk tracking tags in the model
-
-The model uses `risk_tracking` entries with the following suppression tags:
-
-| Tag on asset | Suppresses rule |
-|---|---|
-| `has-csp` | `missing-csp-header` |
-| `has-httponly-session` | `pii-client-side-storage` |
-
-Add these tags to a technical asset once the corresponding control is verified in production.
-
-### Listing available rule packs
-
-```shell
-./bin/threagile rule-pack list
-./bin/threagile rule-pack describe linddun
-./bin/threagile rule-pack describe pasta
-./bin/threagile rule-pack describe vast
-```
+All findings are triaged in `../Threat-model/threagile/feature_risk_review.yaml` (in-progress
+items reference VAULT-* tickets; intentional misconfigurations are acceptances expiring
+2026-12-31; analytically-inapplicable detections are documented false-positives). FAIR
+quantification (`fair-estimates.yaml`) puts the portfolio median ALE at ≈ $787k/yr.
 
 ---
 
-## Execution via Docker Container
-
-The easiest way to execute the **upstream** Threagile on the command line is via its Docker container:
-
-```shell
-docker run --rm -it threagile/threagile --help
-```
-
-> Note: the Docker image is from upstream Threagile and does not include the multi-methodology extensions in this fork. Use the locally built binary for full functionality.
-
 ## Writing custom rules
 
-Custom risk rules can be written as YAML scripts without compiling Go code. See the [script language reference](./docs/scripts/language-reference.md), the [guide for writing custom risk rules](./docs/scripts/guide.md), and how to [test your scripts](./docs/scripts/testing.md).
+Custom risk rules can be written as YAML scripts without compiling Go. See the
+[script language reference](./docs/scripts/language-reference.md), the
+[guide for writing custom risk rules](./docs/scripts/guide.md), and
+[how to test your scripts](./docs/scripts/testing.md).
 
-Place new built-in script rules under `pkg/risks/scripts/`. They are embedded into the binary via `//go:embed scripts/*.yaml` and loaded automatically on every run.
+Place new built-in script rules under `pkg/risks/scripts/` (embedded via
+`//go:embed scripts/*.yaml`). Place methodology-specific rules in the matching
+`pkg/risks/methodologies/<pack>/` directory and rebuild the binary — no tarball step.
 
-Place methodology-specific rules in the appropriate subdirectory under `pkg/risks/methodologies/`, then rebuild the methodology tarball and binary (see [Rebuilding rule packs](#rebuilding-rule-packs-after-editing-yaml-rules) above).
+---
+
+## Execution via Docker
+
+```shell
+docker build -t better-threagile -f Dockerfile .
+docker run --rm -it better-threagile --help
+```
+
+The included `Dockerfile` builds **this fork** (`./cmd/threagile` + `./cmd/risk_demo`) and runs
+the test suite in-image. (Upstream's Dockerfile cloned the upstream repo — fixed here.)
+
+---
 
 ## Model schema and tooling
 
 - Full model field reference: [docs/model.md](./docs/model.md)
 - CLI command reference: [docs/commands.md](./docs/commands.md)
 - All CLI flags: [docs/flags.md](./docs/flags.md)
+- Methodologies & rule packs: [docs/methodologies.md](./docs/methodologies.md)
 - JSON Schema for IDE validation: `support/schema.json`
 - OpenAPI spec (server mode): `support/openapi.yaml`
 
 ## Releases
 
-Release history: [docs/releases.md](./docs/releases.md)
+Release history and process: [docs/releases.md](./docs/releases.md).
 
 ## Contribution
 
-You are very welcome to contribute. If you'd like to add a new feature or fix a bug, please follow the [contribution guide](./CONTRIBUTING.md). Otherwise create a GitHub discussion or issue.
+Contributions welcome — see the [contribution guide](./CONTRIBUTING.md), or open a GitHub
+discussion or issue.

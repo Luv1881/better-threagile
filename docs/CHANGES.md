@@ -1,5 +1,12 @@
 # better-threagile vs Upstream Threagile — Full Differences & Change Log
 
+> **For the current, verified summary of every improvement over upstream, see
+> [`../IMPROVEMENTS.md`](../IMPROVEMENTS.md)** — the canonical single-page overview. This
+> file is the original detailed, file-level historical record; some counts below predate
+> later work (OCTAVE/Trike now ship complete 8-rule packs rather than being "planned", there
+> are nine methodologies/packs, and the SARIF / `quantify` / acceptance-expiry features plus
+> the Phase 0–13 hardening are covered in `IMPROVEMENTS.md`, not here).
+
 This document is a comprehensive record of every divergence between `better-threagile` and upstream [Threagile](https://threagile.io), organised by category. It covers both the original fork work and all changes made during the multi-methodology + VaultNote session.
 
 ---

@@ -45,14 +45,16 @@ linters:
         # rewrite would not improve readability.
         - ifElseChain
 
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - unparam
+          - gochecknoglobals
+
 issues:
-  # Lint is blocking in CI: any remaining issue (outside the exclusions below)
+  # Lint is blocking in CI: any remaining issue (outside the exclusions above)
   # fails the build.
   max-issues-per-linter: 0
   max-same-issues: 0
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - errcheck
-        - unparam
-        - gochecknoglobals

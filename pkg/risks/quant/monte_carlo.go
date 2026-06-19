@@ -82,7 +82,7 @@ func gammaSample(rng *rand.Rand, shape float64) float64 {
 // so results are reproducible across runs for the same model state.
 func modelSeedFromID(syntheticID string) int64 {
 	h := sha256.Sum256([]byte(syntheticID))
-	return int64(binary.LittleEndian.Uint64(h[:8])) //nolint:gosec // wraparound is fine, only used as a PRNG seed
+	return int64(binary.LittleEndian.Uint64(h[:8])) // #nosec G115 -- wraparound is fine, only used as a PRNG seed
 }
 
 // RunMonteCarlo simulates ALE for a single finding given its FAIR estimate.
@@ -100,7 +100,7 @@ func RunMonteCarlo(syntheticID string, estimate *types.FairEstimate, iterations 
 	lef := estimate.LossEventFrequency
 	lm := estimate.LossMagnitude
 
-	rng := rand.New(rand.NewSource(modelSeedFromID(syntheticID))) //nolint:gosec
+	rng := rand.New(rand.NewSource(modelSeedFromID(syntheticID))) // #nosec G404 -- non-crypto PRNG is intentional for deterministic Monte Carlo sampling
 	ales := make([]float64, iterations)
 
 	for i := 0; i < iterations; i++ {

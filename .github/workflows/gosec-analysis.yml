@@ -20,4 +20,6 @@ jobs:
       - name: Run Gosec
         uses: securego/gosec@f1c81de5fcdf7b466b229fb24ca02d1a8406dd09 # master, pinned 2026-06-12
         with:
-          args: ./...
+          # G304 (file path from variable) is an accepted pattern in this CLI
+          # tool; mirrors the gosec exclusion in .golangci.yml.
+          args: -exclude=G304 ./...

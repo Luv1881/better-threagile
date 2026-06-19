@@ -4,9 +4,8 @@
 > upstream [Threagile](https://threagile.io). Last verified 2026-06-13 against the built
 > binary (`threagile version 1.0.0`), 1535 race-clean tests, lint 0.
 >
-> For the blow-by-blow engineering history see `IMPROVEMENT_PLAN.md` (Phases 0–13 + v3
-> roadmap) and `HANDOVER.md`. For the original fork's detailed file-level diff see
-> `docs/CHANGES.md`. This document is the canonical summary.
+> For the original fork's detailed file-level diff see `docs/CHANGES.md`. This document is
+> the canonical summary.
 
 ---
 

@@ -11,8 +11,7 @@ with FAIR Monte-Carlo loss estimates, exported as SARIF for code scanning, and g
 expiring risk acceptances — without any model changes.
 
 > **What's different from upstream, in one page:** see **[IMPROVEMENTS.md](./IMPROVEMENTS.md)**.
-> For the detailed file-level history see [`docs/CHANGES.md`](./docs/CHANGES.md),
-> [`IMPROVEMENT_PLAN.md`](./IMPROVEMENT_PLAN.md), and [`HANDOVER.md`](./HANDOVER.md).
+> For the detailed file-level history see [`docs/CHANGES.md`](./docs/CHANGES.md).
 
 ### Highlights over upstream Threagile
 

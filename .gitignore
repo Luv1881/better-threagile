@@ -1,5 +1,12 @@
 CLAUDE.md
 .DS_Store
+
+# Planning / handover docs — local working notes, never commit
+/HANDOVER.md
+/IMPROVEMENT_PLAN.md
+/*PLAN*.md
+/*HANDOVER*.md
+
 just-for-docker-build-?.txt
 data-asset-diagram.*
 data-flow-diagram.*

@@ -1,6 +1,7 @@
 package threagile
 
 import (
+	"errors"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -16,6 +17,11 @@ type Threagile struct {
 func (what *Threagile) Execute() {
 	err := what.rootCmd.Execute()
 	if err != nil {
+		var ec *exitCodeError
+		if errors.As(err, &ec) {
+			what.rootCmd.Println(ec.msg)
+			os.Exit(ec.code)
+		}
 		what.rootCmd.Println(err)
 		os.Exit(1)
 	}
@@ -55,6 +61,7 @@ func (what *Threagile) Init(buildTimestamp string) *Threagile {
 		initIntel().
 		initCalibrate().
 		initQuantify().
+		initGate().
 		initSeverityProfile().
 		initDrift().
 		initSync().

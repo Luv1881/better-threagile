@@ -1,0 +1,10 @@
+# Example threat-model gate policy. See docs/gate.md.
+# Run: threagile gate --model demo/example/threagile.yaml --policy demo/example/gate-policy.yaml
+name: "Example security gate"
+
+max_severity_counts:
+  critical: 0          # no still-at-risk Critical findings allowed
+
+require_tracking_at_or_above: high   # every High+ finding must be triaged
+
+fail_on_expired_acceptance: true

@@ -58,7 +58,10 @@ Exit codes:
 				os.Exit(2)
 			}
 
-			added, removed, unchanged := diffRisks(baseRisks, currRisks)
+			// diffRisks now classifies severity changes separately; drift keeps its
+			// own severityChanged (returns richer detail), so the 4th value (which
+			// would otherwise also land in unchanged) is intentionally dropped.
+			added, removed, _, unchanged := diffRisks(baseRisks, currRisks)
 			changed := severityChanged(baseRisks, currRisks)
 
 			hasNewHigh := hasHighOrCritical(added)

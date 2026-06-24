@@ -7,7 +7,8 @@
 | `analyze-model`          | Run threat model analysis; produces PDF, Excel, JSON, diagrams                      | `analyze`, `analyse`, `run`, `analyse-model` |
 | `validate`               | Parse and validate the model YAML without running risk rules (fast, CI-safe)        |                                              |
 | `lint`                   | Check the model for style and best-practice issues; `--fix` applies mechanical fixes; `--json` for machine output |                               |
-| `diff <old> <new>`       | Show the risk delta (added / removed / unchanged) between two model versions        |                                              |
+| `diff <old> <new>`       | Show the risk delta (added / removed / unchanged) between two model versions; `--format text\|markdown\|json`, `--output <file>` (Markdown is PR-comment ready) |                          |
+| `gate`                   | [Policy-as-code CI gate](./gate.md): evaluate `--policy policy.yaml`, exit 3 on violation; `--baseline risks.json`, `--format text\|markdown\|json` |              |
 | `explain risk <id>`      | Print full explanation of a specific risk by synthetic ID                           |                                              |
 | `watch`                  | Watch the model directory and re-analyze on every save                              |                                              |
 | `fmt [files...]`         | Canonicalise YAML whitespace and field ordering                                     |                                              |
@@ -51,7 +52,7 @@
 
 | Command                  | Description                                                                         | Aliases |
 |--------------------------|-------------------------------------------------------------------------------------|---------|
-| `generate-ci`            | Generate a CI/CD pipeline config (`--target github\|gitlab\|jenkins\|azure\|generic`) |       |
+| `generate-ci`            | Generate a CI/CD pipeline config (`--target github\|gate-pr\|gitlab\|jenkins\|generic`); `gate-pr` runs the policy gate on PRs and posts the Markdown report as a PR comment (`--policy-path`) |       |
 | `completion bash\|zsh\|fish` | Print shell completion script; source it to enable tab-completion              |         |
 | `lsp`                    | Start the Language Server (stdio) for IDE integration (completion, hover, diagnostics, go-to-definition) | |
 

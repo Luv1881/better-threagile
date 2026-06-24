@@ -11,8 +11,9 @@ import (
 )
 
 type ciTemplateData struct {
-	Schedule  string
-	ModelPath string
+	Schedule   string
+	ModelPath  string
+	PolicyPath string
 }
 
 // workflowTemplate uses [[ ]] delimiters to avoid clashing with GitHub Actions ${{ }} expressions.
@@ -22,6 +23,9 @@ on:
   schedule:
     - cron: '[[ .Schedule ]]'
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   threagile:
@@ -36,7 +40,7 @@ jobs:
             -v "${{ github.workspace }}:/app/work" \
             threagile/threagile:latest \
             analyze-model \
-            --model /app/work/[[ .ModelPath ]] \
+            --model "/app/work/[[ .ModelPath ]]" \
             --output /app/work/threagile-output
 
       - name: Upload Threagile Output
@@ -44,6 +48,71 @@ jobs:
         with:
           name: threagile-report
           path: threagile-output/
+`
+
+// gatePRTemplate runs the policy gate on pull requests and posts the Markdown
+// gate report as a PR comment, failing the check when the gate fails. It
+// expects a policy file at the path given by --policy-path (default policy.yaml).
+const gatePRTemplate = `name: Threat-model Gate
+
+on:
+  pull_request:
+    paths:
+      - '[[ .ModelPath ]]'
+      - '[[ .PolicyPath ]]'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run threat-model gate
+        id: gate
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/app/work" \
+            threagile/threagile:latest \
+            gate \
+            --model "/app/work/[[ .ModelPath ]]" \
+            --policy "/app/work/[[ .PolicyPath ]]" \
+            --format markdown \
+            --output /app/work/gate-report.md
+        continue-on-error: true
+
+      - name: Post gate report as PR comment
+        # Best-effort: fork PRs run with a read-only token, so commenting may 403.
+        # Never let that fail the run — the gate step below owns pass/fail.
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (!fs.existsSync('gate-report.md')) {
+              core.warning('gate-report.md not found — the gate step did not produce a report.');
+              return;
+            }
+            const body = fs.readFileSync('gate-report.md', 'utf8');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+
+      - name: Fail if the gate failed
+        if: steps.gate.outcome != 'success'
+        run: |
+          echo "::error title=Threat-model gate failed::Policy violations — see the gate report (PR comment on pull requests, otherwise the job log artifact)."
+          cat gate-report.md 2>/dev/null || true
+          exit 1
 `
 
 const gitlabTemplate = `# Threagile Threat Model Analysis — GitLab CI
@@ -107,6 +176,7 @@ var ciTargets = map[string]struct {
 	dir      string
 }{
 	"github":  {workflowTemplate, "threagile.yml", ".github/workflows"},
+	"gate-pr": {gatePRTemplate, "threat-model-gate.yml", ".github/workflows"},
 	"gitlab":  {gitlabTemplate, ".gitlab-ci.yml", "."},
 	"jenkins": {jenkinsTemplate, "Jenkinsfile", "."},
 	"generic": {genericTemplate, "run-threagile.sh", "."},
@@ -122,6 +192,7 @@ func (what *Threagile) initGenerateCI() *Threagile {
 			outputDir, _ := cmd.Flags().GetString(ciOutputFlagName)
 			schedule, _ := cmd.Flags().GetString(ciScheduleFlagName)
 			target, _ := cmd.Flags().GetString("target")
+			policyPath, _ := cmd.Flags().GetString("policy-path")
 
 			target = strings.ToLower(target)
 			ci, ok := ciTargets[target]
@@ -162,8 +233,9 @@ func (what *Threagile) initGenerateCI() *Threagile {
 			}
 
 			if err := tmpl.Execute(f, ciTemplateData{
-				Schedule:  schedule,
-				ModelPath: modelPath,
+				Schedule:   schedule,
+				ModelPath:  modelPath,
+				PolicyPath: policyPath,
 			}); err != nil {
 				return fmt.Errorf("failed to render CI template: %w", err)
 			}
@@ -178,7 +250,8 @@ func (what *Threagile) initGenerateCI() *Threagile {
 
 	generateCI.Flags().String(ciOutputFlagName, "", "directory to write the generated CI file (default: target-specific)")
 	generateCI.Flags().String(ciScheduleFlagName, "0 0 * * 0", "cron expression for the scheduled run (default: weekly Sunday midnight)")
-	generateCI.Flags().String("target", "github", "CI/CD target: github, gitlab, jenkins, generic")
+	generateCI.Flags().String("target", "github", "CI/CD target: github, gate-pr, gitlab, jenkins, generic")
+	generateCI.Flags().String("policy-path", "policy.yaml", "path to the gate policy file (used by the gate-pr target)")
 
 	what.rootCmd.AddCommand(generateCI)
 	return what

@@ -2,13 +2,16 @@ package threagile
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/threagile/threagile/pkg/input"
+	"github.com/threagile/threagile/pkg/secretscan"
 )
 
 func (what *Threagile) initValidate() *Threagile {
+	var failOnSecrets bool
 	validate := &cobra.Command{
 		Use:     ValidateCommand,
 		Short:   "Parse and validate the model YAML without running risk rules",
@@ -20,21 +23,46 @@ func (what *Threagile) initValidate() *Threagile {
 			cmd.Printf("Validating model: %s\n", modelFile)
 
 			errs := validateModel(modelFile)
-			if len(errs) == 0 {
-				cmd.Println("✓ Model is valid")
-				return nil
+
+			// Secrets do not belong in a model file. Surface any that slipped in
+			// (redacted), and optionally fail the build.
+			secrets := scanModelForSecrets(modelFile)
+			for _, s := range secrets {
+				cmd.Printf("⚠ possible secret at line %d (%s): %s\n", s.Line, s.Rule, s.Preview)
 			}
 
-			cmd.Printf("✗ Found %d validation error(s):\n\n", len(errs))
-			for i, e := range errs {
-				cmd.Printf("  %d. %s\n", i+1, e)
+			if len(errs) == 0 {
+				cmd.Println("✓ Model is valid")
+			} else {
+				cmd.Printf("✗ Found %d validation error(s):\n\n", len(errs))
+				for i, e := range errs {
+					cmd.Printf("  %d. %s\n", i+1, e)
+				}
 			}
-			return fmt.Errorf("model validation failed with %d error(s)", len(errs))
+
+			if len(errs) > 0 {
+				return fmt.Errorf("model validation failed with %d error(s)", len(errs))
+			}
+			if failOnSecrets && len(secrets) > 0 {
+				return &exitCodeError{code: 3, msg: fmt.Sprintf("found %d possible secret(s) in the model file", len(secrets))}
+			}
+			return nil
 		},
 	}
+	validate.Flags().BoolVar(&failOnSecrets, "fail-on-secrets", false, "exit 3 if a possible secret is found in the model file")
 
 	what.rootCmd.AddCommand(validate)
 	return what
+}
+
+// scanModelForSecrets reads the raw model file and scans it for credentials.
+// A read error is non-fatal here (validateModel already reports load failures).
+func scanModelForSecrets(modelFile string) []secretscan.Finding {
+	data, err := os.ReadFile(modelFile) // #nosec G304 -- operator-supplied model path
+	if err != nil {
+		return nil
+	}
+	return secretscan.Scan(data)
 }
 
 // validateModel loads and parses the model, returning human-readable error strings.

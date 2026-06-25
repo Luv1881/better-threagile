@@ -248,9 +248,11 @@ whole platform. Verified 2026-06-13 with this binary:
   rules — the speculative `llm` command tree was removed by design.
 - **Upstream model compatibility:** existing Threagile models analyze unchanged; new fields
   are additive.
-- **Known CLI wart:** root persistent flags (e.g. `--model`, `--ignore-orphaned-risk-tracking`)
-  must precede command-local flags on the command line (a `pflag` parsing quirk), e.g.
-  `threagile quantify --model … --ignore-orphaned-risk-tracking --estimates …`.
+- **CLI flag ordering:** root persistent flags (e.g. `--model`,
+  `--ignore-orphaned-risk-tracking`) may now appear in any position relative to
+  command-local flags. (Previously a `pflag` quirk required them to come first;
+  the flag-extraction pass now whitelists unknown flags so later root flags are
+  no longer dropped.)
 
 ---
 

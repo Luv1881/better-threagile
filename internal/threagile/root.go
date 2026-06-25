@@ -285,6 +285,11 @@ func (what *Threagile) processSystemArgs(cmd *cobra.Command) *Threagile {
 }
 
 func (what *Threagile) processArgs(cmd *cobra.Command, args []string) bool {
+	// This pass only EXTRACTS root persistent-flag values (real validation happens
+	// later in Execute). Whitelisting unknown flags stops pflag from halting at the
+	// first subcommand-local flag — otherwise root flags (e.g. --model) placed
+	// after a command-local flag like --policy were silently dropped.
+	cmd.PersistentFlags().ParseErrorsWhitelist.UnknownFlags = true
 	_ = cmd.PersistentFlags().Parse(args)
 
 	if what.isFlagOverridden(cmd, configFlagName) {

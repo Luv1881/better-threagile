@@ -7,8 +7,11 @@
 `better-threagile` is an enhanced fork of [Threagile](https://threagile.io) that turns the
 original STRIDE-only engine into a multi-methodology, enterprise-grade threat-model-as-code
 platform. The **same YAML model** can be analyzed through nine different methodologies, scored
-with FAIR Monte-Carlo loss estimates, exported as SARIF for code scanning, and governed with
-expiring risk acceptances — without any model changes.
+with FAIR Monte-Carlo loss estimates, exported as SARIF for code scanning, governed with
+expiring risk acceptances, gated in CI against a declarative policy, mapped to MITRE ATT&CK,
+queried for attack paths to your crown-jewel data, generated from your real infrastructure
+(Terraform / OpenAPI / Kubernetes / docker-compose), and correlated against live KEV/EPSS
+threat intel — without any model changes.
 
 > **What's different from upstream, in one page:** see **[IMPROVEMENTS.md](./IMPROVEMENTS.md)**.
 > For the detailed file-level history see [`docs/CHANGES.md`](./docs/CHANGES.md).
@@ -21,10 +24,16 @@ expiring risk acceptances — without any model changes.
 | Rule packs | Built-in Go rules | Built-in Go + 8 embedded YAML packs (`//go:embed` directories) |
 | Risk quantification | — | `quantify` — FAIR Monte-Carlo ALE (p10/p50/p90) + portfolio summary |
 | CI / code-scanning output | — | SARIF 2.1.0 (`risks.sarif`), suppressions from tracking status |
+| Policy-as-code gate | — | `gate` — declarative `policy.yaml`, exits 3 on violation (severity caps, require-tracking, expired-acceptance, no-new-vs-baseline, framework coverage) |
+| PR-bot / risk delta | — | `diff --format markdown` + `generate-ci gate-pr` — posts the risk delta / gate report as a PR comment |
+| MITRE ATT&CK | — | `attack-navigator` — exports an ATT&CK Navigator layer from findings |
+| Attack-path analysis | — | `paths` — shortest routes from internet-facing assets to crown-jewel data |
+| Architecture importers | — | `import terraform \| openapi \| kubernetes \| compose` → analyzable model fragments |
+| SBOM + threat intel | KEV/EPSS reference data | `sbom` — correlate a CycloneDX SBOM's CVEs with KEV/EPSS, VEX-aware, `--fail-on-kev` gate |
 | Risk governance | Tracking status only | `accepted_until` / `accepted_by` — analysis fails on expired acceptances |
 | Remote rule packs | `--rules-url` (broken upstream) | Fixed — 24 h TTL cache, SHA256-keyed, optional Ed25519 signatures |
 | Correctness | Ships injection/SSRF false positives | Fixed; plus data-race, nondeterminism & duplicate-ID fixes in the engine |
-| Engineering | Prototype | Blocking lint (0 issues), 1535 race-tested cases, coverage ratchet, fuzzing, hardened server, GoReleaser pipeline |
+| Engineering | Prototype | Blocking lint (0 issues), 1657 race-tested cases, coverage ratchet, fuzzing, hardened server, GoReleaser pipeline |
 
 ---
 
@@ -71,7 +80,6 @@ requires a rebuild; the packs are embedded **directories** (`//go:embed`), not t
 
 ```shell
 # FAIR Monte-Carlo risk quantification (estimates keyed by synthetic-ID or category-ID).
-# NOTE: root flags (--model, --ignore-orphaned-risk-tracking) must come BEFORE --estimates.
 ./bin/threagile quantify \
   --model model.yaml --ignore-orphaned-risk-tracking \
   --estimates fair-estimates.yaml --output-json output/quantify.json
@@ -88,6 +96,49 @@ requires a rebuild; the packs are embedded **directories** (`//go:embed`), not t
 
 See [IMPROVEMENTS.md §2](./IMPROVEMENTS.md#2-new-enterprise-workflows-v3) for the estimates and
 tracking YAML formats.
+
+### CI-native security workflows
+
+These commands are built to run in a pipeline — they write machine-readable output to **stdout**
+(pipe with `>` or `--format json`) and drive CI via the exit code.
+
+```shell
+# Policy-as-code gate — fails the build (exit 3) when the model violates policy.yaml.
+./bin/threagile gate --model model.yaml --policy policy.yaml          # docs/gate.md
+
+# "No new High vs the approved baseline" (generate the baseline from main's risks.json):
+./bin/threagile gate --model model.yaml --policy policy.yaml --baseline baseline/risks.json
+
+# Risk delta as a PR comment (Markdown), or scaffold a ready-made GitHub Actions workflow:
+./bin/threagile diff old.yaml new.yaml --format markdown > delta.md
+./bin/threagile generate-ci --model model.yaml --target gate-pr --policy-path policy.yaml
+
+# MITRE ATT&CK Navigator layer from the model's findings:
+./bin/threagile attack-navigator --model model.yaml > attack-layer.json   # docs/attack-navigator.md
+
+# Attack paths: shortest routes from internet-facing assets to confidential data:
+./bin/threagile paths --model model.yaml                              # docs/attack-paths.md
+
+# SBOM + threat intel: rank a CycloneDX SBOM's CVEs by KEV/EPSS; gate on KEV.
+./bin/threagile sbom --sbom sbom.cdx.json --refresh-kev --epss --fail-on-kev   # docs/sbom.md
+```
+
+### Importing architecture from real infrastructure
+
+Generate an analyzable model fragment from existing infrastructure-as-code, then review/merge it:
+
+```shell
+terraform show -json | ./bin/threagile import terraform                 # Terraform
+./bin/threagile import openapi    --spec api.yaml                        # OpenAPI 3.x
+./bin/threagile import kubernetes --manifests <(kubectl get all,ingress,secret,pvc -A -o yaml)
+./bin/threagile import compose    --compose docker-compose.yml          # docker-compose
+```
+
+All four importers emit the authoring YAML format and round-trip through `analyze-model`
+(workloads/services → technical assets, namespaces/networks → trust boundaries, published ports
+→ internet exposure, secrets → data assets, depends_on/selectors → communication links). See
+[docs/import-kubernetes.md](./docs/import-kubernetes.md) and
+[docs/import-compose.md](./docs/import-compose.md).
 
 ---
 
@@ -164,6 +215,13 @@ items reference VAULT-* tickets; intentional misconfigurations are acceptances e
 2026-12-31; analytically-inapplicable detections are documented false-positives). FAIR
 quantification (`fair-estimates.yaml`) puts the portfolio median ALE at ≈ $787k/yr.
 
+The reference model also exercises the CI-native workflows and importers end-to-end —
+see `../Threat-model/threagile/`: `gate-policy.yaml` (gate PASSes; tightening fails exit-3),
+`imports/vaultnote-attack-paths.txt` (internet → `postgresql-db` / `minio` paths),
+`output/attack-navigator.json` (STRIDE → ATT&CK techniques), `imports/vaultnote-sbom.cdx.json`
+(SBOM correlation with live EPSS), and the Kubernetes/docker-compose imports of the stack
+(`imports/vaultnote-k8s.yaml`, generated from the real `docker-compose.yml`).
+
 ---
 
 ## Writing custom rules
@@ -197,6 +255,8 @@ the test suite in-image. (Upstream's Dockerfile cloned the upstream repo — fix
 - CLI command reference: [docs/commands.md](./docs/commands.md)
 - All CLI flags: [docs/flags.md](./docs/flags.md)
 - Methodologies & rule packs: [docs/methodologies.md](./docs/methodologies.md)
+- Policy gate: [docs/gate.md](./docs/gate.md) · Attack paths: [docs/attack-paths.md](./docs/attack-paths.md) · ATT&CK: [docs/attack-navigator.md](./docs/attack-navigator.md) · SBOM: [docs/sbom.md](./docs/sbom.md)
+- Importers: [Kubernetes](./docs/import-kubernetes.md) · [docker-compose](./docs/import-compose.md)
 - JSON Schema for IDE validation: `support/schema.json`
 - OpenAPI spec (server mode): `support/openapi.yaml`
 

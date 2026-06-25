@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -77,8 +78,8 @@ Examples:
 			}
 
 			if outputFile != "" {
-				//nolint:gosec // outputFile is an operator-supplied --output path
-				if writeErr := os.WriteFile(outputFile, []byte(rendered), 0600); writeErr != nil {
+				// #nosec G703 -- outputFile is an operator-supplied --output path (honored by both gosec and golangci-lint)
+				if writeErr := os.WriteFile(filepath.Clean(outputFile), []byte(rendered), 0600); writeErr != nil {
 					return fmt.Errorf("sbom: write %q: %w", outputFile, writeErr)
 				}
 			}

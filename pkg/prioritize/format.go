@@ -15,6 +15,9 @@ func plain(s string) string {
 	return strings.TrimSpace(htmlTag.ReplaceAllString(s, ""))
 }
 
+// Plain strips threagile's simple HTML markup from a string for clean CLI output.
+func Plain(s string) string { return plain(s) }
+
 // FormatText renders the ranked items as a readable "fix these first" list.
 func FormatText(items []Item, totalAtRisk int) string {
 	var b strings.Builder

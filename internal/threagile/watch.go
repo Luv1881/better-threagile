@@ -8,13 +8,15 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/cobra"
 	"github.com/threagile/threagile/pkg/model"
+	"github.com/threagile/threagile/pkg/prioritize"
 	"github.com/threagile/threagile/pkg/risks"
+	"github.com/threagile/threagile/pkg/score"
 )
 
 func (what *Threagile) initWatch() *Threagile {
 	watch := &cobra.Command{
 		Use:   WatchCommand,
-		Short: "Watch the model directory and re-analyze on every save",
+		Short: "Watch the model and show live score + top findings on every save",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			what.processArgs(cmd, args)
 
@@ -83,5 +85,30 @@ func runAnalysis(what *Threagile, cmd *cobra.Command) {
 	for _, v := range result.ParsedModel.GeneratedRisksByCategory {
 		totalRisks += len(v)
 	}
-	cmd.Printf("✓ Analysis complete — %d risks identified\n", totalRisks)
+
+	// Live, actionable feedback: the health score plus the top few things to fix,
+	// so the developer sees the impact of each save immediately.
+	sc := score.Compute(result.ParsedModel)
+	cmd.Printf("✓ %d risks · score %d/100 (grade %s) · completeness %.0f%% posture %.0f%%\n",
+		totalRisks, sc.Overall, sc.Grade, sc.Completeness*100, sc.Posture*100)
+	for _, n := range sc.Notes {
+		cmd.Printf("  ! %s\n", n)
+	}
+
+	pr := prioritize.Analyze(result.ParsedModel)
+	if top := pr.Top(3); len(top) > 0 {
+		cmd.Printf("  Fix first (of %d at risk):\n", pr.TotalAtRisk)
+		for i, it := range top {
+			cmd.Printf("    %d. [%d] %s — %s\n", i+1, it.Score, it.Severity, prioritizeTitle(it.Title))
+		}
+	}
+}
+
+// prioritizeTitle trims an over-long HTML-ish risk title for the watch summary.
+func prioritizeTitle(title string) string {
+	t := prioritize.Plain(title)
+	if len(t) > 80 {
+		return t[:77] + "..."
+	}
+	return t
 }

@@ -10,7 +10,7 @@ import (
 func TestAnyExpression_ParseBool(t *testing.T) {
 	expr := new(AnyExpression)
 	script := map[string]any{
-		"in": "{items}",
+		"in":   "{items}",
 		"true": "{.active}",
 	}
 

@@ -17,7 +17,7 @@ type InformationAsset struct {
 	// Criticality of the information asset (low/medium/high/very-high/mission-critical).
 	Criticality string `yaml:"criticality,omitempty" json:"criticality,omitempty"`
 	// Confidentiality classification (public/restricted/confidential/strictly-confidential).
-	Confidentiality string `yaml:"confidentiality,omitempty" json:"confidentiality,omitempty"`
+	Confidentiality string   `yaml:"confidentiality,omitempty" json:"confidentiality,omitempty"`
 	Tags            []string `yaml:"tags,omitempty" json:"tags,omitempty"`
 }
 

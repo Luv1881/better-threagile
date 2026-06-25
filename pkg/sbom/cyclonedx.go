@@ -23,11 +23,12 @@ type BOM struct {
 }
 
 type Component struct {
-	Type    string `json:"type"`
-	Name    string `json:"name"`
-	Version string `json:"version"`
-	PURL    string `json:"purl"`
-	BOMRef  string `json:"bom-ref"`
+	Type       string      `json:"type"`
+	Name       string      `json:"name"`
+	Version    string      `json:"version"`
+	PURL       string      `json:"purl"`
+	BOMRef     string      `json:"bom-ref"`
+	Components []Component `json:"components"` // nested sub-components (CycloneDX assemblies)
 }
 
 type Vulnerability struct {
@@ -126,21 +127,30 @@ func (v Vulnerability) HighestSeverity() (string, float64) {
 	return label, score
 }
 
-// componentIndex maps a component bom-ref (and purl) to a human label.
+// componentIndex maps a component bom-ref (and purl) to a human label,
+// recursing into nested sub-components (CycloneDX assemblies) so a vulnerability
+// affecting a nested dependency still resolves to a readable name.
 func (b *BOM) componentIndex() map[string]string {
 	idx := map[string]string{}
-	for _, c := range b.Components {
-		label := c.Name
-		if c.Version != "" {
-			label = c.Name + "@" + c.Version
-		}
-		if c.BOMRef != "" {
-			idx[c.BOMRef] = label
-		}
-		if c.PURL != "" {
-			idx[c.PURL] = label
+	var walk func(components []Component)
+	walk = func(components []Component) {
+		for _, c := range components {
+			label := c.Name
+			if c.Version != "" {
+				label = c.Name + "@" + c.Version
+			}
+			if c.BOMRef != "" {
+				idx[c.BOMRef] = label
+			}
+			if c.PURL != "" {
+				idx[c.PURL] = label
+			}
+			if len(c.Components) > 0 {
+				walk(c.Components)
+			}
 		}
 	}
+	walk(b.Components)
 	return idx
 }
 

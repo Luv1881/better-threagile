@@ -48,19 +48,19 @@ func (r *MissingBuildInfrastructureRule) GenerateRisks(input *types.Model) ([]*t
 	var mostRelevantAsset *types.TechnicalAsset
 	for _, id := range input.SortedTechnicalAssetIDs() { // use the sorted one to always get the same tech asset with the highest sensitivity as example asset
 		technicalAsset := input.TechnicalAssets[id]
-		
+
 		getTechFlags(technicalAsset, &hasBuildPipeline, &hasSourcecodeRepo, &hasDevOpsClient)
 
 		if r.skipAsset(technicalAsset) {
 			continue
 		}
-	
+
 		hasCustomDevelopedParts = true
 		if impact == types.LowImpact {
 			mostRelevantAsset = technicalAsset
 			evaluateImpactFromHighestCIAValues(input, technicalAsset, &impact)
 		}
-		
+
 		evaluateImpactFromTechnicalAssetCIAValues(technicalAsset, &impact)
 
 		// just for referencing the most interesting asset

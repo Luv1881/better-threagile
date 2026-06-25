@@ -18,7 +18,7 @@ type TrikeMatrixCell struct {
 	// ActorId references a TrikeActor.
 	ActorId string `yaml:"actor_id" json:"actor_id"`
 	// AssetId references a TechnicalAsset.
-	AssetId string `yaml:"asset_id" json:"asset_id"`
+	AssetId string      `yaml:"asset_id" json:"asset_id"`
 	Action  TrikeAction `yaml:"action" json:"action"`
 	// AcceptableRisk: true if the organisation has explicitly accepted this access pattern.
 	AcceptableRisk bool `yaml:"acceptable_risk" json:"acceptable_risk"`

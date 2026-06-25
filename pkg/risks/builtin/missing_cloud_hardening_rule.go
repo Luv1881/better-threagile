@@ -283,7 +283,7 @@ func (r *MissingCloudHardeningRule) addTrustBoundaryAccordingToBaseTag(
 
 func (r *MissingCloudHardeningRule) addSharedRuntimeAccordingToBaseTag(
 	sharedRuntime *types.SharedRuntime,
-	cloudAssets map[string]*CloudAssets,) {
+	cloudAssets map[string]*CloudAssets) {
 	if sharedRuntime.IsTaggedWithAny(r.SupportedTags()...) {
 		for _, provider := range providers {
 			if isTaggedWithBaseTag(sharedRuntime.Tags, strings.ToLower(provider)) {

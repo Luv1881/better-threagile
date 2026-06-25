@@ -231,20 +231,18 @@ func TestDosRiskyAccessAcrossTrustBoundaryRuleGenerateRisksAcrossTrustBoundaryBu
 				Availability: types.Critical,
 				Technologies: types.TechnologyList{
 					{
-						Name: "web-app",
-						Attributes: map[string]bool{
-						},
+						Name:       "web-app",
+						Attributes: map[string]bool{},
 					},
 				},
 			},
 			"ta2": {
-				Id:           "ta2",
-				Title:        "Second Web Application",
+				Id:    "ta2",
+				Title: "Second Web Application",
 				Technologies: types.TechnologyList{
 					{
-						Name: "web-app",
-						Attributes: map[string]bool{
-						},
+						Name:       "web-app",
+						Attributes: map[string]bool{},
 					},
 				},
 			},
@@ -262,10 +260,10 @@ func TestDosRiskyAccessAcrossTrustBoundaryRuleGenerateRisksAcrossTrustBoundaryBu
 		},
 		DirectContainingTrustBoundaryMappedByTechnicalAssetId: map[string]*types.TrustBoundary{
 			"ta1": {
-				Id:   "tb1",
+				Id: "tb1",
 			},
 			"ta2": {
-				Id:   "tb2",
+				Id: "tb2",
 			},
 		},
 	})
@@ -288,21 +286,19 @@ func TestDosRiskyAccessAcrossTrustBoundaryRuleGenerateRisksMissionCriticalMedium
 				Availability: types.MissionCritical,
 				Technologies: types.TechnologyList{
 					{
-						Name: "web-app",
-						Attributes: map[string]bool{
-						},
+						Name:       "web-app",
+						Attributes: map[string]bool{},
 					},
 				},
 				Redundant: false,
 			},
 			"ta2": {
-				Id:           "ta2",
-				Title:        "Second Web Application",
+				Id:    "ta2",
+				Title: "Second Web Application",
 				Technologies: types.TechnologyList{
 					{
-						Name: "web-app",
-						Attributes: map[string]bool{
-						},
+						Name:       "web-app",
+						Attributes: map[string]bool{},
 					},
 				},
 			},
@@ -320,10 +316,10 @@ func TestDosRiskyAccessAcrossTrustBoundaryRuleGenerateRisksMissionCriticalMedium
 		},
 		DirectContainingTrustBoundaryMappedByTechnicalAssetId: map[string]*types.TrustBoundary{
 			"ta1": {
-				Id:   "tb1",
+				Id: "tb1",
 			},
 			"ta2": {
-				Id:   "tb2",
+				Id: "tb2",
 			},
 		},
 	})
@@ -341,13 +337,12 @@ func TestDosRiskyAccessAcrossTrustBoundaryRuleGenerateRisksWithLoadBalancerMulti
 	risks, err := rule.GenerateRisks(&types.Model{
 		TechnicalAssets: map[string]*types.TechnicalAsset{
 			"ta1": {
-				Id:           "ta1",
-				Title:        "First Web Application",
+				Id:    "ta1",
+				Title: "First Web Application",
 				Technologies: types.TechnologyList{
 					{
-						Name: "web-app",
-						Attributes: map[string]bool{
-						},
+						Name:       "web-app",
+						Attributes: map[string]bool{},
 					},
 				},
 			},
@@ -370,9 +365,8 @@ func TestDosRiskyAccessAcrossTrustBoundaryRuleGenerateRisksWithLoadBalancerMulti
 				Availability: types.Critical,
 				Technologies: types.TechnologyList{
 					{
-						Name: "web-app",
-						Attributes: map[string]bool{
-						},
+						Name:       "web-app",
+						Attributes: map[string]bool{},
 					},
 				},
 			},
@@ -401,13 +395,13 @@ func TestDosRiskyAccessAcrossTrustBoundaryRuleGenerateRisksWithLoadBalancerMulti
 		},
 		DirectContainingTrustBoundaryMappedByTechnicalAssetId: map[string]*types.TrustBoundary{
 			"ta1": {
-				Id:   "tb1",
+				Id: "tb1",
 			},
 			"elb": {
-				Id:   "tb2",
+				Id: "tb2",
 			},
 			"ta2": {
-				Id:   "tb2",
+				Id: "tb2",
 			},
 		},
 	})

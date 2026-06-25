@@ -25,8 +25,8 @@ type DataAsset struct {
 	ProcessingPurpose   string   `yaml:"processing_purpose,omitempty" json:"processing_purpose,omitempty"`
 	CrossBorderTransfer bool     `yaml:"cross_border_transfer,omitempty" json:"cross_border_transfer,omitempty"`
 	// Computed for rule engine: true when len(PiiCategories) > 0
-	HasPii            bool   `yaml:"has_pii,omitempty" json:"has_pii,omitempty"`
-	HasLawfulBasisSet bool   `yaml:"has_lawful_basis_set,omitempty" json:"has_lawful_basis_set,omitempty"`
+	HasPii            bool `yaml:"has_pii,omitempty" json:"has_pii,omitempty"`
+	HasLawfulBasisSet bool `yaml:"has_lawful_basis_set,omitempty" json:"has_lawful_basis_set,omitempty"`
 	// AI/ML fields (all optional, Phase B.5)
 	IsTrainingData    bool `yaml:"is_training_data,omitempty"    json:"is_training_data,omitempty"`
 	IsModelWeights    bool `yaml:"is_model_weights,omitempty"    json:"is_model_weights,omitempty"`

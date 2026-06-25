@@ -2,6 +2,8 @@ package openapi
 
 import (
 	"testing"
+
+	"github.com/threagile/threagile/pkg/types"
 )
 
 const sampleSpec = `
@@ -127,6 +129,63 @@ paths:
 		if asset.Internet {
 			t.Errorf("localhost server should not be marked internet=true, got asset %s", asset.Id)
 		}
+	}
+}
+
+func TestImport_openapi_templated_url_is_internet(t *testing.T) {
+	// A templated public host (variable subdomain) must be treated as internet-facing.
+	spec := `
+openapi: "3.0.3"
+info: {title: "Public API", version: "1.0.0"}
+servers:
+  - url: "https://{env}.api.example.com"
+paths:
+  /health: {get: {responses: {"200": {description: OK}}}}
+`
+	model, err := Import([]byte(spec), ImportOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var anyInternet bool
+	for _, a := range model.TechnicalAssets {
+		if len(a.Technologies) > 0 && a.Technologies[0].Name == types.WebServiceREST && a.Internet {
+			anyInternet = true
+		}
+	}
+	if !anyInternet {
+		t.Error("templated public server URL should be internet-facing")
+	}
+}
+
+func TestImport_openapi_oauth_is_token_not_mtls(t *testing.T) {
+	spec := `
+openapi: "3.0.3"
+info: {title: "OAuth API", version: "1.0.0"}
+servers: [{url: "https://api.example.com"}]
+components:
+  securitySchemes:
+    oauth:
+      type: oauth2
+      flows: {clientCredentials: {tokenUrl: "https://auth/token", scopes: {}}}
+paths:
+  /things: {get: {security: [{oauth: []}], responses: {"200": {description: OK}}}}
+`
+	model, err := Import([]byte(spec), ImportOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var checked bool
+	for _, l := range model.CommunicationLinks {
+		checked = true
+		if l.Authentication == types.ClientCertificate {
+			t.Error("OAuth2 must not be imported as client-certificate (mTLS)")
+		}
+		if l.Authentication != types.Token {
+			t.Errorf("OAuth2 should map to token auth, got %s", l.Authentication)
+		}
+	}
+	if !checked {
+		t.Fatal("expected a client->API communication link")
 	}
 }
 

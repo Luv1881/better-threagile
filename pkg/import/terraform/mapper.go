@@ -88,11 +88,11 @@ var techMappings = []struct {
 	{"google_identity_platform_tenant", resourceMapping{technology: "identity-provider", assetType: "process"}},
 	{"azurerm_active_directory_domain_service", resourceMapping{technology: "identity-provider", assetType: "process"}},
 
-	// Caches
-	{"aws_elasticache_cluster", resourceMapping{technology: "message-queue", assetType: "datastore"}},
-	{"aws_elasticache_replication_group", resourceMapping{technology: "message-queue", assetType: "datastore"}},
-	{"azurerm_redis_cache", resourceMapping{technology: "message-queue", assetType: "datastore"}},
-	{"google_redis_instance", resourceMapping{technology: "message-queue", assetType: "datastore"}},
+	// Caches (in-memory key-value datastores — not message queues)
+	{"aws_elasticache_cluster", resourceMapping{technology: "database", assetType: "datastore"}},
+	{"aws_elasticache_replication_group", resourceMapping{technology: "database", assetType: "datastore"}},
+	{"azurerm_redis_cache", resourceMapping{technology: "database", assetType: "datastore"}},
+	{"google_redis_instance", resourceMapping{technology: "database", assetType: "datastore"}},
 
 	// Secrets managers (skip — no corresponding Threagile tech, use vault)
 	{"aws_secretsmanager_secret", resourceMapping{technology: "vault", assetType: "datastore"}},

@@ -16,6 +16,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -55,8 +56,12 @@ func Import(data []byte, opts ImportOptions) (*types.Model, error) {
 		TagsAvailable:    []string{},
 	}
 
-	// Determine authentication strength from security schemes
+	// Determine authentication strength (PASTA field) and the actual auth
+	// mechanism (the communication-link Authentication enum) separately — they
+	// are different dimensions: e.g. OAuth2 is bearer-token auth (mechanism) that
+	// can enforce MFA (strength).
 	authStrength := detectAuthStrength(spec)
+	authMechanism := detectAuthMechanism(spec)
 
 	// Determine if internet-facing from server URLs
 	internet := hasInternetServer(spec)
@@ -95,7 +100,7 @@ func Import(data []byte, opts ImportOptions) (*types.Model, error) {
 			Title:          "API calls",
 			Description:    "HTTP/S traffic from client to " + apiAsset.Title,
 			Protocol:       types.HTTPS,
-			Authentication: authToAuthentication(authStrength),
+			Authentication: authMechanism,
 			Authorization:  types.TechnicalUser,
 		}
 		if model.CommunicationLinks == nil {
@@ -177,12 +182,27 @@ func hasInternetServer(spec *OpenAPI3) bool {
 	for _, s := range spec.Servers {
 		u := strings.ToLower(s.URL)
 		if strings.HasPrefix(u, "https://") || strings.HasPrefix(u, "http://") {
-			if !strings.Contains(u, "localhost") && !strings.Contains(u, "127.0.0.1") && !strings.Contains(u, "{") {
+			// A templated host (e.g. https://{env}.api.example.com) is typically a
+			// public URL with a variable subdomain — treat it as internet-facing
+			// unless it resolves to an explicit loopback/private pattern.
+			if !strings.Contains(u, "localhost") && !strings.Contains(u, "127.0.0.1") && !isPrivateHost(u) {
 				return true
 			}
 		}
 	}
 	return len(spec.Servers) == 0 // default to true if no server declared (typical for public APIs)
+}
+
+// isPrivateHost reports whether a server URL points at an obviously
+// non-internet (RFC1918 / link-local / .local / loopback) host.
+func isPrivateHost(u string) bool {
+	for _, p := range []string{"://10.", "://192.168.", "://172.16.", "://172.17.",
+		"://172.18.", "://172.19.", "://172.2", "://172.3", "://169.254.", ".local", "://::1"} {
+		if strings.Contains(u, p) {
+			return true
+		}
+	}
+	return false
 }
 
 // collectTagGroups returns the unique operation tags found in the spec.
@@ -203,11 +223,11 @@ func collectTagGroups(spec *OpenAPI3) []string {
 		}
 	}
 
-	// If only one group, return it directly
 	result := make([]string, 0, len(seen))
 	for g := range seen {
 		result = append(result, g)
 	}
+	sort.Strings(result) // deterministic asset/link ordering across runs
 	return result
 }
 
@@ -294,13 +314,27 @@ func buildDataAssets(spec *OpenAPI3, label string) []*types.DataAsset {
 }
 
 // authToAuthentication maps an auth strength string to types.Authentication.
-func authToAuthentication(strength string) types.Authentication {
-	switch strength {
-	case "mfa", "hardware":
-		return types.ClientCertificate
-	case "password":
-		return types.Credentials
-	default:
-		return types.NoneAuthentication
+// detectAuthMechanism returns the communication-link Authentication mechanism
+// implied by the spec's security schemes (distinct from the strength). Bearer /
+// OAuth2 / OIDC / API-key are token-based; HTTP Basic is credentials; client
+// certificates (mutualTLS) map to ClientCertificate.
+func detectAuthMechanism(spec *OpenAPI3) types.Authentication {
+	for _, scheme := range spec.Components.SecuritySchemes {
+		switch strings.ToLower(scheme.Type) {
+		case "oauth2", "openidconnect":
+			return types.Token
+		case "http":
+			switch strings.ToLower(scheme.Scheme) {
+			case "bearer":
+				return types.Token
+			case "basic":
+				return types.Credentials
+			}
+		case "apikey":
+			return types.Token
+		case "mutualtls":
+			return types.ClientCertificate
+		}
 	}
+	return types.NoneAuthentication
 }

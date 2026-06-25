@@ -42,15 +42,15 @@ type TechnicalAsset struct {
 	IsPiiController  bool `json:"is_pii_controller,omitempty" yaml:"is_pii_controller,omitempty"`
 	DataMinimisation bool `json:"data_minimisation,omitempty" yaml:"data_minimisation,omitempty"`
 	// PASTA attack-surface fields (all optional)
-	EntryPointType                 string   `json:"entry_point_type,omitempty" yaml:"entry_point_type,omitempty"`
-	AttackSurfaceExposure          string   `json:"attack_surface_exposure,omitempty" yaml:"attack_surface_exposure,omitempty"`
-	RequiresAuthenticationStrength string   `json:"requires_authentication_strength,omitempty" yaml:"requires_authentication_strength,omitempty"`
+	EntryPointType                 string `json:"entry_point_type,omitempty" yaml:"entry_point_type,omitempty"`
+	AttackSurfaceExposure          string `json:"attack_surface_exposure,omitempty" yaml:"attack_surface_exposure,omitempty"`
+	RequiresAuthenticationStrength string `json:"requires_authentication_strength,omitempty" yaml:"requires_authentication_strength,omitempty"`
 	// VAST business-process fields (all optional)
 	SupportedBusinessProcesses []string `json:"supported_business_processes,omitempty" yaml:"supported_business_processes,omitempty"`
 	// AI/ML fields (all optional, Phase B.5)
-	IsLLMInference      bool     `json:"is_llm_inference,omitempty"      yaml:"is_llm_inference,omitempty"`
-	IsVectorStore       bool     `json:"is_vector_store,omitempty"       yaml:"is_vector_store,omitempty"`
-	RAGContextSources   []string `json:"rag_context_sources,omitempty"   yaml:"rag_context_sources,omitempty"`
+	IsLLMInference    bool     `json:"is_llm_inference,omitempty"      yaml:"is_llm_inference,omitempty"`
+	IsVectorStore     bool     `json:"is_vector_store,omitempty"       yaml:"is_vector_store,omitempty"`
+	RAGContextSources []string `json:"rag_context_sources,omitempty"   yaml:"rag_context_sources,omitempty"`
 }
 
 func (what TechnicalAsset) IsTaggedWithAny(tags ...string) bool {

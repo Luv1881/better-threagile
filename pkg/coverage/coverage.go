@@ -13,17 +13,17 @@ import (
 
 // ControlEntry describes the coverage state of one control.
 type ControlEntry struct {
-	ControlID    string   // e.g. "SC-8" or "A10"
+	ControlID     string   // e.g. "SC-8" or "A10"
 	CoveringRules []string // rule IDs that cover this control
-	Covered      bool
+	Covered       bool
 }
 
 // Report is the output of a coverage analysis for one framework.
 type Report struct {
-	Framework  string          // framework key (e.g. "nist_800_53")
-	Title      string          // human-readable title
-	Controls   []ControlEntry  // sorted by control ID
-	TotalRules int             // total rules checked
+	Framework    string         // framework key (e.g. "nist_800_53")
+	Title        string         // human-readable title
+	Controls     []ControlEntry // sorted by control ID
+	TotalRules   int            // total rules checked
 	CoveredCount int
 	GapCount     int
 }

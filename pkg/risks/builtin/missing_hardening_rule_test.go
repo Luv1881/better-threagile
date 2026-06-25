@@ -233,9 +233,9 @@ func TestMissingHardeningRuleAssetBothDatastoreAndHighValueTargetWithRAA40OnlyOn
 	input := &types.Model{
 		TechnicalAssets: map[string]*types.TechnicalAsset{
 			"ta1": {
-				Id:   "ta1",
+				Id:    "ta1",
 				Title: "Test Technical Asset",
-				Type: types.Datastore,
+				Type:  types.Datastore,
 				Technologies: types.TechnologyList{
 					{
 						Name: "some-technology",

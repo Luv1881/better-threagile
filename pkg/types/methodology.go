@@ -11,7 +11,7 @@ import (
 type Methodology int
 
 const (
-	StrideMethodology    Methodology = iota
+	StrideMethodology Methodology = iota
 	LinddunMethodology
 	PastaMethodology
 	VastMethodology

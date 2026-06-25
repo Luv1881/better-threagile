@@ -62,7 +62,10 @@ Examples:
 			// decision (via the policy's fail_on_expired_acceptance). Force the
 			// analysis to ignore expiry so it doesn't hard-fail before the policy
 			// is evaluated; we re-check expiry ourselves below to feed the policy.
+			// Restore afterwards so interactive sessions aren't contaminated.
+			prevIgnoreExpiry := what.config.IgnoreExpiredRiskAcceptanceValue
 			what.config.IgnoreExpiredRiskAcceptanceValue = true
+			defer func() { what.config.IgnoreExpiredRiskAcceptanceValue = prevIgnoreExpiry }()
 
 			builtinRules := what.loadRiskRules(progressReporter)
 			r, err := model.ReadAndAnalyzeModel(what.config, builtinRules, progressReporter)

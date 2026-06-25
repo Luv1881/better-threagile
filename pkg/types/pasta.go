@@ -12,13 +12,13 @@ import (
 type PASTA int
 
 const (
-	StageObjectives    PASTA = iota // Stage I: Define Objectives
-	StageScope                      // Stage II: Define Technical Scope
-	StageDecomposition              // Stage III: Application Decomposition
-	StageThreatAnalysis             // Stage IV: Threat Analysis
-	StageVulnAnalysis               // Stage V: Weakness and Vulnerability Analysis
-	StageAttackModeling             // Stage VI: Attack Modeling and Simulation
-	StageRiskAnalysis               // Stage VII: Risk Analysis and Management
+	StageObjectives     PASTA = iota // Stage I: Define Objectives
+	StageScope                       // Stage II: Define Technical Scope
+	StageDecomposition               // Stage III: Application Decomposition
+	StageThreatAnalysis              // Stage IV: Threat Analysis
+	StageVulnAnalysis                // Stage V: Weakness and Vulnerability Analysis
+	StageAttackModeling              // Stage VI: Attack Modeling and Simulation
+	StageRiskAnalysis                // Stage VII: Risk Analysis and Management
 )
 
 func PASTAValues() []TypeEnum {

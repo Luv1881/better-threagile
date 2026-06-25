@@ -14,8 +14,8 @@ import (
 
 // SeverityProfile is the top-level structure of a severity-profile.yaml file.
 type SeverityProfile struct {
-	BusinessDrivers BusinessDrivers    `yaml:"business_drivers"`
-	Weights         CIAWeights         `yaml:"weights"`
+	BusinessDrivers BusinessDrivers `yaml:"business_drivers"`
+	Weights         CIAWeights      `yaml:"weights"`
 }
 
 // BusinessDrivers describes the high-level risk context of the organisation.

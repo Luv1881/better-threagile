@@ -13,44 +13,43 @@ import (
 	"sort"
 	"strings"
 
-
 	"gopkg.in/yaml.v3"
 )
 
 // === Model Type Stuff ======================================
 
 type Model struct { // TODO: Eventually remove this and directly use ParsedModelRoot? But then the error messages for model errors are not quite as good anymore...
-	ThreagileVersion                              string                    `yaml:"threagile_version,omitempty" json:"threagile_version,omitempty"`
-	Includes                                      []string                  `yaml:"includes,omitempty" json:"includes,omitempty"`
-	FeatureIncludes                               []string                  `yaml:"feature_includes,omitempty" json:"feature_includes,omitempty"`
-	Title                                         string                    `yaml:"title,omitempty" json:"title,omitempty"`
-	Author                                        Author                    `yaml:"author,omitempty" json:"author,omitempty"`
-	Contributors                                  []Author                  `yaml:"contributors,omitempty" json:"contributors,omitempty"`
-	Date                                          string                    `yaml:"date,omitempty" json:"date,omitempty"`
-	AppDescription                                Overview                  `yaml:"application_description,omitempty" json:"application_description,omitempty"`
-	BusinessOverview                              Overview                  `yaml:"business_overview,omitempty" json:"business_overview,omitempty"`
-	TechnicalOverview                             Overview                  `yaml:"technical_overview,omitempty" json:"technical_overview,omitempty"`
-	BusinessCriticality                           string                    `yaml:"business_criticality,omitempty" json:"business_criticality,omitempty"`
-	ManagementSummaryComment                      string                    `yaml:"management_summary_comment,omitempty" json:"management_summary_comment,omitempty"`
-	SecurityRequirements                          map[string]string         `yaml:"security_requirements,omitempty" json:"security_requirements,omitempty"`
-	Questions                                     map[string]string         `yaml:"questions,omitempty" json:"questions,omitempty"`
-	AbuseCases                                    map[string]string         `yaml:"abuse_cases,omitempty" json:"abuse_cases,omitempty"`
-	TagsAvailable                                 []string                  `yaml:"tags_available,omitempty" json:"tags_available,omitempty"`
-	DataAssets                                    map[string]DataAsset      `yaml:"data_assets,omitempty" json:"data_assets,omitempty"`
-	TechnicalAssets                               map[string]TechnicalAsset `yaml:"technical_assets,omitempty" json:"technical_assets,omitempty"`
-	TrustBoundaries                               map[string]TrustBoundary  `yaml:"trust_boundaries,omitempty" json:"trust_boundaries,omitempty"`
-	SharedRuntimes                                map[string]SharedRuntime  `yaml:"shared_runtimes,omitempty" json:"shared_runtimes,omitempty"`
-	CustomRiskCategories                          RiskCategories              `yaml:"custom_risk_categories,omitempty" json:"custom_risk_categories,omitempty"`
-	RiskTracking                                  map[string]RiskTracking     `yaml:"risk_tracking,omitempty" json:"risk_tracking,omitempty"`
-	ThreatScenarios                               map[string]ThreatScenario   `yaml:"threat_scenarios,omitempty" json:"threat_scenarios,omitempty"`
-	BusinessProcesses                             map[string]BusinessProcess  `yaml:"business_processes,omitempty" json:"business_processes,omitempty"`
-	DiagramTweakNodesep                           int                       `yaml:"diagram_tweak_nodesep,omitempty" json:"diagram_tweak_nodesep,omitempty"`
-	DiagramTweakRanksep                           int                       `yaml:"diagram_tweak_ranksep,omitempty" json:"diagram_tweak_ranksep,omitempty"`
-	DiagramTweakEdgeLayout                        string                    `yaml:"diagram_tweak_edge_layout,omitempty" json:"diagram_tweak_edge_layout,omitempty"`
-	DiagramTweakSuppressEdgeLabels                bool                      `yaml:"diagram_tweak_suppress_edge_labels,omitempty" json:"diagram_tweak_suppress_edge_labels,omitempty"`
-	DiagramTweakLayoutLeftToRight                 bool                      `yaml:"diagram_tweak_layout_left_to_right,omitempty" json:"diagram_tweak_layout_left_to_right,omitempty"`
-	DiagramTweakInvisibleConnectionsBetweenAssets []string                  `yaml:"diagram_tweak_invisible_connections_between_assets,omitempty" json:"diagram_tweak_invisible_connections_between_assets,omitempty"`
-	DiagramTweakSameRankAssets                    []string                  `yaml:"diagram_tweak_same_rank_assets,omitempty" json:"diagram_tweak_same_rank_assets,omitempty"`
+	ThreagileVersion                              string                     `yaml:"threagile_version,omitempty" json:"threagile_version,omitempty"`
+	Includes                                      []string                   `yaml:"includes,omitempty" json:"includes,omitempty"`
+	FeatureIncludes                               []string                   `yaml:"feature_includes,omitempty" json:"feature_includes,omitempty"`
+	Title                                         string                     `yaml:"title,omitempty" json:"title,omitempty"`
+	Author                                        Author                     `yaml:"author,omitempty" json:"author,omitempty"`
+	Contributors                                  []Author                   `yaml:"contributors,omitempty" json:"contributors,omitempty"`
+	Date                                          string                     `yaml:"date,omitempty" json:"date,omitempty"`
+	AppDescription                                Overview                   `yaml:"application_description,omitempty" json:"application_description,omitempty"`
+	BusinessOverview                              Overview                   `yaml:"business_overview,omitempty" json:"business_overview,omitempty"`
+	TechnicalOverview                             Overview                   `yaml:"technical_overview,omitempty" json:"technical_overview,omitempty"`
+	BusinessCriticality                           string                     `yaml:"business_criticality,omitempty" json:"business_criticality,omitempty"`
+	ManagementSummaryComment                      string                     `yaml:"management_summary_comment,omitempty" json:"management_summary_comment,omitempty"`
+	SecurityRequirements                          map[string]string          `yaml:"security_requirements,omitempty" json:"security_requirements,omitempty"`
+	Questions                                     map[string]string          `yaml:"questions,omitempty" json:"questions,omitempty"`
+	AbuseCases                                    map[string]string          `yaml:"abuse_cases,omitempty" json:"abuse_cases,omitempty"`
+	TagsAvailable                                 []string                   `yaml:"tags_available,omitempty" json:"tags_available,omitempty"`
+	DataAssets                                    map[string]DataAsset       `yaml:"data_assets,omitempty" json:"data_assets,omitempty"`
+	TechnicalAssets                               map[string]TechnicalAsset  `yaml:"technical_assets,omitempty" json:"technical_assets,omitempty"`
+	TrustBoundaries                               map[string]TrustBoundary   `yaml:"trust_boundaries,omitempty" json:"trust_boundaries,omitempty"`
+	SharedRuntimes                                map[string]SharedRuntime   `yaml:"shared_runtimes,omitempty" json:"shared_runtimes,omitempty"`
+	CustomRiskCategories                          RiskCategories             `yaml:"custom_risk_categories,omitempty" json:"custom_risk_categories,omitempty"`
+	RiskTracking                                  map[string]RiskTracking    `yaml:"risk_tracking,omitempty" json:"risk_tracking,omitempty"`
+	ThreatScenarios                               map[string]ThreatScenario  `yaml:"threat_scenarios,omitempty" json:"threat_scenarios,omitempty"`
+	BusinessProcesses                             map[string]BusinessProcess `yaml:"business_processes,omitempty" json:"business_processes,omitempty"`
+	DiagramTweakNodesep                           int                        `yaml:"diagram_tweak_nodesep,omitempty" json:"diagram_tweak_nodesep,omitempty"`
+	DiagramTweakRanksep                           int                        `yaml:"diagram_tweak_ranksep,omitempty" json:"diagram_tweak_ranksep,omitempty"`
+	DiagramTweakEdgeLayout                        string                     `yaml:"diagram_tweak_edge_layout,omitempty" json:"diagram_tweak_edge_layout,omitempty"`
+	DiagramTweakSuppressEdgeLabels                bool                       `yaml:"diagram_tweak_suppress_edge_labels,omitempty" json:"diagram_tweak_suppress_edge_labels,omitempty"`
+	DiagramTweakLayoutLeftToRight                 bool                       `yaml:"diagram_tweak_layout_left_to_right,omitempty" json:"diagram_tweak_layout_left_to_right,omitempty"`
+	DiagramTweakInvisibleConnectionsBetweenAssets []string                   `yaml:"diagram_tweak_invisible_connections_between_assets,omitempty" json:"diagram_tweak_invisible_connections_between_assets,omitempty"`
+	DiagramTweakSameRankAssets                    []string                   `yaml:"diagram_tweak_same_rank_assets,omitempty" json:"diagram_tweak_same_rank_assets,omitempty"`
 }
 
 func (model *Model) Defaults() *Model {

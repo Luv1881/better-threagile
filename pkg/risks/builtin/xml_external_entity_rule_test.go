@@ -199,7 +199,7 @@ func TestXmlExternalEntityRuleAllThreeSensitivityConditionsTrueCreatesHighImpact
 		},
 		DataAssets: map[string]*types.DataAsset{
 			"sensitive-data": {
-				Id:             "sensitive-data",
+				Id:              "sensitive-data",
 				Confidentiality: types.StrictlyConfidential,
 				Integrity:       types.MissionCritical,
 				Availability:    types.MissionCritical,

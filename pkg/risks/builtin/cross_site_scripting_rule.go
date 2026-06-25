@@ -52,7 +52,6 @@ func (r *CrossSiteScriptingRule) GenerateRisks(input *types.Model) ([]*types.Ris
 	return risks, nil
 }
 
-
 func (asl CrossSiteScriptingRule) skipAsset(technicalAsset *types.TechnicalAsset) bool {
 	return technicalAsset.OutOfScope || !technicalAsset.Technologies.GetAttribute(types.WebApplication) // TODO: also mobile clients or rich-clients as long as they use web-view...
 }

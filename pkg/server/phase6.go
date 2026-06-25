@@ -146,11 +146,11 @@ func (s *server) explainRisk(ginContext *gin.Context) {
 
 	active := result.ParsedModel.ActiveMethodology
 	response := gin.H{
-		"methodology":            active.String(),
-		"classification":         category.ClassificationLabel(active),
-		"risk":                   risk,
-		"category":               category,
-		"tracking":               tracking,
+		"methodology":    active.String(),
+		"classification": category.ClassificationLabel(active),
+		"risk":           risk,
+		"category":       category,
+		"tracking":       tracking,
 	}
 
 	// Resolve the most relevant technical asset name for convenience.

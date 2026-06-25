@@ -258,7 +258,7 @@ func TestStripHTML(t *testing.T) {
 		{"no tags", "no tags"},
 		{"<b>bold</b>", "bold"},
 		{"<span class='x'>text</span>", "text"},
-		{"a < b", "a "},  // bare < is treated as tag-open; text after it is stripped
+		{"a < b", "a "}, // bare < is treated as tag-open; text after it is stripped
 	}
 	for _, tt := range tests {
 		got := stripHTML(tt.input)

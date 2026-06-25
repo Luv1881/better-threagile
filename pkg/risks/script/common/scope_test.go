@@ -161,7 +161,7 @@ func TestScope_PushCall_Multiple(t *testing.T) {
 type dummyStatement struct{}
 
 func (d *dummyStatement) Run(_ *Scope) (string, error) { return "", nil }
-func (d *dummyStatement) Literal() string               { return "dummy" }
+func (d *dummyStatement) Literal() string              { return "dummy" }
 
 func TestScope_Defer(t *testing.T) {
 	scope := &Scope{}

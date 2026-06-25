@@ -115,6 +115,25 @@ func TestImport_basic(t *testing.T) {
 	}
 }
 
+func TestImport_redisIsDatastoreNotMessageQueue(t *testing.T) {
+	plan := `{"format_version":"1.0","values":{"root_module":{"resources":[
+	  {"address":"aws_elasticache_cluster.cache","type":"aws_elasticache_cluster","name":"cache","values":{}}
+	]}}}`
+	model, err := Import([]byte(plan), ImportOptions{SourceLabel: "test"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, ok := model.TechnicalAssets["aws-elasticache-cluster-cache-test"]
+	if !ok {
+		t.Fatalf("elasticache asset missing: %v", model.TechnicalAssets)
+	}
+	if got := a.Technologies[0].Name; got == "message-queue" {
+		t.Error("Redis/ElastiCache must not be a message-queue")
+	} else if got != "database" {
+		t.Errorf("expected database technology, got %q", got)
+	}
+}
+
 func TestImport_plannedValues(t *testing.T) {
 	plan := `{"format_version":"1.0","planned_values":{"root_module":{"resources":[{"address":"aws_sqs_queue.events","type":"aws_sqs_queue","name":"events","provider_name":"registry.terraform.io/hashicorp/aws","values":{"name":"events"}}]}}}`
 	model, err := Import([]byte(plan), ImportOptions{})

@@ -165,6 +165,25 @@ func TestHighestSeverityEdgeCases(t *testing.T) {
 	}
 }
 
+func TestNestedComponentResolved(t *testing.T) {
+	// A vulnerability affecting a nested sub-component must resolve to its label.
+	doc := `{"bomFormat":"CycloneDX","specVersion":"1.5",
+	  "components":[{"type":"application","name":"app","bom-ref":"app",
+	    "components":[{"type":"library","name":"log4j","version":"2.14.1","bom-ref":"nested-log4j"}]}],
+	  "vulnerabilities":[{"id":"CVE-2021-44228","ratings":[{"score":10,"severity":"critical"}],"affects":[{"ref":"nested-log4j"}]}]}`
+	b, err := Parse([]byte(doc))
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := Correlate(b, nil, nil, Options{})
+	if len(r.Findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(r.Findings))
+	}
+	if !contains(r.Findings[0].AffectedComponents, "log4j@2.14.1") {
+		t.Fatalf("nested component label not resolved: %v", r.Findings[0].AffectedComponents)
+	}
+}
+
 func TestHighestSeverityIgnoresNonCVSSScore(t *testing.T) {
 	// A high "OWASP Risk Rating" score must NOT be reported as a CVSS score; the
 	// CVSS score comes only from a CVSS-method rating.

@@ -101,8 +101,8 @@ func BenchmarkIdentifiedDataBreachProbability(b *testing.B) {
 			if i%5 == 0 {
 				assetID := fmt.Sprintf("ta-%s-%d", catID, i)
 				m.TechnicalAssets[assetID] = &TechnicalAsset{
-					Id:                   assetID,
-					DataAssetsProcessed:  []string{"da-0"},
+					Id:                  assetID,
+					DataAssetsProcessed: []string{"da-0"},
 				}
 				m.GeneratedRisksByCategory[catID][i].DataBreachTechnicalAssetIDs = []string{assetID}
 				m.GeneratedRisksByCategory[catID][i].DataBreachProbability = Probable

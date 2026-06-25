@@ -66,6 +66,17 @@ func TestMaxSeverityCounts(t *testing.T) {
 	}
 }
 
+// A policy written with a capitalised severity key (Critical) must be honoured,
+// not silently ignored.
+func TestMaxSeverityCountsCaseInsensitive(t *testing.T) {
+	in := Input{Risks: riskMap(risk("a", types.CriticalSeverity, types.Unchecked))}
+	p := &Policy{MaxSeverityCounts: map[string]int{"Critical": 0}}
+	r := Evaluate(p, in)
+	if !hasViolation(r, "max_severity_counts") {
+		t.Fatalf("'Critical: 0' should be honoured (case-insensitive), got %v", r.Violations)
+	}
+}
+
 func TestMaxSeverityCountsUnknownKey(t *testing.T) {
 	p := &Policy{MaxSeverityCounts: map[string]int{"catastrophic": 0}}
 	r := Evaluate(p, Input{Risks: riskMap()})
@@ -88,9 +99,9 @@ func TestMaxTotalAtRisk(t *testing.T) {
 
 func TestRequireTracking(t *testing.T) {
 	in := Input{Risks: riskMap(
-		risk("a", types.HighSeverity, types.Unchecked),       // violates
-		risk("b", types.ElevatedSeverity, types.InProgress),  // tracked, ok
-		risk("c", types.MediumSeverity, types.Unchecked),     // below threshold, ok
+		risk("a", types.HighSeverity, types.Unchecked),      // violates
+		risk("b", types.ElevatedSeverity, types.InProgress), // tracked, ok
+		risk("c", types.MediumSeverity, types.Unchecked),    // below threshold, ok
 	)}
 	r := Evaluate(&Policy{RequireTrackingAtOrAbove: "elevated"}, in)
 	if !hasViolation(r, "require_tracking_at_or_above") {

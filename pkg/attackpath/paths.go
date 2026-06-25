@@ -199,8 +199,13 @@ func isDataAsset(model *types.Model, id string) bool {
 	return ok
 }
 
-// shortestPaths runs a BFS from entry and reconstructs the shortest path to every
-// target reachable from it (one path per target).
+// shortestPaths runs a BFS from entry and reconstructs ONE shortest path to every
+// target reachable from it. This is a deliberate design choice: reporting a
+// single shortest route per (entry, target) keeps output bounded and
+// deterministic and still answers "can the attacker reach it, and in how few
+// hops". Distinct entry points and distinct targets already produce distinct
+// paths; only multiple equal-length routes to the *same* target via different
+// intermediates are summarised to one.
 func shortestPaths(adj map[string][]edge, entry string, targets map[string]bool) []Path {
 	type prev struct {
 		node  string

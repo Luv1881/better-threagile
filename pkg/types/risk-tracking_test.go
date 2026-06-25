@@ -48,12 +48,12 @@ type recordingReporter struct {
 	warns []string
 }
 
-func (r *recordingReporter) Info(a ...any)                    { r.infos = append(r.infos, joinAny(a)) }
-func (r *recordingReporter) Warn(a ...any)                    { r.warns = append(r.warns, joinAny(a)) }
-func (r *recordingReporter) Error(a ...any)                   {}
-func (r *recordingReporter) Infof(format string, a ...any)    { r.infos = append(r.infos, format) }
-func (r *recordingReporter) Warnf(format string, a ...any)    { r.warns = append(r.warns, format) }
-func (r *recordingReporter) Errorf(format string, a ...any)   {}
+func (r *recordingReporter) Info(a ...any)                  { r.infos = append(r.infos, joinAny(a)) }
+func (r *recordingReporter) Warn(a ...any)                  { r.warns = append(r.warns, joinAny(a)) }
+func (r *recordingReporter) Error(a ...any)                 {}
+func (r *recordingReporter) Infof(format string, a ...any)  { r.infos = append(r.infos, format) }
+func (r *recordingReporter) Warnf(format string, a ...any)  { r.warns = append(r.warns, format) }
+func (r *recordingReporter) Errorf(format string, a ...any) {}
 
 func joinAny(a []any) string {
 	parts := make([]string, len(a))

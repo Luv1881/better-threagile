@@ -39,7 +39,7 @@ func TestMissingBuildInfrastructureRuleGenerateRisksCustomDevelopedPartWithoutBu
 			"ta1": {
 				Title:                "Test Technical Asset",
 				CustomDevelopedParts: true,
-				OutOfScope: 		 false,
+				OutOfScope:           false,
 			},
 		},
 	})
@@ -58,7 +58,7 @@ func TestMissingBuildInfrastructureRuleGenerateRisksCustomDevelopedPartWithBuild
 			"ta1": {
 				Title:                "Test Technical Asset",
 				CustomDevelopedParts: true,
-				OutOfScope: 		 false,
+				OutOfScope:           false,
 			},
 			"ArgoCD": {
 				Technologies: types.TechnologyList{

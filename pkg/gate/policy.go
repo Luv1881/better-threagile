@@ -93,9 +93,9 @@ type Violation struct {
 
 // Result is the outcome of evaluating a policy against an Input.
 type Result struct {
-	PolicyName     string         `json:"policy_name,omitempty"`
-	Violations     []Violation    `json:"violations"`
-	AtRiskTotal    int            `json:"at_risk_total"`
+	PolicyName       string         `json:"policy_name,omitempty"`
+	Violations       []Violation    `json:"violations"`
+	AtRiskTotal      int            `json:"at_risk_total"`
 	AtRiskBySeverity map[string]int `json:"at_risk_by_severity"`
 }
 
@@ -133,12 +133,21 @@ func Evaluate(policy *Policy, in Input) *Result {
 }
 
 func evalMaxSeverityCounts(policy *Policy, bySeverity map[types.RiskSeverity]int, result *Result) {
+	// Normalize keys to their canonical (lower-case) severity name so a policy
+	// written as "Critical: 0" is honoured, not silently ignored. Validation
+	// (below) is case-insensitive via ParseRiskSeverity, so the lookup must be too.
+	normalized := make(map[string]int, len(policy.MaxSeverityCounts))
+	for key, val := range policy.MaxSeverityCounts {
+		if sev, err := types.ParseRiskSeverity(key); err == nil {
+			normalized[sev.String()] = val
+		}
+	}
 	// Deterministic order: iterate the severities, not the map.
 	for _, sev := range []types.RiskSeverity{
 		types.CriticalSeverity, types.HighSeverity, types.ElevatedSeverity,
 		types.MediumSeverity, types.LowSeverity,
 	} {
-		max, ok := policy.MaxSeverityCounts[sev.String()]
+		max, ok := normalized[sev.String()]
 		if !ok {
 			continue
 		}

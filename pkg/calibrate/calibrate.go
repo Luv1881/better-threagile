@@ -25,9 +25,9 @@ type Finding struct {
 
 // RuleStats holds the calibrated posterior for a single rule.
 type RuleStats struct {
-	RuleID       string  `yaml:"rule_id"          json:"rule_id"`
-	Observations int     `yaml:"observations"     json:"observations"`
-	Positives    int     `yaml:"positives"        json:"positives"`
+	RuleID       string `yaml:"rule_id"          json:"rule_id"`
+	Observations int    `yaml:"observations"     json:"observations"`
+	Positives    int    `yaml:"positives"        json:"positives"`
 	// LikelihoodPrior: Bayesian posterior mean P(exploited | rule fires)
 	// = (1 + positives) / (2 + total_observations)  [Beta(1,1) prior → Beta(1+pos, 1+neg)]
 	LikelihoodPrior float64 `yaml:"likelihood_prior" json:"likelihood_prior"`
@@ -37,10 +37,10 @@ type RuleStats struct {
 
 // Calibration is the full output of a calibration run.
 type Calibration struct {
-	GeneratedAt  time.Time              `yaml:"generated_at"  json:"generated_at"`
-	CorpusSize   int                    `yaml:"corpus_size"   json:"corpus_size"`
-	OverallBrier float64                `yaml:"overall_brier" json:"overall_brier"`
-	Rules        map[string]*RuleStats  `yaml:"rules"         json:"rules"`
+	GeneratedAt  time.Time             `yaml:"generated_at"  json:"generated_at"`
+	CorpusSize   int                   `yaml:"corpus_size"   json:"corpus_size"`
+	OverallBrier float64               `yaml:"overall_brier" json:"overall_brier"`
+	Rules        map[string]*RuleStats `yaml:"rules"         json:"rules"`
 }
 
 // Analyze fits Bayesian posteriors for each rule in the corpus and returns a Calibration.
@@ -168,8 +168,8 @@ func LoadCalibration(path string) (*Calibration, error) {
 func FormatReport(cal *Calibration) string {
 	// Sort rules by Brier score ascending (best first)
 	type row struct {
-		id     string
-		stats  *RuleStats
+		id    string
+		stats *RuleStats
 	}
 	rows := make([]row, 0, len(cal.Rules))
 	for id, s := range cal.Rules {

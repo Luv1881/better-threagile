@@ -35,9 +35,9 @@ type TechnicalAsset struct {
 	IsPiiController  bool `yaml:"is_pii_controller,omitempty" json:"is_pii_controller,omitempty"`
 	DataMinimisation bool `yaml:"data_minimisation,omitempty" json:"data_minimisation,omitempty"`
 	// PASTA attack-surface fields (all optional)
-	EntryPointType                 string   `yaml:"entry_point_type,omitempty" json:"entry_point_type,omitempty"`
-	AttackSurfaceExposure          string   `yaml:"attack_surface_exposure,omitempty" json:"attack_surface_exposure,omitempty"`
-	RequiresAuthenticationStrength string   `yaml:"requires_authentication_strength,omitempty" json:"requires_authentication_strength,omitempty"`
+	EntryPointType                 string `yaml:"entry_point_type,omitempty" json:"entry_point_type,omitempty"`
+	AttackSurfaceExposure          string `yaml:"attack_surface_exposure,omitempty" json:"attack_surface_exposure,omitempty"`
+	RequiresAuthenticationStrength string `yaml:"requires_authentication_strength,omitempty" json:"requires_authentication_strength,omitempty"`
 	// VAST business-process fields (all optional)
 	SupportedBusinessProcesses []string `yaml:"supported_business_processes,omitempty" json:"supported_business_processes,omitempty"`
 }

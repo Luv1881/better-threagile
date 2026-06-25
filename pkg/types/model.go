@@ -18,27 +18,27 @@ import (
 // maybe
 
 type Model struct {
-	ThreagileVersion                              string                        `yaml:"threagile_version,omitempty" json:"threagile_version,omitempty"`
-	Includes                                      []string                      `yaml:"includes,omitempty" json:"includes,omitempty"`
-	Title                                         string                        `json:"title,omitempty" yaml:"title,omitempty"`
-	Author                                        *Author                       `json:"author,omitempty" yaml:"author,omitempty"`
-	Contributors                                  []*Author                     `yaml:"contributors,omitempty" json:"contributors,omitempty"`
-	Date                                          Date                          `json:"date,omitempty" yaml:"date,omitempty"`
-	AppDescription                                *Overview                     `yaml:"application_description,omitempty" json:"application_description,omitempty"`
-	BusinessOverview                              *Overview                     `json:"business_overview,omitempty" yaml:"business_overview,omitempty"`
-	TechnicalOverview                             *Overview                     `json:"technical_overview,omitempty" yaml:"technical_overview,omitempty"`
-	BusinessCriticality                           Criticality                   `json:"business_criticality,omitempty" yaml:"business_criticality,omitempty"`
-	ManagementSummaryComment                      string                        `json:"management_summary_comment,omitempty" yaml:"management_summary_comment,omitempty"`
-	SecurityRequirements                          map[string]string             `json:"security_requirements,omitempty" yaml:"security_requirements,omitempty"`
-	Questions                                     map[string]string             `json:"questions,omitempty" yaml:"questions,omitempty"`
-	AbuseCases                                    map[string]string             `json:"abuse_cases,omitempty" yaml:"abuse_cases,omitempty"`
-	TagsAvailable                                 []string                      `json:"tags_available,omitempty" yaml:"tags_available,omitempty"`
-	DataAssets                                    map[string]*DataAsset         `json:"data_assets,omitempty" yaml:"data_assets,omitempty"`
-	TechnicalAssets                               map[string]*TechnicalAsset    `json:"technical_assets,omitempty" yaml:"technical_assets,omitempty"`
-	TrustBoundaries                               map[string]*TrustBoundary     `json:"trust_boundaries,omitempty" yaml:"trust_boundaries,omitempty"`
-	SharedRuntimes                                map[string]*SharedRuntime     `json:"shared_runtimes,omitempty" yaml:"shared_runtimes,omitempty"`
+	ThreagileVersion         string                     `yaml:"threagile_version,omitempty" json:"threagile_version,omitempty"`
+	Includes                 []string                   `yaml:"includes,omitempty" json:"includes,omitempty"`
+	Title                    string                     `json:"title,omitempty" yaml:"title,omitempty"`
+	Author                   *Author                    `json:"author,omitempty" yaml:"author,omitempty"`
+	Contributors             []*Author                  `yaml:"contributors,omitempty" json:"contributors,omitempty"`
+	Date                     Date                       `json:"date,omitempty" yaml:"date,omitempty"`
+	AppDescription           *Overview                  `yaml:"application_description,omitempty" json:"application_description,omitempty"`
+	BusinessOverview         *Overview                  `json:"business_overview,omitempty" yaml:"business_overview,omitempty"`
+	TechnicalOverview        *Overview                  `json:"technical_overview,omitempty" yaml:"technical_overview,omitempty"`
+	BusinessCriticality      Criticality                `json:"business_criticality,omitempty" yaml:"business_criticality,omitempty"`
+	ManagementSummaryComment string                     `json:"management_summary_comment,omitempty" yaml:"management_summary_comment,omitempty"`
+	SecurityRequirements     map[string]string          `json:"security_requirements,omitempty" yaml:"security_requirements,omitempty"`
+	Questions                map[string]string          `json:"questions,omitempty" yaml:"questions,omitempty"`
+	AbuseCases               map[string]string          `json:"abuse_cases,omitempty" yaml:"abuse_cases,omitempty"`
+	TagsAvailable            []string                   `json:"tags_available,omitempty" yaml:"tags_available,omitempty"`
+	DataAssets               map[string]*DataAsset      `json:"data_assets,omitempty" yaml:"data_assets,omitempty"`
+	TechnicalAssets          map[string]*TechnicalAsset `json:"technical_assets,omitempty" yaml:"technical_assets,omitempty"`
+	TrustBoundaries          map[string]*TrustBoundary  `json:"trust_boundaries,omitempty" yaml:"trust_boundaries,omitempty"`
+	SharedRuntimes           map[string]*SharedRuntime  `json:"shared_runtimes,omitempty" yaml:"shared_runtimes,omitempty"`
 	// InformationAssets is an optional OCTAVE Allegro section (Phase B.1)
-	InformationAssets                             map[string]*InformationAsset  `json:"information_assets,omitempty" yaml:"information_assets,omitempty"`
+	InformationAssets map[string]*InformationAsset `json:"information_assets,omitempty" yaml:"information_assets,omitempty"`
 	// TrikeActors and TrikeMatrix are optional Trike methodology sections (Phase B.2)
 	TrikeActors                                   map[string]*TrikeActor        `json:"trike_actors,omitempty" yaml:"trike_actors,omitempty"`
 	TrikeMatrix                                   []*TrikeMatrixCell            `json:"trike_matrix,omitempty" yaml:"trike_matrix,omitempty"`

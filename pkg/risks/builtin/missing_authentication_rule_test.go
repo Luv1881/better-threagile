@@ -176,15 +176,15 @@ func TestMissingAuthenticationRuleGenerateRisksWithParameterisedAuthenticationAn
 						MultiTenant: true, // require less code instead of adding processed data
 					},
 					"ta2": {
-						Id:    "ta2",
-						Title: "Test Technical Asset 2",
+						Id:          "ta2",
+						Title:       "Test Technical Asset 2",
 						MultiTenant: true, // require less code instead of adding processed data
 					},
 				},
 				IncomingTechnicalCommunicationLinksMappedByTargetId: map[string][]*types.CommunicationLink{
 					"ta1": {
 						{
-							Title: 		    "Communication Link",
+							Title:          "Communication Link",
 							SourceId:       "ta2",
 							Authentication: tt.authentication,
 							Protocol:       tt.protocol,

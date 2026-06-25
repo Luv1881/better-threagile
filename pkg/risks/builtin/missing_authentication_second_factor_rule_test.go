@@ -89,9 +89,9 @@ func TestMissingAuthenticationSecondFactorRuleGenerateRisksCallerFromDatastoreNo
 				MultiTenant: true, // require less code instead of adding processed data
 			},
 			"ta2": {
-				Id:    "ta2",
-				Title: "Test Datastore",
-				Type:  types.Datastore,
+				Id:          "ta2",
+				Title:       "Test Datastore",
+				Type:        types.Datastore,
 				MultiTenant: true, // require less code instead of adding processed data
 			},
 		},
@@ -188,7 +188,7 @@ func TestMissingAuthenticationSecondFactorRuleUsedAsClientByHumanCriticalIntegri
 				Id:                  "ta2",
 				Title:               "Browser",
 				UsedAsClientByHuman: true,
-				MultiTenant: true, // require less code instead of adding processed data
+				MultiTenant:         true, // require less code instead of adding processed data
 			},
 		},
 		IncomingTechnicalCommunicationLinksMappedByTargetId: map[string][]*types.CommunicationLink{
@@ -227,7 +227,7 @@ func TestMissingAuthenticationSecondFactorRuleUsedAsClientByHumanConfidentialDat
 				Id:                  "ta2",
 				Title:               "Browser",
 				UsedAsClientByHuman: true,
-				MultiTenant: true, // require less code instead of adding processed data
+				MultiTenant:         true, // require less code instead of adding processed data
 			},
 		},
 		IncomingTechnicalCommunicationLinksMappedByTargetId: map[string][]*types.CommunicationLink{

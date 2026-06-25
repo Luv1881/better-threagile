@@ -12,13 +12,13 @@ import (
 type LINDDUN int
 
 const (
-	Linking           LINDDUN = iota // Linkability - linking items of interest without knowing their identity
-	Identifying                      // Identifiability - identifying a person from data
-	NonRepudiationL                  // Non-repudiation - inability to deny actions
-	Detecting                        // Detectability - deducing whether something exists
-	DataDisclosure                   // Disclosure of information - exposing data to unauthorized parties
-	Unawareness                      // Unawareness - individuals unaware of data processing
-	NonCompliance                    // Non-compliance - failure to comply with data protection rules
+	Linking         LINDDUN = iota // Linkability - linking items of interest without knowing their identity
+	Identifying                    // Identifiability - identifying a person from data
+	NonRepudiationL                // Non-repudiation - inability to deny actions
+	Detecting                      // Detectability - deducing whether something exists
+	DataDisclosure                 // Disclosure of information - exposing data to unauthorized parties
+	Unawareness                    // Unawareness - individuals unaware of data processing
+	NonCompliance                  // Non-compliance - failure to comply with data protection rules
 )
 
 func LINDDUNValues() []TypeEnum {

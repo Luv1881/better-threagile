@@ -3,6 +3,7 @@ package threagile
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -248,11 +249,14 @@ func writeOrDiff(cmd *cobra.Command, model *types.Model, outputFile string, diff
 	return nil
 }
 
-// printModelSummary prints a human-readable summary of the generated model fragment.
+// printModelSummary prints a human-readable summary of the generated model
+// fragment. Every section is sorted so the output is deterministic (stable CI
+// snapshots / review diffs), unlike raw map iteration.
 func printModelSummary(cmd *cobra.Command, model *types.Model) {
 	cmd.Printf("Model fragment summary: %s\n", model.Title)
 	cmd.Printf("  Technical assets (%d):\n", len(model.TechnicalAssets))
-	for id, a := range model.TechnicalAssets {
+	for _, id := range sortedMapKeys(model.TechnicalAssets) {
+		a := model.TechnicalAssets[id]
 		techNames := make([]string, 0, len(a.Technologies))
 		for _, t := range a.Technologies {
 			techNames = append(techNames, t.Name)
@@ -260,19 +264,28 @@ func printModelSummary(cmd *cobra.Command, model *types.Model) {
 		cmd.Printf("    %-40s  type=%-10s  tech=%s\n", id, a.Type, strings.Join(techNames, ","))
 	}
 	cmd.Printf("  Trust boundaries (%d):\n", len(model.TrustBoundaries))
-	for id, tb := range model.TrustBoundaries {
-		cmd.Printf("    %-40s  type=%s\n", id, tb.Type)
+	for _, id := range sortedMapKeys(model.TrustBoundaries) {
+		cmd.Printf("    %-40s  type=%s\n", id, model.TrustBoundaries[id].Type)
 	}
 	cmd.Printf("  Data assets (%d):\n", len(model.DataAssets))
-	for id, da := range model.DataAssets {
+	for _, id := range sortedMapKeys(model.DataAssets) {
 		pii := ""
-		if da.HasPii {
+		if model.DataAssets[id].HasPii {
 			pii = " [PII]"
 		}
 		cmd.Printf("    %-40s%s\n", id, pii)
 	}
 	cmd.Printf("  Communication links (%d):\n", len(model.CommunicationLinks))
-	for id := range model.CommunicationLinks {
+	for _, id := range sortedMapKeys(model.CommunicationLinks) {
 		cmd.Printf("    %s\n", id)
 	}
+}
+
+func sortedMapKeys[V any](m map[string]V) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }

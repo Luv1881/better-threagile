@@ -275,6 +275,10 @@ func assignNetworkBoundaries(model *types.Model, cf composeFile, svcIDs map[stri
 	for _, name := range sortedKeys(cf.Services) {
 		nets := networkNames(cf.Services[name].Networks)
 		if len(nets) == 0 {
+			// Compose puts services with no explicit `networks:` on an implicit
+			// "default" network — model it so they aren't left outside any
+			// trust boundary (which would distort segmentation analysis).
+			byNetwork["default"] = append(byNetwork["default"], svcIDs[name])
 			continue
 		}
 		// Place the service in the first network it joins (an asset belongs to one
@@ -301,12 +305,50 @@ func assignNetworkBoundaries(model *types.Model, cf composeFile, svcIDs map[stri
 
 // --- polymorphic field helpers -------------------------------------------------
 
-// hasPublishedPorts reports whether the service publishes any port to the host.
-// In docker-compose every entry under `ports:` is host-published (a bare
-// container port still binds to a random host port); only `expose:` is
-// container-internal, which we deliberately do not count here.
+// hasPublishedPorts reports whether the service publishes any port to a
+// non-loopback host interface (i.e. is reachable beyond localhost). A bare
+// container port binds to a random host port on all interfaces (published), but
+// a binding to 127.0.0.1 / ::1 / localhost is dev-only and must NOT be treated as
+// internet exposure. `expose:` is container-internal and never counts.
 func hasPublishedPorts(svc composeService) bool {
-	return len(svc.Ports) > 0
+	for i := range svc.Ports {
+		n := &svc.Ports[i]
+		switch n.Kind {
+		case yaml.ScalarNode:
+			if !isLoopbackBinding(n.Value) {
+				return true
+			}
+		case yaml.MappingNode:
+			var m struct {
+				HostIP string `yaml:"host_ip"`
+			}
+			if err := n.Decode(&m); err == nil && !isLoopbackHost(m.HostIP) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// isLoopbackBinding reports whether a short-form ports entry binds only to
+// loopback, e.g. "127.0.0.1:5432:5432" or "[::1]:8080:80".
+func isLoopbackBinding(spec string) bool {
+	parts := strings.Split(spec, ":")
+	if len(parts) < 3 {
+		return false // "host:container" or bare "container" -> all interfaces
+	}
+	host := strings.Join(parts[:len(parts)-2], ":") // everything before host:container
+	host = strings.Trim(host, "[]")
+	return isLoopbackHost(host)
+}
+
+func isLoopbackHost(host string) bool {
+	switch strings.ToLower(strings.TrimSpace(host)) {
+	case "127.0.0.1", "::1", "localhost":
+		return true
+	default:
+		return strings.HasPrefix(host, "127.")
+	}
 }
 
 func dependsOnNames(node yaml.Node) []string { return listOrMapKeys(node) }

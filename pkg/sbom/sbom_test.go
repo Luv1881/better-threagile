@@ -165,6 +165,22 @@ func TestHighestSeverityEdgeCases(t *testing.T) {
 	}
 }
 
+func TestHighestSeverityIgnoresNonCVSSScore(t *testing.T) {
+	// A high "OWASP Risk Rating" score must NOT be reported as a CVSS score; the
+	// CVSS score comes only from a CVSS-method rating.
+	v := Vulnerability{Ratings: []Rating{
+		{Score: 9.0, Severity: "high", Method: "OWASP"},
+		{Score: 4.0, Severity: "medium", Method: "CVSSv31"},
+	}}
+	sev, score := v.HighestSeverity()
+	if score != 4.0 {
+		t.Fatalf("CVSS score should be 4.0 (CVSS rating only), got %.1f", score)
+	}
+	if sev != "high" { // label still reflects the highest severity present
+		t.Fatalf("severity label should be high, got %s", sev)
+	}
+}
+
 func TestKEVCountExcludesSuppressed(t *testing.T) {
 	// A suppressed vuln that is KEV-listed must not inflate KEVCount, and must
 	// not trigger HasKEV, even with --include-suppressed.

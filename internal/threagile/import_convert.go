@@ -46,6 +46,13 @@ func modelToInput(m *types.Model) *input.Model {
 
 	for _, da := range sortedDataAssets(m.DataAssets) {
 		key := uniqueTitle(da.Title, da.Id, used)
+		// HasPii is derived by the parser from PiiCategories, so an importer that
+		// set HasPii without categories (e.g. openapi's PII heuristic) would lose
+		// the PII signal on re-analysis. Emit a generic category to preserve it.
+		piiCategories := da.PiiCategories
+		if da.HasPii && len(piiCategories) == 0 {
+			piiCategories = []string{"unspecified"}
+		}
 		out.DataAssets[key] = input.DataAsset{
 			ID:              da.Id,
 			Description:     da.Description,
@@ -55,7 +62,7 @@ func modelToInput(m *types.Model) *input.Model {
 			Confidentiality: da.Confidentiality.String(),
 			Integrity:       da.Integrity.String(),
 			Availability:    da.Availability.String(),
-			PiiCategories:   da.PiiCategories,
+			PiiCategories:   piiCategories,
 		}
 	}
 
@@ -104,6 +111,8 @@ func modelToInput(m *types.Model) *input.Model {
 			DataAssetsProcessed: ta.DataAssetsProcessed,
 			DataAssetsStored:    ta.DataAssetsStored,
 			DataFormatsAccepted: dataFormatsToStrings(ta.DataFormatsAccepted),
+			// PASTA attack-surface field set by the openapi importer.
+			RequiresAuthenticationStrength: ta.RequiresAuthenticationStrength,
 		}
 		if u := ta.Usage.String(); u != "" {
 			ia.Usage = u
@@ -221,7 +230,14 @@ func uniqueLinkTitle(title, id string, existing map[string]input.CommunicationLi
 		key = id
 	}
 	if _, ok := existing[key]; ok {
-		key = fmt.Sprintf("%s (%s)", key, id)
+		base := fmt.Sprintf("%s (%s)", key, id)
+		key = base
+		for n := 2; ; n++ {
+			if _, taken := existing[key]; !taken {
+				break
+			}
+			key = fmt.Sprintf("%s #%d", base, n)
+		}
 	}
 	return key
 }

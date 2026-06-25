@@ -11,6 +11,9 @@ type manifest struct {
 	Kind       string     `yaml:"kind"`
 	Metadata   objectMeta `yaml:"metadata"`
 	Spec       yaml.Node  `yaml:"spec"`
+	// Items holds the nested objects of a `kind: ...List` wrapper (e.g. the output
+	// of `kubectl get all -o yaml`).
+	Items []yaml.Node `yaml:"items"`
 }
 
 type objectMeta struct {
@@ -90,6 +93,9 @@ type volume struct {
 	PersistentVolumeClaim *struct {
 		ClaimName string `yaml:"claimName"`
 	} `yaml:"persistentVolumeClaim"`
+	Secret *struct {
+		SecretName string `yaml:"secretName"`
+	} `yaml:"secret"`
 }
 
 // --- Service ---

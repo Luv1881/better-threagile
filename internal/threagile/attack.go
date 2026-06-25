@@ -59,13 +59,16 @@ Example:
 				if writeErr := os.WriteFile(outputFile, append(jsonBytes, '\n'), 0600); writeErr != nil {
 					return fmt.Errorf("attack-navigator: write %q: %w", outputFile, writeErr)
 				}
-				cmd.Printf("ATT&CK Navigator layer written to %s (%d technique(s))\n", outputFile, len(result.Layer.Techniques))
+				fmt.Fprintf(cmd.ErrOrStderr(), "ATT&CK Navigator layer written to %s (%d technique(s))\n", outputFile, len(result.Layer.Techniques))
 			} else {
-				cmd.Println(string(jsonBytes))
+				// The layer JSON is the command's data output — stdout, so
+				// `attack-navigator > layer.json` produces a valid file.
+				fmt.Fprintln(cmd.OutOrStdout(), string(jsonBytes))
 			}
 
 			if len(result.UnmappedCategories) > 0 {
-				cmd.Printf("Note: %d finding category/categories have no ATT&CK mapping yet: %v\n",
+				// To stderr so it never corrupts `attack-navigator > layer.json`.
+				fmt.Fprintf(cmd.ErrOrStderr(), "Note: %d finding category/categories have no ATT&CK mapping yet: %v\n",
 					len(result.UnmappedCategories), result.UnmappedCategories)
 			}
 			return nil

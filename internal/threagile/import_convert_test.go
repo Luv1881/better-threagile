@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	k8simport "github.com/threagile/threagile/pkg/import/kubernetes"
+	"github.com/threagile/threagile/pkg/input"
+	"github.com/threagile/threagile/pkg/types"
 	"gopkg.in/yaml.v3"
 )
 
@@ -76,6 +78,37 @@ func TestImporterOutputIsAnalyzable(t *testing.T) {
 	risks, readErr := os.ReadFile(filepath.Join(out, "risks.json"))
 	require.NoError(t, readErr, "analysis must produce risks.json")
 	assert.Contains(t, string(risks), "synthetic_id", "expected at least one generated risk")
+}
+
+func TestModelToInputPreservesPiiAndAuthStrength(t *testing.T) {
+	// HasPii is derived by the parser from pii_categories, so a HasPii-only data
+	// asset (e.g. openapi's heuristic) must emit a category to survive re-parse.
+	m := &types.Model{
+		ThreagileVersion: "1.0.0",
+		DataAssets: map[string]*types.DataAsset{
+			"d1": {Id: "d1", Title: "User Data", HasPii: true},
+		},
+		TechnicalAssets: map[string]*types.TechnicalAsset{
+			"a1": {Id: "a1", Title: "API", RequiresAuthenticationStrength: "two-factor"},
+		},
+	}
+	in := modelToInput(m)
+
+	var da input.DataAsset
+	for _, v := range in.DataAssets {
+		da = v
+	}
+	if len(da.PiiCategories) == 0 {
+		t.Error("HasPii data asset must emit a pii category so HasPii survives re-parse")
+	}
+
+	var ta input.TechnicalAsset
+	for _, v := range in.TechnicalAssets {
+		ta = v
+	}
+	if ta.RequiresAuthenticationStrength != "two-factor" {
+		t.Errorf("requires_authentication_strength dropped: %q", ta.RequiresAuthenticationStrength)
+	}
 }
 
 func TestModelToInputNestsLinksAndStringEnums(t *testing.T) {

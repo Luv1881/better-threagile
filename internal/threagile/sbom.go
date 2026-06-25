@@ -82,7 +82,7 @@ Examples:
 					return fmt.Errorf("sbom: write %q: %w", outputFile, writeErr)
 				}
 			}
-			cmd.Print(rendered)
+			fmt.Fprint(cmd.OutOrStdout(), rendered)
 
 			if failOnKEV && result.HasKEV() {
 				return &exitCodeError{code: 3, msg: fmt.Sprintf("sbom gate failed: %d KEV-listed vulnerability(ies) present", result.KEVCount)}

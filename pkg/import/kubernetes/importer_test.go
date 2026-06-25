@@ -317,6 +317,65 @@ metadata: {name: pgdata, namespace: app}
 	}
 }
 
+func TestKindListExpanded(t *testing.T) {
+	// `kubectl get all -o yaml` produces a top-level List wrapper.
+	manifests := `
+apiVersion: v1
+kind: List
+items:
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata: {name: web, namespace: shop, labels: {app: web}}
+    spec:
+      template:
+        metadata: {labels: {app: web}}
+        spec: {containers: [{name: web, image: nginx:1.25}]}
+  - apiVersion: v1
+    kind: Service
+    metadata: {name: web, namespace: shop}
+    spec: {type: LoadBalancer, selector: {app: web}, ports: [{port: 443}]}
+`
+	m, err := Import([]byte(manifests), ImportOptions{})
+	if err != nil {
+		t.Fatalf("List wrapper should be flattened, got error: %v", err)
+	}
+	web := m.TechnicalAssets["shop-web-k8s"]
+	if web == nil {
+		t.Fatal("Deployment inside List not imported")
+	}
+	if !web.Internet {
+		t.Error("Service inside List should expose the web workload")
+	}
+}
+
+func TestSecretVolumeLinked(t *testing.T) {
+	manifests := `
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: app, namespace: ns, labels: {app: a}}
+spec:
+  template:
+    metadata: {labels: {app: a}}
+    spec:
+      containers: [{name: a, image: corp/a:1}]
+      volumes:
+        - name: creds
+          secret: {secretName: tls-cert}
+---
+apiVersion: v1
+kind: Secret
+metadata: {name: tls-cert, namespace: ns}
+`
+	m, err := Import([]byte(manifests), ImportOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	app := m.TechnicalAssets["ns-app-k8s"]
+	if !contains(app.DataAssetsProcessed, "data-ns-tls-cert-k8s") {
+		t.Errorf("secret mounted as a volume should be processed by the workload: %v", app.DataAssetsProcessed)
+	}
+}
+
 func hasTag(tags []string, want string) bool { return contains(tags, want) }
 
 func contains(s []string, want string) bool {

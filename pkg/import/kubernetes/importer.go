@@ -182,7 +182,8 @@ func Import(data []byte, opts ImportOptions) (*types.Model, error) {
 }
 
 // decodeManifests splits a multi-document YAML stream and decodes each non-empty
-// document into a manifest.
+// document into a manifest. A `kind: ...List` wrapper (e.g. `kubectl get all -o
+// yaml`, which produces a top-level `List`) is flattened into its items.
 func decodeManifests(data []byte) ([]manifest, error) {
 	dec := yaml.NewDecoder(strings.NewReader(string(data)))
 	var out []manifest
@@ -195,10 +196,19 @@ func decodeManifests(data []byte) ([]manifest, error) {
 		if err != nil {
 			return nil, fmt.Errorf("kubernetes: failed to parse manifest YAML: %w", err)
 		}
-		if m.Kind == "" {
+		switch {
+		case strings.HasSuffix(m.Kind, "List") && len(m.Items) > 0:
+			for i := range m.Items {
+				var item manifest
+				if err := m.Items[i].Decode(&item); err == nil && item.Kind != "" {
+					out = append(out, item)
+				}
+			}
+		case m.Kind == "":
 			continue // empty document or a non-object (e.g. a bare list separator)
+		default:
+			out = append(out, m)
 		}
-		out = append(out, m)
 	}
 	return out, nil
 }
@@ -597,6 +607,12 @@ func referencedSecrets(pod podSpec) []string {
 			if ef.SecretRef != nil {
 				add(ef.SecretRef.Name)
 			}
+		}
+	}
+	// Secrets mounted as volumes are consumed too.
+	for _, v := range pod.Volumes {
+		if v.Secret != nil {
+			add(v.Secret.SecretName)
 		}
 	}
 	return out

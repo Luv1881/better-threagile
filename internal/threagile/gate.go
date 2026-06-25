@@ -117,7 +117,7 @@ Examples:
 					return fmt.Errorf("gate: write %q: %w", outputFile, writeErr)
 				}
 			}
-			cmd.Print(rendered)
+			fmt.Fprint(cmd.OutOrStdout(), rendered)
 
 			if !result.Passed() {
 				// Distinct exit code so CI can tell a gate failure from a usage error.

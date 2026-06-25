@@ -199,6 +199,57 @@ func TestServiceIDCollisionDisambiguated(t *testing.T) {
 	}
 }
 
+func TestLoopbackPortsNotInternet(t *testing.T) {
+	yaml := `
+services:
+  db:
+    image: postgres:16
+    ports: ["127.0.0.1:5432:5432"]
+  cache:
+    image: redis:7
+    ports:
+      - {target: 6379, published: 6379, host_ip: 127.0.0.1}
+  web:
+    image: nginx
+    ports: ["443:443"]
+`
+	m, err := Import([]byte(yaml), ImportOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.TechnicalAssets["db-compose"].Internet {
+		t.Error("loopback-bound db port must not be internet-facing")
+	}
+	if m.TechnicalAssets["cache-compose"].Internet {
+		t.Error("long-form host_ip 127.0.0.1 must not be internet-facing")
+	}
+	if !m.TechnicalAssets["web-compose"].Internet {
+		t.Error("0.0.0.0-bound web port should be internet-facing")
+	}
+}
+
+func TestDefaultNetworkBoundary(t *testing.T) {
+	// A service with no explicit networks joins the implicit "default" network.
+	yaml := "services:\n  a:\n    image: nginx\n"
+	m, err := Import([]byte(yaml), ImportOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tb := m.TrustBoundaries["network-default-compose"]
+	if tb == nil {
+		t.Fatal("service without networks should join a default-network boundary")
+	}
+	found := false
+	for _, id := range tb.TechnicalAssetsInside {
+		if id == "a-compose" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("service 'a' should be inside the default boundary: %v", tb.TechnicalAssetsInside)
+	}
+}
+
 func TestImportErrors(t *testing.T) {
 	if _, err := Import([]byte(""), ImportOptions{}); err == nil {
 		t.Error("empty input should error")

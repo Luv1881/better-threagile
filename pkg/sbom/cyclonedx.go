@@ -92,17 +92,26 @@ func (v Vulnerability) IsSuppressed() bool {
 
 var severityRank = map[string]int{"none": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 
+// isCVSSMethod reports whether a CycloneDX rating method is a CVSS variant
+// (CVSSv2/CVSSv3/CVSSv31/CVSSv4). An empty method is treated as CVSS for
+// tolerance with scanners that omit it.
+func isCVSSMethod(method string) bool {
+	m := strings.ToLower(strings.TrimSpace(method))
+	return m == "" || strings.HasPrefix(m, "cvss")
+}
+
 // HighestSeverity returns a representative severity label and the highest CVSS
-// score across all ratings. It is robust to mixed ratings: it takes the maximum
-// numeric score, and the severity label from the highest-ranked severity present
-// (so severity-only ratings, empty-severity high-score ratings, and all-zero
-// scores still produce a sensible label rather than "unknown").
+// base score across the ratings. The numeric score is taken only from CVSS-method
+// ratings (other scoring systems like OWASP/SSVC are not CVSS and would
+// mis-prioritize if folded in); the severity label is the highest-ranked severity
+// across all ratings, so it stays meaningful even when only a non-CVSS rating
+// carries a label.
 func (v Vulnerability) HighestSeverity() (string, float64) {
 	var score float64
 	bestRank := -1
 	label := ""
 	for _, r := range v.Ratings {
-		if r.Score > score {
+		if isCVSSMethod(r.Method) && r.Score > score {
 			score = r.Score
 		}
 		sev := strings.ToLower(strings.TrimSpace(r.Severity))

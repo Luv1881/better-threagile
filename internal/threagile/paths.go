@@ -87,7 +87,7 @@ Examples:
 					return fmt.Errorf("paths: write %q: %w", outputFile, writeErr)
 				}
 			}
-			cmd.Print(rendered)
+			fmt.Fprint(cmd.OutOrStdout(), rendered)
 			return nil
 		},
 	}

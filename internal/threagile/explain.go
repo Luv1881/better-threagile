@@ -68,7 +68,9 @@ func (what *Threagile) explainRisk(cmd *cobra.Command, args []string) error {
 	}
 
 	for _, riskID := range args {
-		risk, ok := result.ParsedModel.GeneratedRisksBySyntheticId[riskID]
+		// Synthetic IDs are keyed lower-cased; match case-insensitively so
+		// `explain risk SQL-Injection@...` resolves like the lower-cased form.
+		risk, ok := result.ParsedModel.GeneratedRisksBySyntheticId[strings.ToLower(riskID)]
 		if !ok {
 			cmd.Printf("Risk %q not found in model analysis.\n\nKnown risk IDs:\n", riskID)
 			for id := range result.ParsedModel.GeneratedRisksBySyntheticId {

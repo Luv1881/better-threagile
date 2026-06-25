@@ -80,7 +80,7 @@ func (what *Threagile) initDiff() *Threagile {
 					return fmt.Errorf("diff: write %q: %w", outputFile, writeErr)
 				}
 			}
-			cmd.Print(rendered)
+			fmt.Fprint(cmd.OutOrStdout(), rendered)
 			return nil
 		},
 	}

@@ -1,0 +1,20 @@
+# Balanced gate (recommended default) — sensible for most production services.
+# Every rule below works immediately with no extra files. See docs/gate.md.
+name: "Balanced gate"
+
+max_severity_counts:
+  critical: 0            # no still-at-risk Critical findings
+  high: 0                # no still-at-risk High findings
+
+# Critical/High are hard-blocked above. This adds real governance one level down:
+# every Elevated-or-above finding must carry a tracking decision (not "unchecked"),
+# so the next tier can't sit silently un-triaged either.
+require_tracking_at_or_above: elevated
+
+fail_on_expired_acceptance: true
+
+# PR-delta rule — block any finding that is new (or escalated) versus the
+# approved baseline. It needs a baseline snapshot from your main branch:
+#   threagile analyze-model --model model.yaml --output out      # on main
+#   threagile gate --model model.yaml --policy policy.yaml --baseline out/risks.json
+# forbid_new_at_or_above: high

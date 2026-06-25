@@ -1,0 +1,17 @@
+# Strict gate — for internet-facing or high-value services.
+# Caps Elevated findings too and demands triage further down the severity scale.
+name: "Strict gate"
+
+max_severity_counts:
+  critical: 0
+  high: 0
+  elevated: 0
+
+# Critical/High/Elevated are hard-blocked above; require triage one level down too.
+require_tracking_at_or_above: medium
+
+fail_on_expired_acceptance: true
+
+# Block findings new (or escalated) versus the approved baseline. Enable once you
+# publish a baseline from main (see docs/gate.md and the 'balanced' profile):
+# forbid_new_at_or_above: elevated

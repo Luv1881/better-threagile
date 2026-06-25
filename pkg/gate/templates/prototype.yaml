@@ -1,0 +1,9 @@
+# Prototype gate — loosest profile, for early spikes / pre-production services.
+# It only blocks the truly unacceptable. Tighten to the 'balanced' profile
+# before you take the service to production:  threagile policy init --profile balanced
+name: "Prototype gate"
+
+max_severity_counts:
+  critical: 0            # never ship a still-at-risk Critical finding
+
+fail_on_expired_acceptance: true   # an expired risk acceptance fails the gate

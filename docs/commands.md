@@ -20,6 +20,7 @@
 | `sbom`                   | [SBOM + threat-intel correlation](./sbom.md): correlate a CycloneDX SBOM's CVEs with KEV/EPSS, VEX-aware, `--fail-on-kev` gate |       |
 | `stix`                   | [STIX 2.1 export](./stix.md): deterministic bundle (assets, vulnerabilities+CWE, ATT&CK/CAPEC attack-patterns, mitigations) for TIP/OpenCTI interop |       |
 | `mermaid`                | [Mermaid data-flow diagram](./mermaid.md): GitHub/GitLab-renderable flowchart of the model (no Graphviz needed); `--format flowchart\|markdown`, `--direction`, `--with-risks` |       |
+| `policy init` / `policy list` | Scaffold a [secure-by-default gate policy](./gate.md#secure-by-default-starter-policies-policy-init): `--profile prototype\|balanced\|strict\|regulated` |       |
 
 ## Scaffolding
 

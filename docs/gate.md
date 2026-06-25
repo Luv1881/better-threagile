@@ -86,3 +86,28 @@ threagile gate ... --format markdown --output gate.md   # post as a PR comment
 
 The Markdown form is designed to be dropped straight into a pull-request comment
 by a CI job (see `threagile generate-ci`).
+
+## Secure-by-default starter policies (`policy init`)
+
+You don't have to hand-write a policy. `policy init` scaffolds a tuned,
+secure-by-default `policy.yaml` so a team can adopt the gate in one minute and
+tighten over time — no security expert required.
+
+```sh
+threagile policy list                                   # describe each profile
+threagile policy init                                   # 'balanced' -> policy.yaml
+threagile policy init --profile strict --output ci/policy.yaml
+threagile policy init --profile regulated -o -          # print to stdout
+```
+
+| Profile | Use it for | Enforces |
+|---|---|---|
+| `prototype` | early spikes / pre-production | no Critical at risk; expired acceptances fail |
+| `balanced` *(default)* | most production services | + no High at risk; Elevated must be triaged |
+| `strict` | internet-facing / high-value | + no Elevated at risk; triage required down to Medium |
+| `regulated` | audit scope (SOC 2 / ISO / PCI) | strict + every finding triaged + framework-coverage template |
+
+Every profile is validated in CI to parse through the same strict loader the
+gate uses, and writing one is refused over an existing file unless you pass
+`--force`. The `forbid_new_at_or_above` PR-delta rule is included as a commented
+line with the exact `--baseline` workflow to enable it.

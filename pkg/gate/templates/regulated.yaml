@@ -1,0 +1,20 @@
+# Regulated gate — strict thresholds plus compliance-coverage evidence.
+# For services in scope for an audit (SOC 2, ISO 27001, PCI, FedRAMP, ...).
+name: "Regulated gate"
+
+max_severity_counts:
+  critical: 0
+  high: 0
+  elevated: 0
+
+require_tracking_at_or_above: low       # audit posture: every finding must be triaged
+
+fail_on_expired_acceptance: true
+
+# forbid_new_at_or_above: elevated       # enable with --baseline (see docs/gate.md)
+
+# Require minimum control coverage for the frameworks you must evidence. This
+# needs your rule packs to carry 'controls:' mappings; raise the bar over time:
+# framework_coverage:
+#   - framework: nist_800_53
+#     min_percent: 60

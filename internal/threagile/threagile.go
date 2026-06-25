@@ -69,6 +69,8 @@ func (what *Threagile) Init(buildTimestamp string) *Threagile {
 		initSTIX().
 		initD3FEND().
 		initMermaid().
+		initPolicy().
+		initHooks().
 		initSeverityProfile().
 		initDrift().
 		initSync().

@@ -18,6 +18,11 @@ type composeService struct {
 	DependsOn   yaml.Node   `yaml:"depends_on"`  // list or map(keys)
 	Networks    yaml.Node   `yaml:"networks"`    // list or map(keys)
 	Environment yaml.Node   `yaml:"environment"` // list of "K=V" or map
+	// Security-relevant fields used to flag misconfigurations for review.
+	Privileged  bool     `yaml:"privileged"`
+	CapAdd      []string `yaml:"cap_add"`
+	NetworkMode string   `yaml:"network_mode"`
+	Volumes     []string `yaml:"volumes"`
 }
 
 type networkConfig struct {

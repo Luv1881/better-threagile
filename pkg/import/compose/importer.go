@@ -187,7 +187,33 @@ func Import(data []byte, opts ImportOptions) (*types.Model, error) {
 	// Networks -> trust boundaries (each service in the first network it joins).
 	assignNetworkBoundaries(model, cf, svcIDs, opts.SourceLabel)
 
+	// Declare every tag any asset/data asset uses (e.g. the review-* security
+	// tags) so the emitted model passes tag-reference validation.
+	model.TagsAvailable = collectTags(model)
+
 	return model, nil
+}
+
+// collectTags returns the sorted, de-duplicated set of tags referenced by the
+// model's technical and data assets.
+func collectTags(model *types.Model) []string {
+	seen := map[string]bool{}
+	for _, ta := range model.TechnicalAssets {
+		for _, t := range ta.Tags {
+			seen[t] = true
+		}
+	}
+	for _, da := range model.DataAssets {
+		for _, t := range da.Tags {
+			seen[t] = true
+		}
+	}
+	out := make([]string, 0, len(seen))
+	for t := range seen {
+		out = append(out, t)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // uniqueServiceIDs assigns each service name a stable, collision-free asset ID.
@@ -230,7 +256,66 @@ func buildServiceAsset(name string, svc composeService, id string) *types.Techni
 		Confidentiality:      types.Confidential,
 		Integrity:            types.Critical,
 		Availability:         types.Critical,
+		Tags:                 securityReviewTags(svc),
 	}
+}
+
+// dangerousCaps are Linux capabilities that materially weaken container
+// isolation and warrant a manual review when added.
+var dangerousCaps = map[string]bool{
+	"ALL": true, "SYS_ADMIN": true, "NET_ADMIN": true, "SYS_PTRACE": true,
+	"SYS_MODULE": true, "DAC_READ_SEARCH": true, "NET_RAW": true,
+}
+
+// securityReviewTags derives deterministic review tags from a compose service's
+// security-relevant settings, so the highest-risk misconfigurations surface as
+// findings in the imported model instead of being silently lost. All tags are
+// prefixed "review-".
+func securityReviewTags(svc composeService) []string {
+	var tags []string
+	if svc.Privileged {
+		tags = append(tags, "review-privileged")
+	}
+	if strings.EqualFold(strings.TrimSpace(svc.NetworkMode), "host") {
+		tags = append(tags, "review-host-network")
+	}
+	for _, v := range svc.Volumes {
+		if strings.Contains(v, "/var/run/docker.sock") {
+			tags = append(tags, "review-docker-socket-mount")
+			break
+		}
+	}
+	for _, c := range svc.CapAdd {
+		if dangerousCaps[strings.ToUpper(strings.TrimSpace(c))] {
+			tags = append(tags, "review-added-capabilities")
+			break
+		}
+	}
+	if mutableImageTag(svc.Image) {
+		tags = append(tags, "review-mutable-image-tag")
+	}
+	return tags
+}
+
+// mutableImageTag reports whether an image reference is untagged or pinned to a
+// moving tag (":latest"), which makes the deployed artifact non-reproducible.
+func mutableImageTag(image string) bool {
+	image = strings.TrimSpace(image)
+	if image == "" {
+		return false // locally built; no upstream image tag to pin
+	}
+	if i := strings.LastIndex(image, "@"); i >= 0 {
+		return false // digest-pinned -> immutable
+	}
+	namePart := image
+	if slash := strings.LastIndex(image, "/"); slash >= 0 {
+		namePart = image[slash+1:]
+	}
+	colon := strings.LastIndex(namePart, ":")
+	if colon < 0 {
+		return true // untagged -> implicitly :latest
+	}
+	return strings.EqualFold(namePart[colon+1:], "latest")
 }
 
 func classifyService(svc composeService) (string, types.TechnicalAssetType) {

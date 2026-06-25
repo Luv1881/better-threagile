@@ -143,7 +143,7 @@ func TestImport_openapi_json_format(t *testing.T) {
 
 func TestImport_openapi_pii_heuristic(t *testing.T) {
 	tests := []struct {
-		field    string
+		field     string
 		expectPII bool
 	}{
 		{"email", true},

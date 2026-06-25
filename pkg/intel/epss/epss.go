@@ -32,7 +32,7 @@ const (
 // Score is the EPSS score for a single CVE.
 type Score struct {
 	CVE        string  `json:"cve"`
-	EPSS       float64 `json:"epss,string"` // probability 0.0–1.0
+	EPSS       float64 `json:"epss,string"`       // probability 0.0–1.0
 	Percentile float64 `json:"percentile,string"` // relative rank 0.0–1.0
 	Date       string  `json:"date"`
 }
@@ -92,8 +92,13 @@ func FetchScore(cveID, apiBase string) (*Score, error) {
 	return result.Data[0], nil
 }
 
-// FetchBatch fetches EPSS scores for up to 100 CVEs in a single API call.
-// Returns a ScoreMap. CVEs not found in EPSS are absent from the map.
+// maxBatchSize is the FIRST EPSS API's per-request CVE limit; larger requests
+// risk an over-length URL / truncated response, so FetchBatch chunks at this size.
+const maxBatchSize = 100
+
+// FetchBatch fetches EPSS scores for any number of CVEs, splitting the request
+// into chunks of maxBatchSize and merging the results. Returns a ScoreMap; CVEs
+// not found in EPSS are absent from the map.
 func FetchBatch(cveIDs []string, apiBase string) (ScoreMap, error) {
 	if len(cveIDs) == 0 {
 		return ScoreMap{}, nil
@@ -102,6 +107,25 @@ func FetchBatch(cveIDs []string, apiBase string) (ScoreMap, error) {
 		apiBase = DefaultAPIBase
 	}
 
+	scores := make(ScoreMap, len(cveIDs))
+	for start := 0; start < len(cveIDs); start += maxBatchSize {
+		end := start + maxBatchSize
+		if end > len(cveIDs) {
+			end = len(cveIDs)
+		}
+		chunk, err := fetchBatchChunk(cveIDs[start:end], apiBase)
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range chunk {
+			scores[k] = v
+		}
+	}
+	return scores, nil
+}
+
+// fetchBatchChunk fetches a single (≤ maxBatchSize) chunk of CVEs.
+func fetchBatchChunk(cveIDs []string, apiBase string) (ScoreMap, error) {
 	// API supports comma-separated CVE list
 	reqURL := apiBase + "?cve=" + url.QueryEscape(strings.Join(cveIDs, ","))
 	client := &http.Client{Timeout: 20 * time.Second}

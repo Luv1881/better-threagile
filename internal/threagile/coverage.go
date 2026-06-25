@@ -118,4 +118,3 @@ func loadCategoriesForCoverage(what *Threagile, packName string) ([]*types.RiskC
 
 	return categories, nil
 }
-

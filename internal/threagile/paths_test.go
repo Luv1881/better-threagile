@@ -42,6 +42,22 @@ func TestPathsCommand_TextAndJSON(t *testing.T) {
 	}
 }
 
+func TestPathsCommand_RejectsUnknownFrom(t *testing.T) {
+	modelPath := demoModelPath(t)
+	args := []string{"paths", "--model", modelPath, "--from", "no-such-asset"}
+	app := newTestAppWithArgs(args...)
+	_, err := executeCmd(app, args...)
+	require.Error(t, err, "unknown --from must error, not silently return no paths")
+}
+
+func TestPathsCommand_RejectsUnknownTo(t *testing.T) {
+	modelPath := demoModelPath(t)
+	args := []string{"paths", "--model", modelPath, "--to", "no-such-target"}
+	app := newTestAppWithArgs(args...)
+	_, err := executeCmd(app, args...)
+	require.Error(t, err, "unknown --to must error")
+}
+
 func TestPathsCommand_Markdown(t *testing.T) {
 	modelPath := demoModelPath(t)
 	out := filepath.Join(t.TempDir(), "paths.md")

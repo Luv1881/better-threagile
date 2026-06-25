@@ -41,15 +41,18 @@ type Entry struct {
 
 // Catalog is the full KEV dataset indexed by CVE ID.
 type Catalog struct {
-	Title          string           `json:"title"`
-	CatalogVersion string           `json:"catalogVersion"`
-	DateReleased   string           `json:"dateReleased"`
-	Count          int              `json:"count"`
-	Vulnerabilities []*Entry        `json:"vulnerabilities"`
-	index          map[string]*Entry // built on first Lookup call
+	Title           string            `json:"title"`
+	CatalogVersion  string            `json:"catalogVersion"`
+	DateReleased    string            `json:"dateReleased"`
+	Count           int               `json:"count"`
+	Vulnerabilities []*Entry          `json:"vulnerabilities"`
+	index           map[string]*Entry // built on first Lookup call
 }
 
 // Lookup returns the KEV entry for the given CVE ID (case-insensitive), or nil if not found.
+// The index is built eagerly by Load/Refresh/LoadOrRefresh, so Lookup is a
+// read-only map access and safe for concurrent use. The nil guard only covers a
+// directly-constructed Catalog (e.g. in tests).
 func (c *Catalog) Lookup(cveID string) *Entry {
 	if c.index == nil {
 		c.buildIndex()
@@ -82,6 +85,7 @@ func Load(cacheDir string) (*Catalog, error) {
 	if err := json.Unmarshal(entry.Payload, &catalog); err != nil {
 		return nil, fmt.Errorf("kev: failed to parse cached catalog: %w", err)
 	}
+	catalog.buildIndex() // eager so concurrent Lookups don't race on lazy init
 	return &catalog, nil
 }
 
@@ -112,6 +116,7 @@ func Refresh(cacheDir, feedURL string) (*Catalog, error) {
 	if err := json.Unmarshal(data, &catalog); err != nil {
 		return nil, fmt.Errorf("kev: failed to parse catalog JSON: %w", err)
 	}
+	catalog.buildIndex() // eager so concurrent Lookups don't race on lazy init
 
 	if err := cache.Save(cacheDir, CacheName, feedURL, &catalog); err != nil {
 		return nil, fmt.Errorf("kev: failed to cache catalog: %w", err)
@@ -135,6 +140,7 @@ func LoadOrRefresh(cacheDir, feedURL string, ttl time.Duration) (*Catalog, error
 	if entry != nil && entry.IsFresh(ttl) {
 		var catalog Catalog
 		if err := json.Unmarshal(entry.Payload, &catalog); err == nil {
+			catalog.buildIndex() // eager so concurrent Lookups don't race on lazy init
 			return &catalog, nil
 		}
 	}

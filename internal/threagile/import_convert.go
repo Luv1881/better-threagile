@@ -203,7 +203,13 @@ func uniqueTitle(title, id string, used map[string]bool) string {
 		key = id
 	}
 	if used[key] {
-		key = fmt.Sprintf("%s (%s)", key, id)
+		// Disambiguate, then keep suffixing until the key is actually free (the
+		// "title (id)" form could itself already be taken).
+		base := fmt.Sprintf("%s (%s)", key, id)
+		key = base
+		for n := 2; used[key]; n++ {
+			key = fmt.Sprintf("%s #%d", base, n)
+		}
 	}
 	used[key] = true
 	return key

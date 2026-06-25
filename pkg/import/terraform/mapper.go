@@ -4,11 +4,11 @@ import "strings"
 
 // resourceMapping describes how a Terraform resource type maps to Threagile properties.
 type resourceMapping struct {
-	technology  string // Threagile technology slug
-	assetType   string // "process" | "datastore"
-	internet    bool   // default internet exposure
-	encryption  string // default encryption guess
-	isBoundary  bool   // true if this resource should become a TrustBoundary
+	technology   string // Threagile technology slug
+	assetType    string // "process" | "datastore"
+	internet     bool   // default internet exposure
+	encryption   string // default encryption guess
+	isBoundary   bool   // true if this resource should become a TrustBoundary
 	boundaryKind string // "network" | "vpc" | "subnet"
 }
 

@@ -12,6 +12,7 @@ import (
 
 func (what *Threagile) initAttackNavigator() *Threagile {
 	var outputFile string
+	var includeMitigated bool
 
 	cmd := &cobra.Command{
 		Use:   "attack-navigator",
@@ -34,7 +35,21 @@ Example:
 				return fmt.Errorf("attack-navigator: failed to read and analyze model: %w", err)
 			}
 
-			result := attack.BuildLayer(r.ParsedModel.Title, r.ParsedModel.AllRisks())
+			// By default only map findings that are still at risk — a layer
+			// highlighting mitigated/false-positive techniques would misrepresent
+			// the live attack surface.
+			risks := r.ParsedModel.AllRisks()
+			if !includeMitigated {
+				active := risks[:0:0]
+				for _, risk := range risks {
+					if risk.RiskStatus.IsStillAtRisk() {
+						active = append(active, risk)
+					}
+				}
+				risks = active
+			}
+
+			result := attack.BuildLayer(r.ParsedModel.Title, risks)
 
 			jsonBytes, marshalErr := json.MarshalIndent(result.Layer, "", "  ")
 			if marshalErr != nil {
@@ -58,6 +73,7 @@ Example:
 	}
 
 	cmd.Flags().StringVar(&outputFile, "output", "", "write the Navigator layer JSON to this file (default: stdout)")
+	cmd.Flags().BoolVar(&includeMitigated, "include-mitigated", false, "also map mitigated/false-positive findings (default: only still-at-risk)")
 
 	what.rootCmd.AddCommand(cmd)
 	return what

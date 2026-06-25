@@ -31,7 +31,7 @@ Supported sources:
   compose    Parse a docker-compose file
 
 By default the generated model fragment is written to stdout. Use --output to
-write to a file, or --apply to merge into an existing model file.`,
+write it to a file, or --diff to preview a summary without writing.`,
 	}
 
 	importCmd.AddCommand(what.newImportTerraformCmd())

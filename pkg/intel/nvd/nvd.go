@@ -34,7 +34,7 @@ type CVE struct {
 
 // CVSSData holds the best available CVSS score for a CVE.
 type CVSSData struct {
-	Version      string  // "v3" or "v2"
+	Version      string // "v3" or "v2"
 	BaseScore    float64
 	Severity     string // CRITICAL / HIGH / MEDIUM / LOW
 	VectorString string
@@ -78,7 +78,7 @@ type nvdResponse struct {
 }
 
 type nvdCVE struct {
-	ID          string `json:"id"`
+	ID           string `json:"id"`
 	Descriptions []struct {
 		Lang  string `json:"lang"`
 		Value string `json:"value"`

@@ -118,8 +118,12 @@ func loadKEVLookup(cmd *cobra.Command, cacheDir string, refresh bool) sbom.KEVLo
 	} else {
 		catalog, err = kev.Load(cacheDir)
 	}
-	if err != nil || catalog == nil {
+	switch {
+	case err != nil:
 		fmt.Fprintf(cmd.ErrOrStderr(), "warning: KEV unavailable (%v) — run 'threagile intel refresh' or pass --refresh-kev\n", err)
+		return nil
+	case catalog == nil:
+		fmt.Fprintln(cmd.ErrOrStderr(), "note: no cached KEV catalog — run 'threagile intel refresh' or pass --refresh-kev for KEV correlation")
 		return nil
 	}
 	return catalog.IsKEV

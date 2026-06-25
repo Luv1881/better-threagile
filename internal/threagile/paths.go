@@ -44,6 +44,22 @@ Examples:
 				return fmt.Errorf("paths: failed to read and analyze model: %w", err)
 			}
 
+			// Validate selectors up front: a typo'd asset/data-asset ID would
+			// otherwise silently produce "no paths found" — a dangerous
+			// false-negative for a security check.
+			if from != "" && from != "internet" {
+				if _, ok := r.ParsedModel.TechnicalAssets[from]; !ok {
+					return fmt.Errorf("paths: --from %q is not a technical asset ID (use 'internet' or a valid asset ID)", from)
+				}
+			}
+			if to != "" {
+				_, isAsset := r.ParsedModel.TechnicalAssets[to]
+				_, isData := r.ParsedModel.DataAssets[to]
+				if !isAsset && !isData {
+					return fmt.Errorf("paths: --to %q is not a technical-asset or data-asset ID", to)
+				}
+			}
+
 			result := attackpath.Analyze(r.ParsedModel, attackpath.Options{
 				FromAssetID: from,
 				ToTarget:    to,

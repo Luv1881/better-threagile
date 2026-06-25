@@ -89,14 +89,14 @@ func Import(data []byte, opts ImportOptions) (*types.Model, error) {
 	for _, apiAsset := range apiAssets {
 		linkID := "link-" + clientID + "-to-" + apiAsset.Id
 		link := &types.CommunicationLink{
-			Id:            linkID,
-			SourceId:      clientID,
-			TargetId:      apiAsset.Id,
-			Title:         "API calls",
-			Description:   "HTTP/S traffic from client to " + apiAsset.Title,
-			Protocol:      types.HTTPS,
+			Id:             linkID,
+			SourceId:       clientID,
+			TargetId:       apiAsset.Id,
+			Title:          "API calls",
+			Description:    "HTTP/S traffic from client to " + apiAsset.Title,
+			Protocol:       types.HTTPS,
 			Authentication: authToAuthentication(authStrength),
-			Authorization: types.TechnicalUser,
+			Authorization:  types.TechnicalUser,
 		}
 		if model.CommunicationLinks == nil {
 			model.CommunicationLinks = make(map[string]*types.CommunicationLink)

@@ -27,14 +27,14 @@ type OAPath map[string]*OAOperation
 
 // OAOperation is one HTTP operation on a path.
 type OAOperation struct {
-	OperationID string                     `yaml:"operationId,omitempty" json:"operationId,omitempty"`
-	Summary     string                     `yaml:"summary,omitempty" json:"summary,omitempty"`
-	Description string                     `yaml:"description,omitempty" json:"description,omitempty"`
-	Tags        []string                   `yaml:"tags,omitempty" json:"tags,omitempty"`
-	Security    []map[string][]string      `yaml:"security,omitempty" json:"security,omitempty"`
-	RequestBody *OARequestBody             `yaml:"requestBody,omitempty" json:"requestBody,omitempty"`
-	Responses   map[string]*OAResponse     `yaml:"responses,omitempty" json:"responses,omitempty"`
-	Parameters  []OAParameter              `yaml:"parameters,omitempty" json:"parameters,omitempty"`
+	OperationID string                 `yaml:"operationId,omitempty" json:"operationId,omitempty"`
+	Summary     string                 `yaml:"summary,omitempty" json:"summary,omitempty"`
+	Description string                 `yaml:"description,omitempty" json:"description,omitempty"`
+	Tags        []string               `yaml:"tags,omitempty" json:"tags,omitempty"`
+	Security    []map[string][]string  `yaml:"security,omitempty" json:"security,omitempty"`
+	RequestBody *OARequestBody         `yaml:"requestBody,omitempty" json:"requestBody,omitempty"`
+	Responses   map[string]*OAResponse `yaml:"responses,omitempty" json:"responses,omitempty"`
+	Parameters  []OAParameter          `yaml:"parameters,omitempty" json:"parameters,omitempty"`
 }
 
 type OARequestBody struct {
@@ -73,9 +73,9 @@ type OAComponents struct {
 }
 
 type OASecuritySchemeD struct {
-	Type   string `yaml:"type,omitempty" json:"type,omitempty"`   // apiKey | http | oauth2 | openIdConnect
+	Type   string `yaml:"type,omitempty" json:"type,omitempty"`     // apiKey | http | oauth2 | openIdConnect
 	Scheme string `yaml:"scheme,omitempty" json:"scheme,omitempty"` // bearer | basic
-	In     string `yaml:"in,omitempty" json:"in,omitempty"`       // header | query | cookie
+	In     string `yaml:"in,omitempty" json:"in,omitempty"`         // header | query | cookie
 }
 
 // Stub needed for top-level security field (list of scheme-name → scopes maps)

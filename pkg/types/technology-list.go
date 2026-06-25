@@ -45,7 +45,15 @@ func (what TechnologyList) String() string {
 }
 
 func (what TechnologyList) GetAttribute(firstAttribute string, otherAttributes ...string) bool {
-	for _, attribute := range append(otherAttributes, firstAttribute) {
+	// Avoid append(otherAttributes, firstAttribute): it allocates a new slice on
+	// every call (and can mutate the caller's backing array). This method is on
+	// the hot path of the analysis, so check the attributes in place instead.
+	for _, technology := range what {
+		if technology.GetAttribute(firstAttribute) {
+			return true
+		}
+	}
+	for _, attribute := range otherAttributes {
 		for _, technology := range what {
 			if technology.GetAttribute(attribute) {
 				return true

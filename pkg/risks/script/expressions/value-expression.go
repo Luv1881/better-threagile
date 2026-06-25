@@ -3,7 +3,6 @@ package expressions
 import (
 	"fmt"
 	"github.com/threagile/threagile/pkg/risks/script/common"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -263,7 +262,7 @@ func (what *ValueExpression) stringToString(scope *common.Scope, valueString *co
 func (what *ValueExpression) evalStringReference(scope *common.Scope, ref *common.StringValue) (common.Value, string, error) {
 	varRe := `\{[^{}]+}`
 	value := what.resolveStringValues(scope, varRe, ref)
-	if regexp.MustCompile(`^` + varRe + `$`).MatchString(value.StringValue()) {
+	if cachedRegexp(`^` + varRe + `$`).MatchString(value.StringValue()) {
 		returnValue, _ := scope.Get(value.StringValue()[1 : len(value.StringValue())-1])
 		return returnValue, "", nil
 	}
@@ -274,7 +273,7 @@ func (what *ValueExpression) evalStringReference(scope *common.Scope, ref *commo
 		return common.EmptyStringValue(), errorLiteral, evalError
 	}
 
-	if regexp.MustCompile(`^` + funcRe + `$`).MatchString(resolvedValue.StringValue()) {
+	if cachedRegexp(`^` + funcRe + `$`).MatchString(resolvedValue.StringValue()) {
 		genericValue, genericErrorLiteral, genericEvalError := what.resolveMethodCall(scope, funcRe, resolvedValue)
 		return common.SomeValue(genericValue, ref.Event()), genericErrorLiteral, genericEvalError
 	}
@@ -285,7 +284,7 @@ func (what *ValueExpression) evalStringReference(scope *common.Scope, ref *commo
 func (what *ValueExpression) resolveStringValues(scope *common.Scope, reString string, value *common.StringValue) *common.StringValue {
 	replacements := 0
 	values := make([]common.Value, 0)
-	text := regexp.MustCompile(reString).ReplaceAllStringFunc(value.StringValue(), func(name string) string {
+	text := cachedRegexp(reString).ReplaceAllStringFunc(value.StringValue(), func(name string) string {
 		cleanName := name[1 : len(name)-1]
 		item, ok := scope.Get(strings.ToLower(cleanName))
 		if !ok {
@@ -324,7 +323,7 @@ func (what *ValueExpression) resolveStringValues(scope *common.Scope, reString s
 func (what *ValueExpression) resolveMethodCalls(scope *common.Scope, reString string, value *common.StringValue) (*common.StringValue, string, error) {
 	replacements := 0
 	values := make([]common.Value, 0)
-	text := regexp.MustCompile(reString).ReplaceAllStringFunc(value.StringValue(), func(name string) string {
+	text := cachedRegexp(reString).ReplaceAllStringFunc(value.StringValue(), func(name string) string {
 		returnValue, _, callError := what.resolveMethodCall(scope, reString, common.SomeStringValue(name, value.Event()))
 		if callError != nil {
 			return name
@@ -352,7 +351,7 @@ func (what *ValueExpression) resolveMethodCalls(scope *common.Scope, reString st
 }
 
 func (what *ValueExpression) resolveMethodCall(scope *common.Scope, reString string, value *common.StringValue) (common.Value, string, error) {
-	re := regexp.MustCompile(reString)
+	re := cachedRegexp(reString)
 
 	match := re.FindStringSubmatch(value.StringValue())
 	if len(match) != 3 {

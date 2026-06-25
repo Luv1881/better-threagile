@@ -193,9 +193,22 @@ func applyRiskGeneration(parsedModel *types.Model, rules types.RiskRules,
 	// Pre-convert the model to the map representation used by script-rule
 	// scopes once, instead of re-marshaling/unmarshaling it for every rule.
 	// Safe because script rules only ever read from $model, never write to it.
-	modelMap, modelMapErr := common.ModelToMap(parsedModel)
-	if modelMapErr != nil {
-		progressReporter.Warnf("Unable to convert model to map for script rules: %v", modelMapErr)
+	// Only do the (relatively expensive) full-model marshal when at least one
+	// active rule is actually a script rule that needs it.
+	var modelMap map[string]any
+	needsModelMap := false
+	for _, entry := range activeRules {
+		if _, ok := entry.rule.(types.ModelMapRiskRule); ok {
+			needsModelMap = true
+			break
+		}
+	}
+	if needsModelMap {
+		var modelMapErr error
+		modelMap, modelMapErr = common.ModelToMap(parsedModel)
+		if modelMapErr != nil {
+			progressReporter.Warnf("Unable to convert model to map for script rules: %v", modelMapErr)
+		}
 	}
 
 	jobs := make(chan ruleEntry, len(activeRules))

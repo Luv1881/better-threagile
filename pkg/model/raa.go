@@ -40,11 +40,15 @@ func calculateRelativeAttackerAttractiveness(input *types.Model, attractiveness 
 		sort.Strings(keys)
 		for _, key := range keys {
 			techAsset := input.TechnicalAssets[key]
-			if calculateAttackerAttractiveness(input, techAsset) > attackerAttractivenessMaximum {
-				attackerAttractivenessMaximum = calculateAttackerAttractiveness(input, techAsset)
+			// Compute once per asset: calculateAttackerAttractiveness is pure but
+			// non-trivial, and calling it up to four times per asset dominated the
+			// analysis allocation profile.
+			aa := calculateAttackerAttractiveness(input, techAsset)
+			if aa > attackerAttractivenessMaximum {
+				attackerAttractivenessMaximum = aa
 			}
-			if calculateAttackerAttractiveness(input, techAsset) < attackerAttractivenessMinimum {
-				attackerAttractivenessMinimum = calculateAttackerAttractiveness(input, techAsset)
+			if aa < attackerAttractivenessMinimum {
+				attackerAttractivenessMinimum = aa
 			}
 		}
 		if !(attackerAttractivenessMinimum < attackerAttractivenessMaximum) {

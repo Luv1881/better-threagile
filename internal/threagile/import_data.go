@@ -10,9 +10,11 @@ import (
 	"gopkg.in/yaml.v3"
 
 	composeimport "github.com/threagile/threagile/pkg/import/compose"
+	drawioimport "github.com/threagile/threagile/pkg/import/drawio"
 	k8simport "github.com/threagile/threagile/pkg/import/kubernetes"
 	oaimport "github.com/threagile/threagile/pkg/import/openapi"
 	tfimport "github.com/threagile/threagile/pkg/import/terraform"
+	tdimport "github.com/threagile/threagile/pkg/import/threatdragon"
 	"github.com/threagile/threagile/pkg/types"
 )
 
@@ -30,6 +32,8 @@ Supported sources:
   openapi    Parse an OpenAPI 3.x specification
   kubernetes Parse Kubernetes manifests (multi-document YAML)
   compose    Parse a docker-compose file
+  threat-dragon Parse an OWASP Threat Dragon (v2) diagram model
+  drawio     Parse a draw.io / diagrams.net diagram (mxGraph XML; best-effort)
 
 By default the generated model fragment is written to stdout. Use --output to
 write it to a file, or --diff to preview a summary without writing.`,
@@ -39,6 +43,8 @@ write it to a file, or --diff to preview a summary without writing.`,
 	importCmd.AddCommand(what.newImportOpenAPICmd())
 	importCmd.AddCommand(what.newImportKubernetesCmd())
 	importCmd.AddCommand(what.newImportComposeCmd())
+	importCmd.AddCommand(what.newImportThreatDragonCmd())
+	importCmd.AddCommand(what.newImportDrawioCmd())
 
 	what.rootCmd.AddCommand(importCmd)
 	return what
@@ -209,6 +215,99 @@ Example:
 	cmd.Flags().StringVar(&composeFile, "compose", "", "Path to docker-compose file (default: stdin)")
 	cmd.Flags().StringVar(&outputFile, "output", "", "Write model YAML to this file (default: stdout)")
 	cmd.Flags().StringVar(&label, "label", "compose", "Short label appended to generated asset IDs (e.g. 'prod')")
+	cmd.Flags().BoolVar(&diff, "diff", false, "Show a summary of what would be generated without writing output")
+
+	return cmd
+}
+
+func (what *Threagile) newImportThreatDragonCmd() *cobra.Command {
+	var modelFile string
+	var outputFile string
+	var label string
+	var diff bool
+
+	cmd := &cobra.Command{
+		Use:   "threat-dragon",
+		Short: "Import an OWASP Threat Dragon diagram into a Threagile model fragment",
+		Long: `Parse an OWASP Threat Dragon (v2) model file and produce a Threagile model
+fragment — a fully deterministic diagram-to-YAML conversion (no AI). Actors
+become external entities, processes/stores become technical assets (datastores
+classified from the node name), data flows become communication links, and
+trust-boundary boxes become trust boundaries (membership resolved by diagram
+geometry).
+
+Example:
+  threagile import threat-dragon --tdmodel model.json --output model-fragment.yaml`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			what.processArgs(cmd, args)
+
+			data, err := readInput(modelFile)
+			if err != nil {
+				return fmt.Errorf("threat-dragon import: %w", err)
+			}
+
+			opts := tdimport.ImportOptions{SourceLabel: label}
+			model, err := tdimport.Import(data, opts)
+			if err != nil {
+				return err
+			}
+
+			return writeOrDiff(cmd, model, outputFile, diff)
+		},
+	}
+
+	cmd.Flags().StringVar(&modelFile, "tdmodel", "", "Path to the Threat Dragon JSON model file (default: stdin)")
+	cmd.Flags().StringVar(&outputFile, "output", "", "Write model YAML to this file (default: stdout)")
+	cmd.Flags().StringVar(&label, "label", "td", "Short label appended to generated asset IDs")
+	cmd.Flags().BoolVar(&diff, "diff", false, "Show a summary of what would be generated without writing output")
+
+	return cmd
+}
+
+func (what *Threagile) newImportDrawioCmd() *cobra.Command {
+	var diagramFile string
+	var outputFile string
+	var label string
+	var diff bool
+
+	cmd := &cobra.Command{
+		Use:   "drawio",
+		Short: "Import a draw.io / diagrams.net diagram into a Threagile model fragment (best-effort)",
+		Long: `Parse a draw.io / diagrams.net (mxGraph) diagram and produce a Threagile model
+fragment. draw.io is a GENERIC diagram format with no built-in threat-model
+semantics, so this conversion is deterministic but LOSSY: shapes are classified
+by style and label (cylinders/named stores -> datastores, actor shapes/named
+users -> external entities, the rest -> processes), edges -> communication links,
+and boundary-styled/named rectangles -> trust boundaries (membership by
+geometry). Every generated asset is tagged "review-drawio" — review the fragment
+before merging. There is no AI involved.
+
+If your .drawio file is compressed, re-export it as uncompressed XML
+(Extras -> Edit Diagram, or File -> Export as -> XML, uncompressed).
+
+Example:
+  threagile import drawio --diagram model.drawio --output model-fragment.yaml`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			what.processArgs(cmd, args)
+
+			data, err := readInput(diagramFile)
+			if err != nil {
+				return fmt.Errorf("drawio import: %w", err)
+			}
+
+			opts := drawioimport.ImportOptions{SourceLabel: label}
+			model, err := drawioimport.Import(data, opts)
+			if err != nil {
+				return err
+			}
+
+			return writeOrDiff(cmd, model, outputFile, diff)
+		},
+	}
+
+	cmd.Flags().StringVar(&diagramFile, "diagram", "", "Path to the draw.io diagram file (default: stdin)")
+	cmd.Flags().StringVar(&outputFile, "output", "", "Write model YAML to this file (default: stdout)")
+	cmd.Flags().StringVar(&label, "label", "drawio", "Short label appended to generated asset IDs")
 	cmd.Flags().BoolVar(&diff, "diff", false, "Show a summary of what would be generated without writing output")
 
 	return cmd

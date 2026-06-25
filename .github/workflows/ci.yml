@@ -46,6 +46,8 @@ jobs:
           go test ./pkg/import/terraform/... -run=NONE -fuzz=FuzzImport -fuzztime=10s
           go test ./pkg/import/kubernetes/... -run=NONE -fuzz=FuzzImport -fuzztime=10s
           go test ./pkg/import/compose/... -run=NONE -fuzz=FuzzImport -fuzztime=10s
+          go test ./pkg/import/threatdragon/... -run=NONE -fuzz=FuzzImport -fuzztime=10s
+          go test ./pkg/import/drawio/... -run=NONE -fuzz=FuzzImport -fuzztime=10s
           go test ./pkg/sbom/... -run=NONE -fuzz=FuzzParse -fuzztime=10s
           go test ./pkg/risks/script -run=NONE -fuzz=FuzzRiskRuleParseFromData -fuzztime=10s
 

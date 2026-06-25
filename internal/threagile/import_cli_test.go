@@ -80,6 +80,44 @@ func TestImportCompose_ErrorOnBadFile(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestImportThreatDragonCLI(t *testing.T) {
+	td := writeTemp(t, "model.json", `{
+	  "version":"2.0","summary":{"title":"T"},
+	  "detail":{"diagrams":[{"id":0,"cells":[
+	    {"shape":"actor","id":"u","position":{"x":0,"y":0},"size":{"width":80,"height":40},"data":{"type":"tm.Actor","name":"User"}},
+	    {"shape":"process","id":"p","position":{"x":0,"y":100},"size":{"width":80,"height":40},"data":{"type":"tm.Process","name":"App"}},
+	    {"shape":"flow","id":"f","source":{"cell":"u"},"target":{"cell":"p"},"data":{"type":"tm.Flow","name":"HTTP"}}
+	  ]}]}
+	}`)
+	out := filepath.Join(t.TempDir(), "fragment.yaml")
+	args := []string{"import", "threat-dragon", "--tdmodel", td, "--output", out}
+	app := newTestAppWithArgs(args...)
+	_, err := executeCmd(app, args...)
+	require.NoError(t, err)
+	data, readErr := os.ReadFile(out)
+	require.NoError(t, readErr)
+	assert.Contains(t, string(data), "u-td")
+	assert.Contains(t, string(data), "business_criticality:")
+}
+
+func TestImportDrawioCLI(t *testing.T) {
+	dio := writeTemp(t, "d.drawio", `<mxfile><diagram><mxGraphModel><root>
+	  <mxCell id="0"/><mxCell id="1" parent="0"/>
+	  <mxCell id="u" value="User" style="shape=actor;" vertex="1" parent="1"><mxGeometry x="0" y="0" width="40" height="80" as="geometry"/></mxCell>
+	  <mxCell id="p" value="Service" style="rounded=1;" vertex="1" parent="1"><mxGeometry x="0" y="120" width="80" height="40" as="geometry"/></mxCell>
+	  <mxCell id="e" edge="1" parent="1" source="u" target="p"><mxGeometry as="geometry"/></mxCell>
+	</root></mxGraphModel></diagram></mxfile>`)
+	out := filepath.Join(t.TempDir(), "fragment.yaml")
+	args := []string{"import", "drawio", "--diagram", dio, "--output", out}
+	app := newTestAppWithArgs(args...)
+	_, err := executeCmd(app, args...)
+	require.NoError(t, err)
+	data, readErr := os.ReadFile(out)
+	require.NoError(t, readErr)
+	assert.Contains(t, string(data), "u-drawio")
+	assert.Contains(t, string(data), "review-drawio")
+}
+
 func TestImportHelpDoesNotAdvertiseApply(t *testing.T) {
 	// Regression: the parent help previously claimed an --apply flag that never existed.
 	app := newTestApp()

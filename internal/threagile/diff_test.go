@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/threagile/threagile/pkg/prioritize"
 	"github.com/threagile/threagile/pkg/types"
 )
 
@@ -24,6 +25,31 @@ func sampleDiff() *riskDiff {
 		},
 		Removed:   []*types.Risk{diffRisk("old-risk@x", types.LowSeverity)},
 		Unchanged: []*types.Risk{diffRisk("u1@a", types.MediumSeverity), diffRisk("u2@b", types.LowSeverity)},
+	}
+}
+
+func TestDiffMarkdownShowsRemediation(t *testing.T) {
+	d := &riskDiff{
+		OldFile: "old.yaml", NewFile: "new.yaml", Methodology: "stride",
+		Added: []*types.Risk{
+			{SyntheticId: "missing-authentication@api", Severity: types.HighSeverity, CategoryId: "missing-authentication"},
+			{SyntheticId: "missing-authentication@web", Severity: types.HighSeverity, CategoryId: "missing-authentication"},
+		},
+		Remediation: map[string]prioritize.Remediation{
+			"missing-authentication": {Action: "Authenticate incoming requests", CWE: 306},
+		},
+		CategoryTitles: map[string]string{"missing-authentication": "Missing Authentication"},
+	}
+	out := d.formatMarkdown()
+	if !strings.Contains(out, "**How to fix the new findings:**") {
+		t.Fatalf("missing remediation section:\n%s", out)
+	}
+	if !strings.Contains(out, "Missing Authentication") || !strings.Contains(out, "Authenticate incoming requests") || !strings.Contains(out, "CWE-306") {
+		t.Fatalf("remediation content missing:\n%s", out)
+	}
+	// deduped by category: only one fix line despite two findings
+	if strings.Count(out, "Authenticate incoming requests") != 1 {
+		t.Fatalf("remediation should dedupe by category:\n%s", out)
 	}
 }
 

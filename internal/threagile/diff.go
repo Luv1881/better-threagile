@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/threagile/threagile/pkg/model"
+	"github.com/threagile/threagile/pkg/prioritize"
 	"github.com/threagile/threagile/pkg/risks"
 	"github.com/threagile/threagile/pkg/types"
 )
@@ -50,13 +51,15 @@ func (what *Threagile) initDiff() *Threagile {
 
 			added, removed, changed, unchanged := diffRisks(oldRisks, newRisks)
 			d := riskDiff{
-				OldFile:     filepath.Base(oldFile),
-				NewFile:     filepath.Base(newFile),
-				Methodology: methodology,
-				Added:       added,
-				Removed:     removed,
-				Changed:     changed,
-				Unchanged:   unchanged,
+				OldFile:        filepath.Base(oldFile),
+				NewFile:        filepath.Base(newFile),
+				Methodology:    methodology,
+				Added:          added,
+				Removed:        removed,
+				Changed:        changed,
+				Unchanged:      unchanged,
+				Remediation:    remediationByCategory(builtinRules),
+				CategoryTitles: categoryTitles(builtinRules),
 			}
 
 			var rendered string
@@ -101,6 +104,10 @@ type riskDiff struct {
 	Removed     []*types.Risk
 	Changed     []riskChange // same risk, different severity (escalated/de-escalated)
 	Unchanged   []*types.Risk
+	// Remediation maps a risk category ID to its fix guidance, so a PR comment
+	// can tell developers how to resolve the findings their change introduced.
+	Remediation    map[string]prioritize.Remediation
+	CategoryTitles map[string]string
 }
 
 // riskChange is a risk present in both models whose severity changed.
@@ -167,6 +174,7 @@ func (d *riskDiff) formatMarkdown() string {
 	if len(d.Added) > 0 {
 		fmt.Fprintf(&sb, "\n### ❌ %d new risk(s)\n\n", len(d.Added))
 		writeRiskTable(&sb, d.Added)
+		d.writeRemediation(&sb)
 	}
 	if len(d.Changed) > 0 {
 		fmt.Fprintf(&sb, "\n### ⚠️ %d severity change(s)\n\n", len(d.Changed))
@@ -191,6 +199,58 @@ func writeRiskTable(sb *strings.Builder, riskList []*types.Risk) {
 	for _, r := range riskList {
 		fmt.Fprintf(sb, "| %s | `%s` |\n", r.Severity.Title(), r.SyntheticId)
 	}
+}
+
+// writeRemediation lists, once per category, how to fix the newly-introduced
+// findings — so a PR comment is actionable, not just a list of problems.
+func (d *riskDiff) writeRemediation(sb *strings.Builder) {
+	if len(d.Remediation) == 0 {
+		return
+	}
+	seen := map[string]bool{}
+	var lines []string
+	for _, r := range d.Added {
+		if seen[r.CategoryId] {
+			continue
+		}
+		seen[r.CategoryId] = true
+		if fix := prioritize.FixLine(d.Remediation[r.CategoryId]); fix != "" {
+			title := d.CategoryTitles[r.CategoryId]
+			if title == "" {
+				title = r.CategoryId
+			}
+			lines = append(lines, "- **"+title+"** — "+fix)
+		}
+	}
+	if len(lines) == 0 {
+		return
+	}
+	sb.WriteString("\n**How to fix the new findings:**\n\n")
+	for _, l := range lines {
+		sb.WriteString(l + "\n")
+	}
+}
+
+// remediationByCategory builds a category-ID → remediation map from the rule set.
+func remediationByCategory(rules types.RiskRules) map[string]prioritize.Remediation {
+	out := map[string]prioritize.Remediation{}
+	for _, rule := range rules {
+		if cat := rule.Category(); cat != nil {
+			out[cat.ID] = prioritize.RemediationFromCategory(cat)
+		}
+	}
+	return out
+}
+
+// categoryTitles builds a category-ID → human title map from the rule set.
+func categoryTitles(rules types.RiskRules) map[string]string {
+	out := map[string]string{}
+	for _, rule := range rules {
+		if cat := rule.Category(); cat != nil {
+			out[cat.ID] = cat.Title
+		}
+	}
+	return out
 }
 
 type riskDiffJSON struct {

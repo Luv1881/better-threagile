@@ -157,7 +157,12 @@ func assetDataSensitivity(model *types.Model, asset *types.TechnicalAsset) float
 }
 
 func remediationFor(model *types.Model, categoryID string) Remediation {
-	cat := model.GetRiskCategory(categoryID)
+	return RemediationFromCategory(model.GetRiskCategory(categoryID))
+}
+
+// RemediationFromCategory extracts the fix guidance from a risk category (nil
+// yields an empty Remediation). Shared with the diff PR-comment renderer.
+func RemediationFromCategory(cat *types.RiskCategory) Remediation {
 	if cat == nil {
 		return Remediation{}
 	}
@@ -168,6 +173,9 @@ func remediationFor(model *types.Model, categoryID string) Remediation {
 		CWE:        cat.CWE,
 	}
 }
+
+// FixLine is the public one-line "how to fix" rendering of a Remediation.
+func FixLine(r Remediation) string { return fixLine(r) }
 
 // Top returns at most n items (n <= 0 means all).
 func (r *Result) Top(n int) []Item {

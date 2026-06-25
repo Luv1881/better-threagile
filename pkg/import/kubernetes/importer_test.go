@@ -257,6 +257,66 @@ spec:
 	}
 }
 
+func TestSecretsAndPVCLinkedToWorkload(t *testing.T) {
+	manifests := `
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: {name: db, namespace: app, labels: {app: db}}
+spec:
+  template:
+    metadata: {labels: {app: db}}
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          env:
+            - name: PW
+              valueFrom: {secretKeyRef: {name: db-creds}}
+          envFrom:
+            - secretRef: {name: app-config}
+      volumes:
+        - name: data
+          persistentVolumeClaim: {claimName: pgdata}
+---
+apiVersion: v1
+kind: Secret
+metadata: {name: db-creds, namespace: app}
+---
+apiVersion: v1
+kind: Secret
+metadata: {name: app-config, namespace: app}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: pgdata, namespace: app}
+`
+	m, err := Import([]byte(manifests), ImportOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	db := m.TechnicalAssets["app-db-k8s"]
+	if db == nil {
+		t.Fatal("db asset missing")
+	}
+	// Both secrets (env secretKeyRef + envFrom secretRef) become processed data assets.
+	if !contains(db.DataAssetsProcessed, "data-app-db-creds-k8s") {
+		t.Errorf("db should process db-creds secret: %v", db.DataAssetsProcessed)
+	}
+	if !contains(db.DataAssetsProcessed, "data-app-app-config-k8s") {
+		t.Errorf("db should process app-config secret: %v", db.DataAssetsProcessed)
+	}
+	// PVC volume becomes a communication link to the PVC datastore.
+	var pvcLink bool
+	for _, l := range db.CommunicationLinks {
+		if l.TargetId == "app-pgdata-pvc-k8s" {
+			pvcLink = true
+		}
+	}
+	if !pvcLink {
+		t.Error("db should have a communication link to its mounted PVC")
+	}
+}
+
 func hasTag(tags []string, want string) bool { return contains(tags, want) }
 
 func contains(s []string, want string) bool {

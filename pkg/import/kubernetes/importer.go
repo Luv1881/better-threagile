@@ -109,10 +109,12 @@ func Import(data []byte, opts ImportOptions) (*types.Model, error) {
 	}
 
 	b := &builder{
-		model:         model,
-		label:         opts.SourceLabel,
-		services:      map[string]map[string]string{},
-		nsExtraAssets: map[string][]string{},
+		model:            model,
+		label:            opts.SourceLabel,
+		services:         map[string]map[string]string{},
+		nsExtraAssets:    map[string][]string{},
+		secretDataAssets: map[string]string{},
+		pvcAssets:        map[string]string{},
 	}
 
 	// First pass: collect workloads and Service selectors (so later passes can
@@ -151,6 +153,11 @@ func Import(data []byte, opts ImportOptions) (*types.Model, error) {
 			b.handlePVC(m)
 		}
 	}
+
+	// Third pass: now that Secrets/PVCs exist, link them to the workloads that use
+	// them (env/envFrom secret refs -> data assets processed; volume PVC claims ->
+	// datastore communication links).
+	b.linkSecretsAndVolumes()
 
 	b.assignNamespaceBoundaries()
 
@@ -206,6 +213,10 @@ type builder struct {
 	// nsExtraAssets holds non-workload asset IDs (e.g. PVCs) that should still be
 	// placed inside their namespace trust boundary.
 	nsExtraAssets map[string][]string
+	// secretDataAssets maps "namespace/secretName" -> the Secret data-asset ID.
+	secretDataAssets map[string]string
+	// pvcAssets maps "namespace/pvcName" -> the PVC datastore asset ID.
+	pvcAssets map[string]string
 }
 
 func (b *builder) parseWorkload(m *manifest) *workload {
@@ -485,7 +496,9 @@ func (b *builder) ensureExternalClient(clientID string) *types.TechnicalAsset {
 }
 
 func (b *builder) handleSecret(m *manifest) {
-	id := toID("data", nsOrDefault(m.Metadata.Namespace), m.Metadata.Name, b.label)
+	ns := nsOrDefault(m.Metadata.Namespace)
+	id := toID("data", ns, m.Metadata.Name, b.label)
+	b.secretDataAssets[ns+"/"+m.Metadata.Name] = id
 	b.model.DataAssets[id] = &types.DataAsset{
 		Id:              id,
 		Title:           "Secret: " + m.Metadata.Name,
@@ -503,6 +516,7 @@ func (b *builder) handlePVC(m *manifest) {
 	if _, exists := b.model.TechnicalAssets[id]; exists {
 		return
 	}
+	b.pvcAssets[ns+"/"+m.Metadata.Name] = id
 	b.nsExtraAssets[ns] = append(b.nsExtraAssets[ns], id)
 	b.model.TechnicalAssets[id] = &types.TechnicalAsset{
 		Id:              id,
@@ -516,6 +530,92 @@ func (b *builder) handlePVC(m *manifest) {
 		Integrity:       types.Critical,
 		Availability:    types.Critical,
 	}
+}
+
+// linkSecretsAndVolumes connects workloads to the Secrets they consume (via
+// env/envFrom) and the PVCs they mount (via volumes), so credential-handling and
+// data-at-rest risk rules actually fire on the workloads.
+func (b *builder) linkSecretsAndVolumes() {
+	for _, w := range b.workloads {
+		asset, ok := b.model.TechnicalAssets[w.assetID]
+		if !ok {
+			continue
+		}
+
+		// Secret references in container env / envFrom -> data assets processed.
+		for _, secretName := range referencedSecrets(w.pod) {
+			if daID, found := b.secretDataAssets[w.namespace+"/"+secretName]; found {
+				asset.DataAssetsProcessed = appendUnique(asset.DataAssetsProcessed, daID)
+			}
+		}
+
+		// PVC volume mounts -> communication link workload -> PVC datastore.
+		for _, claim := range referencedPVCs(w.pod) {
+			pvcID, found := b.pvcAssets[w.namespace+"/"+claim]
+			if !found {
+				continue
+			}
+			linkID := toID("link", w.name, "to", claim, "pvc", b.label)
+			if _, exists := b.model.CommunicationLinks[linkID]; exists {
+				continue
+			}
+			link := &types.CommunicationLink{
+				Id:             linkID,
+				SourceId:       asset.Id,
+				TargetId:       pvcID,
+				Title:          w.name + " → " + claim,
+				Description:    "Mounts PersistentVolumeClaim " + claim,
+				Protocol:       types.LocalFileAccess,
+				Authentication: types.NoneAuthentication,
+				Authorization:  types.NoneAuthorization,
+				Usage:          types.Business,
+			}
+			b.model.CommunicationLinks[linkID] = link
+			asset.CommunicationLinks = append(asset.CommunicationLinks, link)
+		}
+	}
+}
+
+// referencedSecrets returns the de-duplicated Secret names a pod consumes via
+// container env (secretKeyRef) and envFrom (secretRef).
+func referencedSecrets(pod podSpec) []string {
+	seen := map[string]bool{}
+	var out []string
+	add := func(name string) {
+		if name != "" && !seen[name] {
+			seen[name] = true
+			out = append(out, name)
+		}
+	}
+	for _, c := range pod.Containers {
+		for _, e := range c.Env {
+			if e.ValueFrom != nil && e.ValueFrom.SecretKeyRef != nil {
+				add(e.ValueFrom.SecretKeyRef.Name)
+			}
+		}
+		for _, ef := range c.EnvFrom {
+			if ef.SecretRef != nil {
+				add(ef.SecretRef.Name)
+			}
+		}
+	}
+	return out
+}
+
+// referencedPVCs returns the de-duplicated PVC claim names a pod mounts.
+func referencedPVCs(pod podSpec) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, v := range pod.Volumes {
+		if v.PersistentVolumeClaim != nil && v.PersistentVolumeClaim.ClaimName != "" {
+			name := v.PersistentVolumeClaim.ClaimName
+			if !seen[name] {
+				seen[name] = true
+				out = append(out, name)
+			}
+		}
+	}
+	return out
 }
 
 // assignNamespaceBoundaries groups every workload/PVC asset by namespace into a
@@ -578,6 +678,15 @@ func labelsMatch(have, want map[string]string) bool {
 		}
 	}
 	return true
+}
+
+func appendUnique(s []string, v string) []string {
+	for _, x := range s {
+		if x == v {
+			return s
+		}
+	}
+	return append(s, v)
 }
 
 func mergeLabels(a, b map[string]string) map[string]string {

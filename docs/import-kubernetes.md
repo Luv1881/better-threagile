@@ -28,8 +28,8 @@ threagile analyze-model --model model-fragment.yaml --output out
 | Namespace (from `metadata.namespace`) | Trust boundary (`network-policy-namespace-isolation`) containing its workloads |
 | Service `type: LoadBalancer` / `NodePort` | Marks the selected workloads internet-exposed + a communication link from an external client |
 | Ingress | Marks the backing workloads internet-exposed + a communication link |
-| Secret | Strictly-confidential data asset (tagged `credential`) |
-| PersistentVolumeClaim | Datastore asset (`block-storage`) |
+| Secret | Strictly-confidential data asset (tagged `credential`) — and **linked to the workloads that consume it** via container `env`/`envFrom` secret references (added to their `data_assets_processed`) |
+| PersistentVolumeClaim | Datastore asset (`block-storage`) — with a **communication link from each workload that mounts it** (via a `persistentVolumeClaim` volume) |
 
 Hardening signals become tags: `securityContext.runAsNonRoot` → `run-as-non-root`;
 a `privileged` container → `privileged-container`.

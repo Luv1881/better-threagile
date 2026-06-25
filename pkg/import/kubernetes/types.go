@@ -50,6 +50,23 @@ type container struct {
 	Image           string                    `yaml:"image"`
 	Ports           []containerPort           `yaml:"ports"`
 	SecurityContext *containerSecurityContext `yaml:"securityContext"`
+	Env             []envVar                  `yaml:"env"`
+	EnvFrom         []envFromSource           `yaml:"envFrom"`
+}
+
+type envVar struct {
+	Name      string `yaml:"name"`
+	ValueFrom *struct {
+		SecretKeyRef *struct {
+			Name string `yaml:"name"`
+		} `yaml:"secretKeyRef"`
+	} `yaml:"valueFrom"`
+}
+
+type envFromSource struct {
+	SecretRef *struct {
+		Name string `yaml:"name"`
+	} `yaml:"secretRef"`
 }
 
 type containerPort struct {

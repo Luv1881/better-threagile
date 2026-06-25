@@ -7,6 +7,7 @@ package threagile
 import (
 	"fmt"
 	"log"
+	"os"
 )
 
 type DefaultProgressReporter struct {
@@ -14,14 +15,17 @@ type DefaultProgressReporter struct {
 	SuppressError bool
 }
 
+// Diagnostics (progress, warnings) go to stderr so they never corrupt the
+// machine-readable output that data-emitting commands (mermaid, paths, d3fend,
+// stix, sbom, attack-navigator, ...) write to stdout for `command > file`.
 func (r DefaultProgressReporter) Info(a ...any) {
 	if r.Verbose {
-		fmt.Println(a...)
+		fmt.Fprintln(os.Stderr, a...)
 	}
 }
 
 func (DefaultProgressReporter) Warn(a ...any) {
-	fmt.Println(a...)
+	fmt.Fprintln(os.Stderr, a...)
 }
 
 func (r DefaultProgressReporter) Error(v ...any) {
@@ -34,15 +38,15 @@ func (r DefaultProgressReporter) Error(v ...any) {
 
 func (r DefaultProgressReporter) Infof(format string, a ...any) {
 	if r.Verbose {
-		fmt.Printf(format, a...)
-		fmt.Println()
+		fmt.Fprintf(os.Stderr, format, a...)
+		fmt.Fprintln(os.Stderr)
 	}
 }
 
 func (DefaultProgressReporter) Warnf(format string, a ...any) {
-	fmt.Print("WARNING: ")
-	fmt.Printf(format, a...)
-	fmt.Println()
+	fmt.Fprint(os.Stderr, "WARNING: ")
+	fmt.Fprintf(os.Stderr, format, a...)
+	fmt.Fprintln(os.Stderr)
 }
 
 func (r DefaultProgressReporter) Errorf(format string, v ...any) {

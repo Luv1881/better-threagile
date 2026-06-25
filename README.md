@@ -32,6 +32,7 @@ threat intel — without any model changes.
 | MITRE D3FEND | — | `d3fend` — maps findings to D3FEND defensive countermeasures (defensive complement of ATT&CK/CAPEC) |
 | Architecture importers | — | `import terraform \| openapi \| kubernetes \| compose` → analyzable model fragments |
 | Diagram → model (no AI) | — | `import threat-dragon` (OWASP Threat Dragon JSON) and `import drawio` (mxGraph) — deterministic diagram-to-YAML conversion |
+| Model → diagram (no Graphviz) | Graphviz PNG only | `mermaid` — GitHub/GitLab-renderable data-flow flowchart (trust boundaries, shaped nodes, encrypted/cleartext edges, risk colouring) for PRs/READMEs/CI |
 | SBOM + threat intel | KEV/EPSS reference data | `sbom` — correlate a CycloneDX SBOM's CVEs with KEV/EPSS, VEX-aware, `--fail-on-kev` gate |
 | Risk governance | Tracking status only | `accepted_until` / `accepted_by` — analysis fails on expired acceptances |
 | Remote rule packs | `--rules-url` (broken upstream) | Fixed — 24 h TTL cache, SHA256-keyed, optional Ed25519 signatures |
@@ -131,6 +132,9 @@ These commands are built to run in a pipeline — they write machine-readable ou
 
 # STIX 2.1 bundle (assets, vulns+CWE, ATT&CK/CAPEC attack-patterns, mitigations):
 ./bin/threagile stix --model model.yaml > stix-bundle.json                # docs/stix.md
+
+# Mermaid data-flow diagram (renders natively in GitHub/GitLab Markdown, no Graphviz):
+./bin/threagile mermaid --model model.yaml --format markdown > diagram.md  # docs/mermaid.md
 ```
 
 ### Importing architecture from real infrastructure
@@ -273,7 +277,7 @@ the test suite in-image. (Upstream's Dockerfile cloned the upstream repo — fix
 - CLI command reference: [docs/commands.md](./docs/commands.md)
 - All CLI flags: [docs/flags.md](./docs/flags.md)
 - Methodologies & rule packs: [docs/methodologies.md](./docs/methodologies.md)
-- Policy gate: [docs/gate.md](./docs/gate.md) · Attack paths: [docs/attack-paths.md](./docs/attack-paths.md) · ATT&CK: [docs/attack-navigator.md](./docs/attack-navigator.md) · SBOM: [docs/sbom.md](./docs/sbom.md)
+- Policy gate: [docs/gate.md](./docs/gate.md) · Attack paths: [docs/attack-paths.md](./docs/attack-paths.md) · ATT&CK: [docs/attack-navigator.md](./docs/attack-navigator.md) · SBOM: [docs/sbom.md](./docs/sbom.md) · Mermaid diagram: [docs/mermaid.md](./docs/mermaid.md)
 - Importers: [Kubernetes](./docs/import-kubernetes.md) · [docker-compose](./docs/import-compose.md)
 - JSON Schema for IDE validation: `support/schema.json`
 - OpenAPI spec (server mode): `support/openapi.yaml`

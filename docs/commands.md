@@ -14,6 +14,7 @@
 | `fmt [files...]`         | Canonicalise YAML whitespace and field ordering                                     |                                              |
 | `quantify`               | FAIR Monte-Carlo ALE simulation over generated risks (`--estimates` YAML file; `--output-json` for full result) |                  |
 | `attack-navigator`       | Export a [MITRE ATT&CK Navigator layer](./attack-navigator.md) mapping findings to ATT&CK techniques (`--output`) |              |
+| `paths`                  | [Attack-path analysis](./attack-paths.md): shortest routes from internet-facing assets to crown-jewel data (`--from`, `--to`, `--format`) |       |
 
 ## Scaffolding
 

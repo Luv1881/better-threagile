@@ -26,7 +26,8 @@ threat intel — without any model changes.
 | CI / code-scanning output | — | SARIF 2.1.0 (`risks.sarif`), suppressions from tracking status |
 | Policy-as-code gate | — | `gate` — declarative `policy.yaml`, exits 3 on violation (severity caps, require-tracking, expired-acceptance, no-new-vs-baseline, framework coverage) |
 | PR-bot / risk delta | — | `diff --format markdown` + `generate-ci gate-pr` — posts the risk delta / gate report as a PR comment |
-| MITRE ATT&CK | — | `attack-navigator` — exports an ATT&CK Navigator layer from findings |
+| MITRE ATT&CK / CAPEC | — | `attack-navigator` (ATT&CK Navigator layer) + curated ATT&CK & CAPEC mappings surfaced in the STIX export |
+| STIX 2.1 export | — | `stix` — deterministic STIX 2.1 bundle (assets, vulnerabilities+CWE, ATT&CK/CAPEC attack-patterns, mitigations) for OpenCTI / TIP interop |
 | Attack-path analysis | — | `paths` — shortest routes from internet-facing assets to crown-jewel data |
 | Architecture importers | — | `import terraform \| openapi \| kubernetes \| compose` → analyzable model fragments |
 | Diagram → model (no AI) | — | `import threat-dragon` (OWASP Threat Dragon JSON) and `import drawio` (mxGraph) — deterministic diagram-to-YAML conversion |
@@ -122,6 +123,9 @@ These commands are built to run in a pipeline — they write machine-readable ou
 
 # SBOM + threat intel: rank a CycloneDX SBOM's CVEs by KEV/EPSS; gate on KEV.
 ./bin/threagile sbom --sbom sbom.cdx.json --refresh-kev --epss --fail-on-kev   # docs/sbom.md
+
+# STIX 2.1 bundle (assets, vulns+CWE, ATT&CK/CAPEC attack-patterns, mitigations):
+./bin/threagile stix --model model.yaml > stix-bundle.json                # docs/stix.md
 ```
 
 ### Importing architecture from real infrastructure

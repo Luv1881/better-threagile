@@ -71,6 +71,7 @@ func (what *Threagile) Init(buildTimestamp string) *Threagile {
 		initMermaid().
 		initPolicy().
 		initHooks().
+		initScore().
 		initSeverityProfile().
 		initDrift().
 		initSync().

@@ -21,6 +21,7 @@
 | `stix`                   | [STIX 2.1 export](./stix.md): deterministic bundle (assets, vulnerabilities+CWE, ATT&CK/CAPEC attack-patterns, mitigations) for TIP/OpenCTI interop |       |
 | `mermaid`                | [Mermaid data-flow diagram](./mermaid.md): GitHub/GitLab-renderable flowchart of the model (no Graphviz needed); `--format flowchart\|markdown`, `--direction`, `--with-risks` |       |
 | `policy init` / `policy list` | Scaffold a [secure-by-default gate policy](./gate.md#secure-by-default-starter-policies-policy-init): `--profile prototype\|balanced\|strict\|regulated` |       |
+| `score`                  | [Threat-model health score](./score.md) 0-100 + A-F grade (completeness + risk posture); `--min` gates CI, `--format shields` for a badge |       |
 
 ## Scaffolding
 

@@ -16,6 +16,7 @@
 | `attack-navigator`       | Export a [MITRE ATT&CK Navigator layer](./attack-navigator.md) mapping findings to ATT&CK techniques (`--output`) |              |
 | `paths`                  | [Attack-path analysis](./attack-paths.md): shortest routes from internet-facing assets to crown-jewel data (`--from`, `--to`, `--format`) |       |
 | `sbom`                   | [SBOM + threat-intel correlation](./sbom.md): correlate a CycloneDX SBOM's CVEs with KEV/EPSS, VEX-aware, `--fail-on-kev` gate |       |
+| `stix`                   | [STIX 2.1 export](./stix.md): deterministic bundle (assets, vulnerabilities+CWE, ATT&CK/CAPEC attack-patterns, mitigations) for TIP/OpenCTI interop |       |
 
 ## Scaffolding
 

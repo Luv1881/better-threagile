@@ -65,6 +65,7 @@ func (what *Threagile) Init(buildTimestamp string) *Threagile {
 		initAttackNavigator().
 		initPaths().
 		initSBOM().
+		initSTIX().
 		initSeverityProfile().
 		initDrift().
 		initSync().

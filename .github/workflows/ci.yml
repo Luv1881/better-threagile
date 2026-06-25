@@ -44,6 +44,7 @@ jobs:
           go test ./pkg/input/... -run=NONE -fuzz=FuzzModelUnmarshal -fuzztime=10s
           go test ./pkg/import/openapi/... -run=NONE -fuzz=FuzzImport -fuzztime=10s
           go test ./pkg/import/terraform/... -run=NONE -fuzz=FuzzImport -fuzztime=10s
+          go test ./pkg/import/kubernetes/... -run=NONE -fuzz=FuzzImport -fuzztime=10s
           go test ./pkg/risks/script -run=NONE -fuzz=FuzzRiskRuleParseFromData -fuzztime=10s
 
       - name: Upload coverage report

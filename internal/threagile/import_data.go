@@ -8,8 +8,9 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	tfimport "github.com/threagile/threagile/pkg/import/terraform"
+	k8simport "github.com/threagile/threagile/pkg/import/kubernetes"
 	oaimport "github.com/threagile/threagile/pkg/import/openapi"
+	tfimport "github.com/threagile/threagile/pkg/import/terraform"
 	"github.com/threagile/threagile/pkg/types"
 )
 
@@ -25,6 +26,7 @@ threat model YAML file.
 Supported sources:
   terraform  Parse 'terraform show -json' output
   openapi    Parse an OpenAPI 3.x specification
+  kubernetes Parse Kubernetes manifests (multi-document YAML)
 
 By default the generated model fragment is written to stdout. Use --output to
 write to a file, or --apply to merge into an existing model file.`,
@@ -32,6 +34,7 @@ write to a file, or --apply to merge into an existing model file.`,
 
 	importCmd.AddCommand(what.newImportTerraformCmd())
 	importCmd.AddCommand(what.newImportOpenAPICmd())
+	importCmd.AddCommand(what.newImportKubernetesCmd())
 
 	what.rootCmd.AddCommand(importCmd)
 	return what
@@ -120,6 +123,50 @@ Example:
 	return cmd
 }
 
+func (what *Threagile) newImportKubernetesCmd() *cobra.Command {
+	var manifestFile string
+	var outputFile string
+	var label string
+	var diff bool
+
+	cmd := &cobra.Command{
+		Use:   "kubernetes",
+		Short: "Import Kubernetes manifests into a Threagile model fragment",
+		Long: `Parse Kubernetes manifests (a single file or a multi-document YAML stream)
+and produce a Threagile model fragment. Workloads (Deployment/StatefulSet/
+DaemonSet/Pod/Job/CronJob) become technical assets (datastores detected from
+container images), namespaces become trust boundaries, Services/Ingresses set
+internet exposure and communication links, and Secrets/PVCs become data assets.
+
+Example:
+  kubectl get all,ingress,secret -A -o yaml > manifests.yaml
+  threagile import kubernetes --manifests manifests.yaml --output model-fragment.yaml`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			what.processArgs(cmd, args)
+
+			data, err := readInput(manifestFile)
+			if err != nil {
+				return fmt.Errorf("kubernetes import: %w", err)
+			}
+
+			opts := k8simport.ImportOptions{SourceLabel: label}
+			model, err := k8simport.Import(data, opts)
+			if err != nil {
+				return err
+			}
+
+			return writeOrDiff(cmd, model, outputFile, diff)
+		},
+	}
+
+	cmd.Flags().StringVar(&manifestFile, "manifests", "", "Path to Kubernetes manifest YAML file (default: stdin)")
+	cmd.Flags().StringVar(&outputFile, "output", "", "Write model YAML to this file (default: stdout)")
+	cmd.Flags().StringVar(&label, "label", "k8s", "Short label appended to generated asset IDs (e.g. 'prod')")
+	cmd.Flags().BoolVar(&diff, "diff", false, "Show a summary of what would be generated without writing output")
+
+	return cmd
+}
+
 // readInput reads from a file path or stdin if path is empty.
 func readInput(path string) ([]byte, error) {
 	if path == "" {
@@ -135,7 +182,10 @@ func writeOrDiff(cmd *cobra.Command, model *types.Model, outputFile string, diff
 		return nil
 	}
 
-	out, err := yaml.Marshal(model)
+	// Convert to the authoring (input) format so the emitted YAML is directly
+	// parseable/analyzable; marshalling a raw types.Model produces YAML that the
+	// model parser cannot read back.
+	out, err := yaml.Marshal(modelToInput(model))
 	if err != nil {
 		return fmt.Errorf("failed to marshal model to YAML: %w", err)
 	}

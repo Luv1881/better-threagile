@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
+	composeimport "github.com/threagile/threagile/pkg/import/compose"
 	k8simport "github.com/threagile/threagile/pkg/import/kubernetes"
 	oaimport "github.com/threagile/threagile/pkg/import/openapi"
 	tfimport "github.com/threagile/threagile/pkg/import/terraform"
@@ -27,6 +28,7 @@ Supported sources:
   terraform  Parse 'terraform show -json' output
   openapi    Parse an OpenAPI 3.x specification
   kubernetes Parse Kubernetes manifests (multi-document YAML)
+  compose    Parse a docker-compose file
 
 By default the generated model fragment is written to stdout. Use --output to
 write to a file, or --apply to merge into an existing model file.`,
@@ -35,6 +37,7 @@ write to a file, or --apply to merge into an existing model file.`,
 	importCmd.AddCommand(what.newImportTerraformCmd())
 	importCmd.AddCommand(what.newImportOpenAPICmd())
 	importCmd.AddCommand(what.newImportKubernetesCmd())
+	importCmd.AddCommand(what.newImportComposeCmd())
 
 	what.rootCmd.AddCommand(importCmd)
 	return what
@@ -162,6 +165,49 @@ Example:
 	cmd.Flags().StringVar(&manifestFile, "manifests", "", "Path to Kubernetes manifest YAML file (default: stdin)")
 	cmd.Flags().StringVar(&outputFile, "output", "", "Write model YAML to this file (default: stdout)")
 	cmd.Flags().StringVar(&label, "label", "k8s", "Short label appended to generated asset IDs (e.g. 'prod')")
+	cmd.Flags().BoolVar(&diff, "diff", false, "Show a summary of what would be generated without writing output")
+
+	return cmd
+}
+
+func (what *Threagile) newImportComposeCmd() *cobra.Command {
+	var composeFile string
+	var outputFile string
+	var label string
+	var diff bool
+
+	cmd := &cobra.Command{
+		Use:   "compose",
+		Short: "Import a docker-compose file into a Threagile model fragment",
+		Long: `Parse a docker-compose file and produce a Threagile model fragment. Services
+become technical assets (datastores detected from the image), host-published
+ports set internet exposure, depends_on becomes communication links, networks
+become trust boundaries (internal networks are treated as more isolated), and
+secret-looking environment variables produce an application-secrets data asset.
+
+Example:
+  threagile import compose --compose docker-compose.yml --output model-fragment.yaml`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			what.processArgs(cmd, args)
+
+			data, err := readInput(composeFile)
+			if err != nil {
+				return fmt.Errorf("compose import: %w", err)
+			}
+
+			opts := composeimport.ImportOptions{SourceLabel: label}
+			model, err := composeimport.Import(data, opts)
+			if err != nil {
+				return err
+			}
+
+			return writeOrDiff(cmd, model, outputFile, diff)
+		},
+	}
+
+	cmd.Flags().StringVar(&composeFile, "compose", "", "Path to docker-compose file (default: stdin)")
+	cmd.Flags().StringVar(&outputFile, "output", "", "Write model YAML to this file (default: stdout)")
+	cmd.Flags().StringVar(&label, "label", "compose", "Short label appended to generated asset IDs (e.g. 'prod')")
 	cmd.Flags().BoolVar(&diff, "diff", false, "Show a summary of what would be generated without writing output")
 
 	return cmd

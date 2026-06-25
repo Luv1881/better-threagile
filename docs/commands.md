@@ -27,6 +27,7 @@
 | Command                  | Description                                                                         | Aliases |
 |--------------------------|-------------------------------------------------------------------------------------|---------|
 | `init`                   | Interactively scaffold a new threat model (`threagile.yaml` + feature files)        |         |
+| `hooks install`          | Install [git pre-commit / pre-push hooks](./hooks.md) that run validate/lint/gate    |         |
 | `create-example-model`   | Write a comprehensive example model YAML to `--output`                              |         |
 | `create-stub-model`      | Write a minimal starter model YAML to `--output`                                    |         |
 | `create-editing-support` | Regenerate the JSON schema file used for IDE autocompletion                         |         |

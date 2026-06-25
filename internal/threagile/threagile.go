@@ -73,6 +73,7 @@ func (what *Threagile) Init(buildTimestamp string) *Threagile {
 		initHooks().
 		initScore().
 		initBootstrap().
+		initOSCAL().
 		initSeverityProfile().
 		initDrift().
 		initSync().

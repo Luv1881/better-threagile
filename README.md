@@ -22,6 +22,13 @@ threat intel — without any model changes.
 |---|---|---|
 | Methodologies | STRIDE only | STRIDE · LINDDUN · PASTA · VAST · OCTAVE · Trike · Cloud-Native · Supply-Chain · AI/ML |
 | Rule packs | Built-in Go rules | Built-in Go + 8 embedded YAML packs (`//go:embed` directories) |
+| Zero-config onboarding | — | `bootstrap` — scan a repo (compose / k8s / OpenAPI) → starter model + secure-by-default policy + git hooks in one command |
+| Local guardrails | — | `hooks install` — git pre-commit (validate+lint) / pre-push (gate) so problems surface before CI |
+| Secure-by-default policy | — | `policy init --profile prototype\|balanced\|strict\|regulated` — tuned starter gate, no security expert needed |
+| Health score | — | `score` — one 0–100 / A–F number (completeness + risk posture) to track each sprint; `--min` gate, `--format shields` badge |
+| Prioritization | — | `prioritize` — "fix these first, here's how": ranks findings by exploitability (severity × exposure × reachability × data) with remediation + CWE + cheat sheet |
+| Secret hygiene | — | `validate` scans the model for committed credentials (`--fail-on-secrets`) |
+| Compliance evidence | — | `oscal` — NIST OSCAL assessment-results export for GRC pipelines |
 | Risk quantification | — | `quantify` — FAIR Monte-Carlo ALE (p10/p50/p90) + portfolio summary |
 | CI / code-scanning output | — | SARIF 2.1.0 (`risks.sarif`), suppressions from tracking status |
 | Policy-as-code gate | — | `gate` — declarative `policy.yaml`, exits 3 on violation (severity caps, require-tracking, expired-acceptance, no-new-vs-baseline, framework coverage) |
@@ -37,9 +44,33 @@ threat intel — without any model changes.
 | Risk governance | Tracking status only | `accepted_until` / `accepted_by` — analysis fails on expired acceptances |
 | Remote rule packs | `--rules-url` (broken upstream) | Fixed — 24 h TTL cache, SHA256-keyed, optional Ed25519 signatures |
 | Correctness | Ships injection/SSRF false positives | Fixed; plus data-race, nondeterminism & duplicate-ID fixes in the engine |
-| Engineering | Prototype | Blocking lint (0 issues), 1657 race-tested cases, coverage ratchet, fuzzing, hardened server, GoReleaser pipeline |
+| Engineering | Prototype | Blocking lint (0 issues), 1790+ race-tested cases, coverage ratchet, fuzzing, hardened server, GoReleaser pipeline; analysis hot path ~67% fewer allocations |
 
 ---
+
+## Get guarded in one minute
+
+`better-threagile` is built to drop into an existing repo with near-zero friction —
+no security expert, no blank page, no separate dashboard:
+
+```shell
+# 1. Scan the repo and scaffold a model + secure-by-default policy + git hooks
+./bin/threagile bootstrap --with-hooks
+
+# 2. See where you stand (one number you can track each sprint)
+./bin/threagile score --model threagile.yaml
+
+# 3. Find the few things that matter and how to fix them
+./bin/threagile prioritize --model threagile.yaml --top 5
+
+# 4. Enforce it in CI (exit 3 on violation) and in pull requests
+./bin/threagile gate --model threagile.yaml --policy policy.yaml
+./bin/threagile generate-ci --model threagile.yaml --target gate-pr
+```
+
+From there, `validate` catches committed secrets, `mermaid` renders the data-flow
+diagram in your README, and `diff old new --format markdown` posts a PR comment
+that says exactly what a change introduced and how to fix it.
 
 ## Building from source
 

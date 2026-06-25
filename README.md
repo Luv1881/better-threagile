@@ -28,7 +28,8 @@ threat intel — without any model changes.
 | PR-bot / risk delta | — | `diff --format markdown` + `generate-ci gate-pr` — posts the risk delta / gate report as a PR comment |
 | MITRE ATT&CK / CAPEC | — | `attack-navigator` (ATT&CK Navigator layer) + curated ATT&CK & CAPEC mappings surfaced in the STIX export |
 | STIX 2.1 export | — | `stix` — deterministic STIX 2.1 bundle (assets, vulnerabilities+CWE, ATT&CK/CAPEC attack-patterns, mitigations) for OpenCTI / TIP interop |
-| Attack-path analysis | — | `paths` — shortest routes from internet-facing assets to crown-jewel data |
+| Attack-path / attack-tree | — | `paths` (shortest routes) + `attack-tree` (goal-oriented OR-trees, Graphviz DOT) from internet-facing assets to crown-jewel data |
+| MITRE D3FEND | — | `d3fend` — maps findings to D3FEND defensive countermeasures (defensive complement of ATT&CK/CAPEC) |
 | Architecture importers | — | `import terraform \| openapi \| kubernetes \| compose` → analyzable model fragments |
 | Diagram → model (no AI) | — | `import threat-dragon` (OWASP Threat Dragon JSON) and `import drawio` (mxGraph) — deterministic diagram-to-YAML conversion |
 | SBOM + threat intel | KEV/EPSS reference data | `sbom` — correlate a CycloneDX SBOM's CVEs with KEV/EPSS, VEX-aware, `--fail-on-kev` gate |
@@ -118,8 +119,12 @@ These commands are built to run in a pipeline — they write machine-readable ou
 # MITRE ATT&CK Navigator layer from the model's findings:
 ./bin/threagile attack-navigator --model model.yaml > attack-layer.json   # docs/attack-navigator.md
 
-# Attack paths: shortest routes from internet-facing assets to confidential data:
-./bin/threagile paths --model model.yaml                              # docs/attack-paths.md
+# Attack paths / goal-oriented attack trees to crown-jewel data:
+./bin/threagile paths       --model model.yaml                        # docs/attack-paths.md
+./bin/threagile attack-tree --model model.yaml --format dot > tree.dot # docs/attack-tree.md
+
+# MITRE D3FEND defensive countermeasures for the findings:
+./bin/threagile d3fend --model model.yaml                             # docs/d3fend.md
 
 # SBOM + threat intel: rank a CycloneDX SBOM's CVEs by KEV/EPSS; gate on KEV.
 ./bin/threagile sbom --sbom sbom.cdx.json --refresh-kev --epss --fail-on-kev   # docs/sbom.md

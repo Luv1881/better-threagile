@@ -29,6 +29,7 @@ threat intel — without any model changes.
 | MITRE ATT&CK | — | `attack-navigator` — exports an ATT&CK Navigator layer from findings |
 | Attack-path analysis | — | `paths` — shortest routes from internet-facing assets to crown-jewel data |
 | Architecture importers | — | `import terraform \| openapi \| kubernetes \| compose` → analyzable model fragments |
+| Diagram → model (no AI) | — | `import threat-dragon` (OWASP Threat Dragon JSON) and `import drawio` (mxGraph) — deterministic diagram-to-YAML conversion |
 | SBOM + threat intel | KEV/EPSS reference data | `sbom` — correlate a CycloneDX SBOM's CVEs with KEV/EPSS, VEX-aware, `--fail-on-kev` gate |
 | Risk governance | Tracking status only | `accepted_until` / `accepted_by` — analysis fails on expired acceptances |
 | Remote rule packs | `--rules-url` (broken upstream) | Fixed — 24 h TTL cache, SHA256-keyed, optional Ed25519 signatures |
@@ -132,7 +133,15 @@ terraform show -json | ./bin/threagile import terraform                 # Terraf
 ./bin/threagile import openapi    --spec api.yaml                        # OpenAPI 3.x
 ./bin/threagile import kubernetes --manifests <(kubectl get all,ingress,secret,pvc -A -o yaml)
 ./bin/threagile import compose    --compose docker-compose.yml          # docker-compose
+./bin/threagile import threat-dragon --tdmodel model.json               # OWASP Threat Dragon diagram
+./bin/threagile import drawio        --diagram architecture.drawio      # draw.io / diagrams.net (best-effort)
 ```
+
+The two **diagram** importers are deterministic, no-AI conversions: Threat
+Dragon JSON is threat-model-native (high fidelity); draw.io is a generic format
+(lossy best-effort — assets are tagged `review-drawio`). See
+[docs/import-threat-dragon.md](./docs/import-threat-dragon.md) and
+[docs/import-drawio.md](./docs/import-drawio.md).
 
 All four importers emit the authoring YAML format and round-trip through `analyze-model`
 (workloads/services → technical assets, namespaces/networks → trust boundaries, published ports

@@ -27,6 +27,7 @@
 
 | Command                  | Description                                                                         | Aliases |
 |--------------------------|-------------------------------------------------------------------------------------|---------|
+| `bootstrap`              | [Zero-config onboarding](./bootstrap.md): scan a repo (compose/k8s/openapi) → starter model + policy (+ hooks) |         |
 | `init`                   | Interactively scaffold a new threat model (`threagile.yaml` + feature files)        |         |
 | `hooks install`          | Install [git pre-commit / pre-push hooks](./hooks.md) that run validate/lint/gate    |         |
 | `create-example-model`   | Write a comprehensive example model YAML to `--output`                              |         |

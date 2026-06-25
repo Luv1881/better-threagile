@@ -114,6 +114,28 @@ Examples:
 	return what
 }
 
+// installHooks writes the requested hook scripts into hooksDir and returns the
+// paths it actually wrote. Existing files are skipped unless force is set. Used
+// by both `hooks install` and `bootstrap --with-hooks`.
+func installHooks(hooksDir, binary, model string, hooks []string, force bool) []string {
+	var written []string
+	if err := os.MkdirAll(hooksDir, 0750); err != nil {
+		return written
+	}
+	for _, h := range hooks {
+		path := filepath.Join(hooksDir, h)
+		if _, err := os.Stat(path); err == nil && !force {
+			continue
+		}
+		if err := os.WriteFile(path, []byte(renderHookScript(h, binary, model)), 0700); err != nil { // #nosec G306 -- git hooks must be executable
+			continue
+		}
+		_ = os.Chmod(path, 0700) // #nosec G302 -- a hook must be executable by its owner
+		written = append(written, path)
+	}
+	return written
+}
+
 // threagileBinaryPath returns the absolute path of the running binary so the
 // installed hook keeps working regardless of the user's PATH. Falls back to the
 // bare command name if it cannot be resolved.

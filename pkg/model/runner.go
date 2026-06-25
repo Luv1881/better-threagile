@@ -89,7 +89,5 @@ func (p *runner) Run(in any, out any, parameters ...string) error {
 		return unmarshalError
 	}
 
-	// _ = os.WriteFile(fmt.Sprintf("%v.yaml", rand.Int31()), stdout, 0644)
-
 	return nil
 }

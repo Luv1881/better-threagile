@@ -264,13 +264,8 @@ func (what *ValueExpression) evalStringReference(scope *common.Scope, ref *commo
 	varRe := `\{[^{}]+}`
 	value := what.resolveStringValues(scope, varRe, ref)
 	if regexp.MustCompile(`^` + varRe + `$`).MatchString(value.StringValue()) {
-		returnValue, ok := scope.Get(value.StringValue()[1 : len(value.StringValue())-1])
-		if ok {
-			return returnValue, "", nil
-		}
-
+		returnValue, _ := scope.Get(value.StringValue()[1 : len(value.StringValue())-1])
 		return returnValue, "", nil
-		//		return common.SomeStringValue(value.StringValue()[1:len(value.StringValue())-1], nil), "", nil
 	}
 
 	funcRe := `(\w+)\(([^()]+)\)`

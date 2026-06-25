@@ -19,7 +19,7 @@
                 "text": "If this risk is unmitigated, attackers which have access to affected sourcecode repositories or artifact registries might find secrets accidentally checked-in.\n\nMitigation: Establish measures preventing accidental check-in or package-in of secrets into sourcecode repositories and artifact registries. This starts by using good .gitignore and .dockerignore files, but does not stop there. See for example tools like \u003ci\u003e\\\"git-secrets\\\"\u003c/i\u003e or \u003ci\u003e\\\"Talisman\\\"\u003c/i\u003e to have check-in preventive measures for secrets. Consider also to regularly scan your repositories for secrets accidentally checked-in using scanning tools like \u003ci\u003e\"gitleaks\"\u003c/i\u003e or \u003ci\u003e\"gitrob\"\u003c/i\u003e."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: Build Pipeline Hardening\n\nMitigation: Establish measures preventing accidental check-in or package-in of secrets into sourcecode repositories and artifact registries. This starts by using good .gitignore and .dockerignore files, but does not stop there. See for example tools like \u003ci\u003e\\\"git-secrets\\\"\u003c/i\u003e or \u003ci\u003e\\\"Talisman\\\"\u003c/i\u003e to have check-in preventive measures for secrets. Consider also to regularly scan your repositories for secrets accidentally checked-in using scanning tools like \u003ci\u003e\"gitleaks\"\u003c/i\u003e or \u003ci\u003e\"gitrob\"\u003c/i\u003e.\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
               "properties": {
@@ -39,7 +39,7 @@
                 "text": "If this risk remains unmitigated, attackers might be able to execute code on and completely takeover production environments.\n\nMitigation: Reduce the attack surface of backdooring the build pipeline by not directly exposing the build pipeline components on the public internet and also not exposing it in front of unmanaged (out-of-scope) developer clients.Also consider the use of code signing to prevent code modifications."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: Build Pipeline Hardening\n\nMitigation: Reduce the attack surface of backdooring the build pipeline by not directly exposing the build pipeline components on the public internet and also not exposing it in front of unmanaged (out-of-scope) developer clients.Also consider the use of code signing to prevent code modifications.\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html",
               "properties": {
@@ -59,7 +59,7 @@
                 "text": "If this risk is unmitigated, attackers might be able to deeply persist in the target system by executing code in deployed containers.\n\nMitigation: Apply hardening of all container infrastructures (see for example the \u003ci\u003eCIS-Benchmarks for Docker and Kubernetes\u003c/i\u003e and the \u003ci\u003eDocker Bench for Security\u003c/i\u003e). Use only trusted base images of the original vendors, verify digital signatures and apply image creation best practices. Also consider using Google's \u003ci\u003eDistroless\u003c/i\u003e base images or otherwise very small base images. Regularly execute container image scans with tools checking the layers for vulnerable components."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS/CSVS applied?"
+                "text": "How to fix: Container Infrastructure Hardening\n\nMitigation: Apply hardening of all container infrastructures (see for example the \u003ci\u003eCIS-Benchmarks for Docker and Kubernetes\u003c/i\u003e and the \u003ci\u003eDocker Bench for Security\u003c/i\u003e). Use only trusted base images of the original vendors, verify digital signatures and apply image creation best practices. Also consider using Google's \u003ci\u003eDistroless\u003c/i\u003e base images or otherwise very small base images. Regularly execute container image scans with tools checking the layers for vulnerable components.\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS/CSVS applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html",
               "properties": {
@@ -79,7 +79,7 @@
                 "text": "If this risk remains unmitigated, attackers might be able to disturb the availability of important parts of the system.\n\nMitigation: Apply anti-DoS techniques like throttling and/or per-client load blocking with quotas. Also for maintenance access routes consider applying a VPN instead of public reachable interfaces. Generally applying redundancy on the targeted technical asset reduces the risk of DoS."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: Anti-DoS Measures\n\nMitigation: Apply anti-DoS techniques like throttling and/or per-client load blocking with quotas. Also for maintenance access routes consider applying a VPN instead of public reachable interfaces. Generally applying redundancy on the targeted technical asset reduces the risk of DoS.\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html",
               "properties": {
@@ -99,7 +99,7 @@
                 "text": "Stolen credentials can be replayed to access assets in higher-trust zones, bypassing the intended trust boundary controls.\n\nMitigation: Use distinct credentials / service accounts per trust zone. Apply credential rotation and short-lived tokens (OIDC/mTLS) so that credential reuse across zones is impossible by design."
               },
               "help": {
-                "text": "Are separate credentials used for assets in each trust zone?"
+                "text": "How to fix: Credential Isolation per Trust Zone\n\nMitigation: Use distinct credentials / service accounts per trust zone. Apply credential rotation and short-lived tokens (OIDC/mTLS) so that credential reuse across zones is impossible by design.\n\nCheck: Are separate credentials used for assets in each trust zone?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html",
               "properties": {
@@ -118,7 +118,7 @@
                 "text": "An attacker who compromises any asset on the shared runtime may pivot to other co-located assets, including those in higher trust zones.\n\nMitigation: Separate assets from different trust zones onto dedicated runtimes (separate node pools, dedicated VMs, distinct container namespaces with NetworkPolicy). Apply seccomp/AppArmor profiles and disable privilege escalation."
               },
               "help": {
-                "text": "Are high-trust and low-trust assets co-located on the same shared runtime?"
+                "text": "How to fix: Runtime Isolation\n\nMitigation: Separate assets from different trust zones onto dedicated runtimes (separate node pools, dedicated VMs, distinct container namespaces with NetworkPolicy). Apply seccomp/AppArmor profiles and disable privilege escalation.\n\nCheck: Are high-trust and low-trust assets co-located on the same shared runtime?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html",
               "properties": {
@@ -137,7 +137,7 @@
                 "text": "An attacker who compromises the bridging asset or injects malicious data into the first hop can influence or extract data from the high-trust target.\n\nMitigation: Remove unnecessary transitive paths. Introduce a DMZ or API gateway for unavoidable bridging. Apply strict input validation and output encoding in the bridging component. Log and alert on data flowing from low-trust sources that reaches high-trust destinations."
               },
               "help": {
-                "text": "Does any asset bridge traffic from low-trust to high-trust zones without validation or separation?"
+                "text": "How to fix: Eliminate Unnecessary Bridging\n\nMitigation: Remove unnecessary transitive paths. Introduce a DMZ or API gateway for unavoidable bridging. Apply strict input validation and output encoding in the bridging component. Log and alert on data flowing from low-trust sources that reaches high-trust destinations.\n\nCheck: Does any asset bridge traffic from low-trust to high-trust zones without validation or separation?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Network_Segmentation_Cheat_Sheet.html",
               "properties": {
@@ -156,7 +156,7 @@
                 "text": "If this risk remains unmitigated, attackers might be able to modify LDAP queries and access more data from the LDAP server than allowed.\n\nMitigation: Try to use libraries that properly encode LDAP meta characters in searches and queries to access the LDAP server in order to stay safe from LDAP-Injection vulnerabilities. When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: LDAP-Injection Prevention\n\nMitigation: Try to use libraries that properly encode LDAP meta characters in searches and queries to access the LDAP server in order to stay safe from LDAP-Injection vulnerabilities. When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level.\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html",
               "properties": {
@@ -176,7 +176,7 @@
                 "text": "If this risk is unmitigated, attackers might be able to access or modify sensitive data in an unauthenticated way.\n\nMitigation: Apply an authentication method to the technical asset. To protect highly sensitive data consider the use of two-factor authentication for human users."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: Authentication of Incoming Requests\n\nMitigation: Apply an authentication method to the technical asset. To protect highly sensitive data consider the use of two-factor authentication for human users.\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html",
               "properties": {
@@ -196,7 +196,7 @@
                 "text": "If this risk is unmitigated, attackers might be able to access or modify highly sensitive data without strong authentication.\n\nMitigation: Apply an authentication method to the technical asset protecting highly sensitive data via two-factor authentication for human users."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: Authentication with Second Factor (2FA)\n\nMitigation: Apply an authentication method to the technical asset protecting highly sensitive data via two-factor authentication for human users.\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet.html",
               "properties": {
@@ -216,7 +216,7 @@
                 "text": "If this risk is unmitigated, attackers might access cloud components in an unintended way.\n\nMitigation: Apply hardening of all cloud components and services, taking special care to follow the individual risk descriptions (which depend on the cloud provider tags in the model). \u003cbr\u003e\u003cbr\u003eFor \u003cb\u003eAmazon Web Services (AWS)\u003c/b\u003e: Follow the \u003ci\u003eCIS Benchmark for Amazon Web Services\u003c/i\u003e (see also the automated checks of cloud audit tools like \u003ci\u003e\"PacBot\", \"CloudSploit\", \"CloudMapper\", \"ScoutSuite\", or \"Prowler AWS CIS Benchmark Tool\"\u003c/i\u003e). \u003cbr\u003eFor EC2 and other servers running Amazon Linux, follow the \u003ci\u003eCIS Benchmark for Amazon Linux\u003c/i\u003e and switch to IMDSv2. \u003cbr\u003eFor S3 buckets follow the \u003ci\u003eSecurity Best Practices for Amazon S3\u003c/i\u003e at \u003ca href=\"https://docs.aws.amazon.com/AmazonS3/latest/dev/security-best-practices.html\"\u003ehttps://docs.aws.amazon.com/AmazonS3/latest/dev/security-best-practices.html\u003c/a\u003e to avoid accidental leakage. \u003cbr\u003eAlso take a look at some of these tools: \u003ca href=\"https://github.com/toniblyx/my-arsenal-of-aws-security-tools\"\u003ehttps://github.com/toniblyx/my-arsenal-of-aws-security-tools\u003c/a\u003e \u003cbr\u003e\u003cbr\u003eFor \u003cb\u003eMicrosoft Azure\u003c/b\u003e: Follow the \u003ci\u003eCIS Benchmark for Microsoft Azure\u003c/i\u003e (see also the automated checks of cloud audit tools like \u003ci\u003e\"CloudSploit\" or \"ScoutSuite\"\u003c/i\u003e).\u003cbr\u003e\u003cbr\u003eFor \u003cb\u003eGoogle Cloud Platform\u003c/b\u003e: Follow the \u003ci\u003eCIS Benchmark for Google Cloud Computing Platform\u003c/i\u003e (see also the automated checks of cloud audit tools like \u003ci\u003e\"CloudSploit\" or \"ScoutSuite\"\u003c/i\u003e). \u003cbr\u003e\u003cbr\u003eFor \u003cb\u003eOracle Cloud Platform\u003c/b\u003e: Follow the hardening best practices (see also the automated checks of cloud audit tools like \u003ci\u003e\"CloudSploit\"\u003c/i\u003e)."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: Cloud Hardening\n\nMitigation: Apply hardening of all cloud components and services, taking special care to follow the individual risk descriptions (which depend on the cloud provider tags in the model). \u003cbr\u003e\u003cbr\u003eFor \u003cb\u003eAmazon Web Services (AWS)\u003c/b\u003e: Follow the \u003ci\u003eCIS Benchmark for Amazon Web Services\u003c/i\u003e (see also the automated checks of cloud audit tools like \u003ci\u003e\"PacBot\", \"CloudSploit\", \"CloudMapper\", \"ScoutSuite\", or \"Prowler AWS CIS Benchmark Tool\"\u003c/i\u003e). \u003cbr\u003eFor EC2 and other servers running Amazon Linux, follow the \u003ci\u003eCIS Benchmark for Amazon Linux\u003c/i\u003e and switch to IMDSv2. \u003cbr\u003eFor S3 buckets follow the \u003ci\u003eSecurity Best Practices for Amazon S3\u003c/i\u003e at \u003ca href=\"https://docs.aws.amazon.com/AmazonS3/latest/dev/security-best-practices.html\"\u003ehttps://docs.aws.amazon.com/AmazonS3/latest/dev/security-best-practices.html\u003c/a\u003e to avoid accidental leakage. \u003cbr\u003eAlso take a look at some of these tools: \u003ca href=\"https://github.com/toniblyx/my-arsenal-of-aws-security-tools\"\u003ehttps://github.com/toniblyx/my-arsenal-of-aws-security-tools\u003c/a\u003e \u003cbr\u003e\u003cbr\u003eFor \u003cb\u003eMicrosoft Azure\u003c/b\u003e: Follow the \u003ci\u003eCIS Benchmark for Microsoft Azure\u003c/i\u003e (see also the automated checks of cloud audit tools like \u003ci\u003e\"CloudSploit\" or \"ScoutSuite\"\u003c/i\u003e).\u003cbr\u003e\u003cbr\u003eFor \u003cb\u003eGoogle Cloud Platform\u003c/b\u003e: Follow the \u003ci\u003eCIS Benchmark for Google Cloud Computing Platform\u003c/i\u003e (see also the automated checks of cloud audit tools like \u003ci\u003e\"CloudSploit\" or \"ScoutSuite\"\u003c/i\u003e). \u003cbr\u003e\u003cbr\u003eFor \u003cb\u003eOracle Cloud Platform\u003c/b\u003e: Follow the hardening best practices (see also the automated checks of cloud audit tools like \u003ci\u003e\"CloudSploit\"\u003c/i\u003e).\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
               "properties": {
@@ -236,7 +236,7 @@
                 "text": "If this risk is unmitigated, attackers might be able to provide malicious files to the application.\n\nMitigation: Filter by file extension and discard (if feasible) the name provided. Whitelist the accepted file types and determine the mime-type on the server-side (for example via \"Apache Tika\" or similar checks). If the file is retrievable by end users and/or backoffice employees, consider performing scans for popular malware (if the files can be retrieved much later than they were uploaded, also apply a fresh malware scan during retrieval to scan with newer signatures of popular malware). Also enforce limits on maximum file size to avoid denial-of-service like scenarios."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: File Validation\n\nMitigation: Filter by file extension and discard (if feasible) the name provided. Whitelist the accepted file types and determine the mime-type on the server-side (for example via \"Apache Tika\" or similar checks). If the file is retrievable by end users and/or backoffice employees, consider performing scans for popular malware (if the files can be retrieved much later than they were uploaded, also apply a fresh malware scan during retrieval to scan with newer signatures of popular malware). Also enforce limits on maximum file size to avoid denial-of-service like scenarios.\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html",
               "properties": {
@@ -256,7 +256,7 @@
                 "text": "If this risk remains unmitigated, attackers might be able to easier attack high-value targets.\n\nMitigation: Try to apply all hardening best practices (like CIS benchmarks, OWASP recommendations, vendor recommendations, DevSec Hardening Framework, DBSAT for Oracle databases, and others)."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: System Hardening\n\nMitigation: Try to apply all hardening best practices (like CIS benchmarks, OWASP recommendations, vendor recommendations, DevSec Hardening Framework, DBSAT for Oracle databases, and others).\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
               "properties": {
@@ -276,7 +276,7 @@
                 "text": "If this risk is unmitigated, attackers might be able to access or modify foreign data after a successful compromise of a component within the system due to missing resource-based authorization checks.\n\nMitigation: When processing requests for end users if possible authorize in the backend against the propagated identity of the end user. This can be achieved in passing JWTs or similar tokens and checking them in the backend services. For DevOps usages apply at least a technical-user authorization."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: Identity Propagation and Resource-based Authorization\n\nMitigation: When processing requests for end users if possible authorize in the backend against the propagated identity of the end user. This can be achieved in passing JWTs or similar tokens and checking them in the backend services. For DevOps usages apply at least a technical-user authorization.\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html",
               "properties": {
@@ -296,7 +296,7 @@
                 "text": "If this risk is unmitigated, attackers might be able to easier steal config secrets (like credentials, private keys, client certificates, etc.) once a vulnerability to access files is present and exploited.\n\nMitigation: Consider using a Vault (Secret Storage) to securely store and access config secrets (like credentials, private keys, client certificates, etc.)."
               },
               "help": {
-                "text": "GetAttribute a Vault (Secret Storage) in place?"
+                "text": "How to fix: Vault (Secret Storage)\n\nMitigation: Consider using a Vault (Secret Storage) to securely store and access config secrets (like credentials, private keys, client certificates, etc.).\n\nCheck: GetAttribute a Vault (Secret Storage) in place?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html",
               "properties": {
@@ -316,7 +316,7 @@
                 "text": "If this risk is unmitigated, attackers successfully attacking other components of the system might have an easy path towards more valuable targets, as they are running on the same shared runtime.\n\nMitigation: Use separate runtime environments for running different target components or apply similar separation styles to prevent load- or breach-related problems originating from one more attacker-facing asset impacts also the other more critical rated backend/datastore assets."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: Runtime Separation\n\nMitigation: Use separate runtime environments for running different target components or apply similar separation styles to prevent load- or breach-related problems originating from one more attacker-facing asset impacts also the other more critical rated backend/datastore assets.\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
               "properties": {
@@ -336,7 +336,7 @@
                 "text": "If this risk is unmitigated, attackers might be able to read sensitive files (configuration data, key/credential files, deployment files, business data files, etc.) from the filesystem of affected components.\n\nMitigation: Before accessing the file cross-check that it resides in the expected folder and is of the expected type and filename/suffix. Try to use a mapping if possible instead of directly accessing by a filename which is (partly or fully) provided by the caller. When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: Path-Traversal Prevention\n\nMitigation: Before accessing the file cross-check that it resides in the expected folder and is of the expected type and filename/suffix. Try to use a mapping if possible instead of directly accessing by a filename which is (partly or fully) provided by the caller. When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level.\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html",
               "properties": {
@@ -356,7 +356,7 @@
                 "text": "If this risk is unmitigated, attackers might have more potential target vectors for attacks, as the overall attack surface is unnecessarily increased.\n\nMitigation: Try to prefer pull-based deployments (like GitOps scenarios offer) over push-based deployments to reduce the attack surface of the production system."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: Build Pipeline Hardening\n\nMitigation: Try to prefer pull-based deployments (like GitOps scenarios offer) over push-based deployments to reduce the attack surface of the production system.\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
               "properties": {
@@ -376,7 +376,7 @@
                 "text": "If this risk is unmitigated, attackers might be able to access sensitive services or files of network-reachable components by modifying outgoing calls of affected components.\n\nMitigation: Try to avoid constructing the outgoing target URL with caller controllable values. Alternatively use a mapping (whitelist) when accessing outgoing URLs instead of creating them including caller controllable values. When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: SSRF Prevention\n\nMitigation: Try to avoid constructing the outgoing target URL with caller controllable values. Alternatively use a mapping (whitelist) when accessing outgoing URLs instead of creating them including caller controllable values. When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level.\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html",
               "properties": {
@@ -396,7 +396,7 @@
                 "text": "If this risk is unmitigated, attackers might be able to modify SQL/NoSQL queries to steal and modify data and eventually further escalate towards a deeper system penetration via code executions.\n\nMitigation: Try to use parameter binding to be safe from injection vulnerabilities. When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: SQL/NoSQL-Injection Prevention\n\nMitigation: Try to use parameter binding to be safe from injection vulnerabilities. When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level.\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
               "properties": {
@@ -416,7 +416,7 @@
                 "text": "If this risk remains unmitigated, vulnerabilities in custom-developed software or their dependencies might not be identified during continuous deployment cycles.\n\nMitigation: Apply DevSecOps best-practices and use scanning tools to identify vulnerabilities in source- or byte-code,dependencies, container layers, and optionally also via dynamic scans against running test systems."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: Build Pipeline Hardening\n\nMitigation: Apply DevSecOps best-practices and use scanning tools to identify vulnerabilities in source- or byte-code,dependencies, container layers, and optionally also via dynamic scans against running test systems.\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html",
               "properties": {
@@ -436,7 +436,7 @@
                 "text": "If this risk is unmitigated, attackers might be able to access unencrypted data when successfully compromising sensitive components.\n\nMitigation: Apply encryption to the technical asset."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: Encryption of Technical Asset\n\nMitigation: Apply encryption to the technical asset.\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html",
               "properties": {
@@ -456,7 +456,7 @@
                 "text": "If this risk is unmitigated, network attackers might be able to to eavesdrop on unencrypted sensitive data sent between components.\n\nMitigation: Apply transport layer encryption to the communication link."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: Encryption of Communication Links\n\nMitigation: Apply transport layer encryption to the communication link.\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html",
               "properties": {
@@ -476,7 +476,7 @@
                 "text": "If this risk is unmitigated, attackers might be able to directly attack sensitive systems without any hardening components in-between due to them being directly exposed on the internet.\n\nMitigation: Encapsulate the asset behind a guarding service, application, or reverse-proxy. For admin maintenance a bastion-host should be used as a jump-server. For file transfer a store-and-forward-host should be used as an indirect file exchange platform."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: Encapsulation of Technical Asset\n\nMitigation: Encapsulate the asset behind a guarding service, application, or reverse-proxy. For admin maintenance a bastion-host should be used as a jump-server. For file transfer a store-and-forward-host should be used as an indirect file exchange platform.\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
               "properties": {
@@ -496,7 +496,7 @@
                 "text": "If this risk is unmitigated, attackers might be able to execute code on target systems by exploiting untrusted deserialization endpoints.\n\nMitigation: Try to avoid the deserialization of untrusted data (even of data within the same trust-boundary as long as it is sent across a remote connection) in order to stay safe from Untrusted Deserialization vulnerabilities. Alternatively a strict whitelisting approach of the classes/types/values to deserialize might help as well. When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: Prevention of Deserialization of Untrusted Data\n\nMitigation: Try to avoid the deserialization of untrusted data (even of data within the same trust-boundary as long as it is sent across a remote connection) in order to stay safe from Untrusted Deserialization vulnerabilities. Alternatively a strict whitelisting approach of the classes/types/values to deserialize might help as well. When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level.\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html",
               "properties": {
@@ -516,7 +516,7 @@
                 "text": "If this risk is unmitigated, attackers might be able to read sensitive files (configuration data, key/credential files, deployment files, business data files, etc.) form the filesystem of affected components and/or access sensitive services or files of other components.\n\nMitigation: Apply hardening of all XML parser instances in order to stay safe from XML External Entity (XXE) vulnerabilities. When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level."
               },
               "help": {
-                "text": "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+                "text": "How to fix: XML Parser Hardening\n\nMitigation: Apply hardening of all XML parser instances in order to stay safe from XML External Entity (XXE) vulnerabilities. When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level.\n\nCheck: Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html",
               "properties": {

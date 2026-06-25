@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/threagile/threagile/pkg/types"
 )
@@ -116,8 +117,21 @@ func BuildSarif(parsedModel *types.Model, modelFileURI string, version string) (
 			if fullText != "" {
 				rule.FullDescription = &sarifMessage{Text: fullText}
 			}
+			// The SARIF help panel is what a developer reads in their IDE / GitHub
+			// code-scanning to fix the finding, so lead with the actionable
+			// remediation (action + mitigation) before the detection logic.
+			var help string
+			if category.Action != "" {
+				help += "How to fix: " + category.Action + "\n\n"
+			}
+			if category.Mitigation != "" {
+				help += "Mitigation: " + category.Mitigation + "\n\n"
+			}
 			if category.Check != "" {
-				rule.Help = &sarifMessage{Text: category.Check}
+				help += "Check: " + category.Check
+			}
+			if help != "" {
+				rule.Help = &sarifMessage{Text: strings.TrimSpace(help)}
 			}
 			rule.HelpURI = category.CheatSheet
 			properties := make(map[string]interface{})

@@ -24,6 +24,7 @@
 | `policy init` / `policy list` | Scaffold a [secure-by-default gate policy](./gate.md#secure-by-default-starter-policies-policy-init): `--profile prototype\|balanced\|strict\|regulated` |       |
 | `score`                  | [Threat-model health score](./score.md) 0-100 + A-F grade (completeness + risk posture); `--min` gates CI, `--format shields` for a badge |       |
 | `prioritize`             | [Rank findings by exploitability](./prioritize.md) ("fix these first, here's how"): severity × exposure × reachability × data sensitivity, with remediation; `--top`, `--min-severity` |       |
+| `summary`                | [Sprint/PR scorecard](./summary.md): one document — health score + top findings to fix (one analysis pass); `--format markdown\|text\|json`, `--top` |       |
 
 ## Scaffolding
 

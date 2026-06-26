@@ -11,6 +11,7 @@ import (
 	"github.com/threagile/threagile/pkg/coverage"
 	"github.com/threagile/threagile/pkg/gate"
 	"github.com/threagile/threagile/pkg/model"
+	"github.com/threagile/threagile/pkg/score"
 	"github.com/threagile/threagile/pkg/types"
 )
 
@@ -95,6 +96,12 @@ Examples:
 				if err != nil {
 					return fmt.Errorf("gate: %w", err)
 				}
+			}
+
+			// Only compute the health score when the policy actually gates on it.
+			if policy.MinScore != nil {
+				overall := score.Compute(parsedModel).Overall
+				in.Score = &overall
 			}
 
 			result := gate.Evaluate(policy, in)

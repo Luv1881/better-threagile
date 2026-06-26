@@ -76,6 +76,20 @@ threagile gate --model threagile.yaml --policy policy.yaml \
 `forbid_new_at_or_above` flags any finding (by synthetic ID) at or above the
 named severity that is not present in the baseline.
 
+## Gating on the health score
+
+`min_score` requires the [threat-model health score](./score.md) (0–100) to stay
+at or above a floor — one number that captures both model completeness and risk
+posture. Set it to your current score and raise it over time so quality can only
+improve:
+
+```yaml
+min_score: 75
+```
+
+The gate only computes the score when this rule is present, so it adds no cost to
+policies that don't use it.
+
 ## Output formats
 
 ```sh

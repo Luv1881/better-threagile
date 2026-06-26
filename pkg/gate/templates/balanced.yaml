@@ -18,3 +18,7 @@ fail_on_expired_acceptance: true
 #   threagile analyze-model --model model.yaml --output out      # on main
 #   threagile gate --model model.yaml --policy policy.yaml --baseline out/risks.json
 # forbid_new_at_or_above: high
+
+# Ratchet overall quality with one number (see `threagile score`). Set it to
+# your current score, then raise it over time so it can only improve:
+# min_score: 70

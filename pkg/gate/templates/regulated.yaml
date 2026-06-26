@@ -18,3 +18,6 @@ fail_on_expired_acceptance: true
 # framework_coverage:
 #   - framework: nist_800_53
 #     min_percent: 60
+
+# Hold the threat-model health score above an audit-grade floor (see `threagile score`):
+# min_score: 85

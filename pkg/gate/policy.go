@@ -56,6 +56,11 @@ type Policy struct {
 	// FrameworkCoverage requires minimum control-coverage percentages for named
 	// compliance frameworks.
 	FrameworkCoverage []CoverageThreshold `yaml:"framework_coverage,omitempty" json:"framework_coverage,omitempty"`
+
+	// MinScore requires the threat-model health score (0–100, see `threagile
+	// score`) to stay at or above this floor. It lets a team ratchet overall
+	// quality up over time with a single number. nil disables the check.
+	MinScore *int `yaml:"min_score,omitempty" json:"min_score,omitempty"`
 }
 
 // CoverageThreshold is a minimum control-coverage requirement for one framework.
@@ -83,6 +88,10 @@ type Input struct {
 	// CoveragePercents maps framework name -> achieved coverage percent (0–100)
 	// for every framework referenced by the policy.
 	CoveragePercents map[string]float64
+
+	// Score is the threat-model health score (0–100) for the min_score rule, or
+	// nil when the CLI did not compute one.
+	Score *int
 }
 
 // Violation is a single failed policy rule.
@@ -128,8 +137,29 @@ func Evaluate(policy *Policy, in Input) *Result {
 	evalExpiredAcceptance(policy, in.ExpiredAcceptanceErr, result)
 	evalForbidNew(policy, in, result)
 	evalFrameworkCoverage(policy, in.CoveragePercents, result)
+	evalMinScore(policy, in.Score, result)
 
 	return result
+}
+
+// evalMinScore fails the gate when the health score is below the policy floor.
+func evalMinScore(policy *Policy, score *int, result *Result) {
+	if policy.MinScore == nil {
+		return
+	}
+	if score == nil {
+		result.Violations = append(result.Violations, Violation{
+			Rule:    "min_score",
+			Message: "rule requires the health score but none was supplied",
+		})
+		return
+	}
+	if *score < *policy.MinScore {
+		result.Violations = append(result.Violations, Violation{
+			Rule:    "min_score",
+			Message: fmt.Sprintf("health score %d is below the required minimum of %d", *score, *policy.MinScore),
+		})
+	}
 }
 
 func evalMaxSeverityCounts(policy *Policy, bySeverity map[types.RiskSeverity]int, result *Result) {

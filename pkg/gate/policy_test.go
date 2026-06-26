@@ -44,6 +44,31 @@ func TestEmptyPolicyPasses(t *testing.T) {
 	}
 }
 
+func TestMinScore(t *testing.T) {
+	floor := 75
+	mk := func(score *int) *Result {
+		return Evaluate(&Policy{MinScore: &floor}, Input{Score: score})
+	}
+	// below floor -> violation
+	low := 60
+	if r := mk(&low); r.Passed() {
+		t.Errorf("score %d below floor %d should fail", low, floor)
+	}
+	// at/above floor -> pass
+	ok := 80
+	if r := mk(&ok); !r.Passed() {
+		t.Errorf("score %d at/above floor %d should pass, got %v", ok, floor, r.Violations)
+	}
+	// missing score with the rule set -> loud violation, not silent pass
+	if r := mk(nil); r.Passed() {
+		t.Error("min_score rule with no score supplied should fail loudly")
+	}
+	// no rule -> score ignored
+	if r := Evaluate(&Policy{}, Input{Score: &low}); !r.Passed() {
+		t.Error("min_score not set should ignore the score")
+	}
+}
+
 func TestMaxSeverityCounts(t *testing.T) {
 	in := Input{Risks: riskMap(
 		risk("a", types.CriticalSeverity, types.Unchecked),

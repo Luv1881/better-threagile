@@ -26,7 +26,9 @@ threat intel — without any model changes.
 | Local guardrails | — | `hooks install` — git pre-commit (validate+lint) / pre-push (gate) so problems surface before CI |
 | Secure-by-default policy | — | `policy init --profile prototype\|balanced\|strict\|regulated` — tuned starter gate, no security expert needed |
 | Health score | — | `score` — one 0–100 / A–F number (completeness + risk posture) to track each sprint; `--min` gate, `--format shields` badge |
+| Sprint / PR scorecard | — | `summary` — one-pass scorecard (health score + top fixes) for a sprint review or PR comment |
 | Prioritization | — | `prioritize` — "fix these first, here's how": ranks findings by exploitability (severity × exposure × reachability × data) with remediation + CWE + cheat sheet |
+| Security backlog | — | `requirements` — turns still-at-risk findings into a deduplicated security-requirements backlog / test cases (Markdown checklist, Gherkin, or JSON) |
 | Secret hygiene | — | `validate` scans the model for committed credentials (`--fail-on-secrets`) |
 | Compliance evidence | — | `oscal` — NIST OSCAL assessment-results export for GRC pipelines |
 | Risk quantification | — | `quantify` — FAIR Monte-Carlo ALE (p10/p50/p90) + portfolio summary |
@@ -69,8 +71,10 @@ no security expert, no blank page, no separate dashboard:
 ```
 
 From there, `validate` catches committed secrets, `mermaid` renders the data-flow
-diagram in your README, and `diff old new --format markdown` posts a PR comment
-that says exactly what a change introduced and how to fix it.
+diagram in your README, `summary` produces a one-line sprint/PR scorecard,
+`requirements` turns the findings into a security backlog, and
+`diff old new --format markdown` posts a PR comment that says exactly what a
+change introduced and how to fix it.
 
 ## Building from source
 
@@ -143,6 +147,10 @@ These commands are built to run in a pipeline — they write machine-readable ou
 
 # "No new High vs the approved baseline" (generate the baseline from main's risks.json):
 ./bin/threagile gate --model model.yaml --policy policy.yaml --baseline baseline/risks.json
+
+# One-pass sprint / PR scorecard (health score + the top fixes), and a security backlog:
+./bin/threagile summary      --model model.yaml --format markdown > scorecard.md   # docs/summary.md
+./bin/threagile requirements --model model.yaml --format markdown > backlog.md      # docs/requirements.md
 
 # Risk delta as a PR comment (Markdown), or scaffold a ready-made GitHub Actions workflow:
 ./bin/threagile diff old.yaml new.yaml --format markdown > delta.md
@@ -275,6 +283,18 @@ see `../Threat-model/threagile/`: `gate-policy.yaml` (gate PASSes; tightening fa
 (SBOM correlation with live EPSS), and the Kubernetes/docker-compose imports of the stack
 (`imports/vaultnote-k8s.yaml`, generated from the real `docker-compose.yml`).
 
+### Continuous threat modeling in CI → GitHub Issues
+
+The VaultNote repo's `.github/workflows/threat-model.yml` (branch `ci-pipeline`) runs the
+fork on every security-relevant change: it builds the binary, installs Graphviz, runs
+`analyze-model` (with `--app-dir . --background report/template/background.pdf`), diffs the
+risks against the committed baseline to post a PR comment, and on `push`/`workflow_dispatch`
+syncs each still-at-risk finding to a **GitHub Issue** (`scripts/create-tickets.py`) with
+CVSS / CISA-KEV / EPSS / RAA severity scoring. Issues are keyed by a `threagile:<synthetic-id>`
+label; because GitHub caps label names at 50 chars, long chained synthetic IDs are truncated
+with a short content hash so the sync stays idempotent (create / reopen / close as findings
+come and go).
+
 ---
 
 ## Writing custom rules
@@ -308,7 +328,7 @@ the test suite in-image. (Upstream's Dockerfile cloned the upstream repo — fix
 - CLI command reference: [docs/commands.md](./docs/commands.md)
 - All CLI flags: [docs/flags.md](./docs/flags.md)
 - Methodologies & rule packs: [docs/methodologies.md](./docs/methodologies.md)
-- Onboarding: [docs/bootstrap.md](./docs/bootstrap.md) · Git hooks: [docs/hooks.md](./docs/hooks.md) · Score: [docs/score.md](./docs/score.md) · Prioritize: [docs/prioritize.md](./docs/prioritize.md)
+- Onboarding: [docs/bootstrap.md](./docs/bootstrap.md) · Git hooks: [docs/hooks.md](./docs/hooks.md) · Score: [docs/score.md](./docs/score.md) · Summary: [docs/summary.md](./docs/summary.md) · Prioritize: [docs/prioritize.md](./docs/prioritize.md) · Requirements: [docs/requirements.md](./docs/requirements.md)
 - Policy gate: [docs/gate.md](./docs/gate.md) · Attack paths: [docs/attack-paths.md](./docs/attack-paths.md) · ATT&CK: [docs/attack-navigator.md](./docs/attack-navigator.md) · SBOM: [docs/sbom.md](./docs/sbom.md) · Mermaid diagram: [docs/mermaid.md](./docs/mermaid.md) · OSCAL: [docs/oscal.md](./docs/oscal.md)
 - Importers: [Kubernetes](./docs/import-kubernetes.md) · [docker-compose](./docs/import-compose.md)
 - JSON Schema for IDE validation: `support/schema.json`

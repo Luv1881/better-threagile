@@ -23,7 +23,7 @@ func (*MissingWafRule) Category() *types.RiskCategory {
 		Action:     "Web Application Firewall (WAF)",
 		Mitigation: "Consider placing a Web Application Firewall (WAF) in front of the web-services and/or web-applications. For cloud environments many cloud providers offer " +
 			"pre-configured WAFs. Even reverse proxies can be enhances by a WAF component via ModSecurity plugins.",
-		Check:          "GetAttribute a Web Application Firewall (WAF) in place?",
+		Check:          "Is there a Web Application Firewall (WAF) in place?",
 		Function:       types.Operations,
 		STRIDE:         types.Tampering,
 		DetectionLogic: "In-scope web-services and/or web-applications accessed across a network trust boundary not having a Web Application Firewall (WAF) in front of them.",

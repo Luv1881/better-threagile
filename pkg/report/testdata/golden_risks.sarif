@@ -296,7 +296,7 @@
                 "text": "If this risk is unmitigated, attackers might be able to easier steal config secrets (like credentials, private keys, client certificates, etc.) once a vulnerability to access files is present and exploited.\n\nMitigation: Consider using a Vault (Secret Storage) to securely store and access config secrets (like credentials, private keys, client certificates, etc.)."
               },
               "help": {
-                "text": "How to fix: Vault (Secret Storage)\n\nMitigation: Consider using a Vault (Secret Storage) to securely store and access config secrets (like credentials, private keys, client certificates, etc.).\n\nCheck: GetAttribute a Vault (Secret Storage) in place?"
+                "text": "How to fix: Vault (Secret Storage)\n\nMitigation: Consider using a Vault (Secret Storage) to securely store and access config secrets (like credentials, private keys, client certificates, etc.).\n\nCheck: Is there a Vault (Secret Storage) in place?"
               },
               "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html",
               "properties": {

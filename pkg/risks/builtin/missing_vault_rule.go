@@ -24,7 +24,7 @@ func (*MissingVaultRule) Category() *types.RiskCategory {
 		CheatSheet:     "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html",
 		Action:         "Vault (Secret Storage)",
 		Mitigation:     "Consider using a Vault (Secret Storage) to securely store and access config secrets (like credentials, private keys, client certificates, etc.).",
-		Check:          "GetAttribute a Vault (Secret Storage) in place?",
+		Check:          "Is there a Vault (Secret Storage) in place?",
 		Function:       types.Architecture,
 		STRIDE:         types.InformationDisclosure,
 		DetectionLogic: "Models without a Vault (Secret Storage).",

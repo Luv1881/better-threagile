@@ -50,6 +50,8 @@ jobs:
           go test ./pkg/import/drawio/... -run=NONE -fuzz=FuzzImport -fuzztime=10s
           go test ./pkg/sbom/... -run=NONE -fuzz=FuzzParse -fuzztime=10s
           go test ./pkg/risks/script -run=NONE -fuzz=FuzzRiskRuleParseFromData -fuzztime=10s
+          go test ./pkg/secretscan/... -run=NONE -fuzz=FuzzScan -fuzztime=10s
+          go test ./pkg/bootstrap/... -run=NONE -fuzz=FuzzDetect -fuzztime=10s
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4

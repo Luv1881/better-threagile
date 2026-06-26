@@ -86,7 +86,20 @@ jobs:
             --output /app/work/gate-report.md
         continue-on-error: true
 
-      - name: Post gate report as PR comment
+      - name: Generate scorecard
+        # Adds the health score + the top findings-to-fix to the PR comment so the
+        # review is actionable, not just pass/fail. Best-effort.
+        continue-on-error: true
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/app/work" \
+            threagile/threagile:latest \
+            summary \
+            --model "/app/work/[[ .ModelPath ]]" \
+            --format markdown \
+            --output /app/work/summary.md
+
+      - name: Post scorecard + gate report as PR comment
         # Best-effort: fork PRs run with a read-only token, so commenting may 403.
         # Never let that fail the run — the gate step below owns pass/fail.
         if: github.event_name == 'pull_request'
@@ -95,11 +108,17 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            if (!fs.existsSync('gate-report.md')) {
-              core.warning('gate-report.md not found — the gate step did not produce a report.');
+            let body = '';
+            if (fs.existsSync('summary.md')) {
+              body += fs.readFileSync('summary.md', 'utf8') + '\n\n---\n\n';
+            }
+            if (fs.existsSync('gate-report.md')) {
+              body += fs.readFileSync('gate-report.md', 'utf8');
+            }
+            if (body === '') {
+              core.warning('no scorecard or gate report produced.');
               return;
             }
-            const body = fs.readFileSync('gate-report.md', 'utf8');
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,

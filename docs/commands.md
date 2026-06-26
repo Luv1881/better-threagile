@@ -25,6 +25,7 @@
 | `score`                  | [Threat-model health score](./score.md) 0-100 + A-F grade (completeness + risk posture); `--min` gates CI, `--format shields` for a badge |       |
 | `prioritize`             | [Rank findings by exploitability](./prioritize.md) ("fix these first, here's how"): severity × exposure × reachability × data sensitivity, with remediation; `--top`, `--min-severity` |       |
 | `summary`                | [Sprint/PR scorecard](./summary.md): one document — health score + top findings to fix (one analysis pass); `--format markdown\|text\|json`, `--top` |       |
+| `requirements`           | [Security requirements / test cases](./requirements.md) from findings: dedup checklist, `--format markdown\|gherkin\|json` |       |
 
 ## Scaffolding
 

@@ -39,6 +39,10 @@ type Object struct {
 	RelationshipType string `json:"relationship_type,omitempty"`
 	SourceRef        string `json:"source_ref,omitempty"`
 	TargetRef        string `json:"target_ref,omitempty"`
+	// Custom provenance properties (STIX 2.1 permits x_-prefixed extensions),
+	// set on the model identity so a bundle records which model/tool produced it.
+	XThreagileVersion string `json:"x_threagile_version,omitempty"`
+	XModelSHA256      string `json:"x_model_sha256,omitempty"`
 }
 
 type ExternalRef struct {
@@ -76,7 +80,11 @@ func (b *Bundle) add(typeName, seed string, mutate func(*Object)) string {
 }
 
 // Build produces a STIX 2.1 bundle from the analyzed model and its risks.
-func Build(model *types.Model, risks []*types.Risk) *Result {
+//
+// version and modelSHA256 are recorded as x_ provenance properties on the model
+// identity (either may be empty). The model hash is deterministic, so the bundle
+// stays byte-identical across runs of the same model.
+func Build(model *types.Model, risks []*types.Risk, version, modelSHA256 string) *Result {
 	// Seed the bundle ID with the title plus model size so two distinct models
 	// that share a title don't collide on the same bundle id.
 	bundleSeed := fmt.Sprintf("bundle:%s:%d:%d", model.Title, len(model.TechnicalAssets), len(risks))
@@ -87,6 +95,8 @@ func Build(model *types.Model, risks []*types.Risk) *Result {
 		o.Name = orDefault(model.Title, "Threat Model")
 		o.IdentityClass = "system"
 		o.Description = "Threagile threat model"
+		o.XThreagileVersion = version
+		o.XModelSHA256 = modelSHA256
 	})
 
 	// Infrastructure SDO per technical asset (sorted for determinism).

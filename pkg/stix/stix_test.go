@@ -28,7 +28,7 @@ func buildModel() (*types.Model, []*types.Risk) {
 
 func TestBuildBundleStructure(t *testing.T) {
 	m, risks := buildModel()
-	res := Build(m, risks)
+	res := Build(m, risks, "9.9.9", "deadbeef")
 	b := res.Bundle
 
 	if b.Type != "bundle" || !strings.HasPrefix(b.ID, "bundle--") {
@@ -47,6 +47,13 @@ func TestBuildBundleStructure(t *testing.T) {
 	if counts["identity"] != 1 {
 		t.Errorf("want 1 identity, got %d", counts["identity"])
 	}
+	for _, o := range b.Objects {
+		if o.Type == "identity" {
+			if o.XThreagileVersion != "9.9.9" || o.XModelSHA256 != "deadbeef" {
+				t.Errorf("identity missing provenance props: %+v", o)
+			}
+		}
+	}
 	if counts["infrastructure"] != 2 {
 		t.Errorf("want 2 infrastructure (assets), got %d", counts["infrastructure"])
 	}
@@ -60,7 +67,7 @@ func TestBuildBundleStructure(t *testing.T) {
 
 func TestBuildExternalRefsAndRelationships(t *testing.T) {
 	m, risks := buildModel()
-	b := Build(m, risks).Bundle
+	b := Build(m, risks, "", "").Bundle
 
 	idType := map[string]string{}
 	for _, o := range b.Objects {
@@ -101,8 +108,8 @@ func TestBuildExternalRefsAndRelationships(t *testing.T) {
 
 func TestDeterministicAndValidJSON(t *testing.T) {
 	m, risks := buildModel()
-	a, _ := json.Marshal(Build(m, risks).Bundle)
-	b, _ := json.Marshal(Build(m, risks).Bundle)
+	a, _ := json.Marshal(Build(m, risks, "", "").Bundle)
+	b, _ := json.Marshal(Build(m, risks, "", "").Bundle)
 	if string(a) != string(b) {
 		t.Fatal("STIX bundle is not deterministic")
 	}

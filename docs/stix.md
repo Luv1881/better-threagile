@@ -37,3 +37,8 @@ always produces a byte-identical bundle — safe to commit and diff in CI.
 
 (Like the other data commands, the bundle goes to **stdout** so
 `threagile stix ... > bundle.json` works.)
+
+The model `identity` object carries provenance as custom properties —
+`x_threagile_version` and `x_model_sha256` (the SHA-256 of the analysed model
+file) — so a bundle records which model, at which tool version, produced it.
+The hash is deterministic, so reproducible output is preserved.

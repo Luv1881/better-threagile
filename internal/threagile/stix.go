@@ -40,7 +40,8 @@ Example:
 				return fmt.Errorf("stix: failed to read and analyze model: %w", err)
 			}
 
-			result := stix.Build(r.ParsedModel, r.ParsedModel.AllRisks())
+			result := stix.Build(r.ParsedModel, r.ParsedModel.AllRisks(),
+				what.config.GetThreagileVersion(), fileSHA256(what.config.GetInputFile()))
 
 			jsonBytes, marshalErr := json.MarshalIndent(result.Bundle, "", "  ")
 			if marshalErr != nil {

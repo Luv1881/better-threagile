@@ -22,6 +22,9 @@ func FormatText(r *Result) string {
 	fmt.Fprintf(&sb, "FAIL — %d policy violation(s):\n", len(r.Violations))
 	for _, v := range r.Violations {
 		fmt.Fprintf(&sb, "  ✗ [%s] %s\n", v.Rule, v.Message)
+		if len(v.Findings) > 0 {
+			fmt.Fprintf(&sb, "      offending: %s\n", joinCapped(v.Findings, 15))
+		}
 	}
 	return sb.String()
 }
@@ -48,9 +51,22 @@ func FormatMarkdown(r *Result) string {
 	fmt.Fprintf(&sb, "### %d policy violation(s)\n\n", len(r.Violations))
 	sb.WriteString("| Rule | Detail |\n|------|--------|\n")
 	for _, v := range r.Violations {
-		fmt.Fprintf(&sb, "| `%s` | %s |\n", v.Rule, escapeCell(v.Message))
+		detail := escapeCell(v.Message)
+		if len(v.Findings) > 0 {
+			detail += "<br>offending: " + escapeCell(joinCapped(v.Findings, 15))
+		}
+		fmt.Fprintf(&sb, "| `%s` | %s |\n", v.Rule, detail)
 	}
 	return sb.String()
+}
+
+// joinCapped renders up to max IDs comma-separated, with a "(+N more)" suffix
+// when the list is longer, so reports stay readable while JSON keeps the full set.
+func joinCapped(ids []string, max int) string {
+	if len(ids) <= max {
+		return strings.Join(ids, ", ")
+	}
+	return strings.Join(ids[:max], ", ") + fmt.Sprintf(" (+%d more)", len(ids)-max)
 }
 
 func severitySummary(bySeverity map[string]int) string {

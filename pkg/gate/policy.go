@@ -98,6 +98,9 @@ type Input struct {
 type Violation struct {
 	Rule    string `json:"rule"`
 	Message string `json:"message"`
+	// Findings are the synthetic IDs of the findings responsible for this
+	// violation (when the rule is finding-based), so the report is actionable.
+	Findings []string `json:"findings,omitempty"`
 }
 
 // Result is the outcome of evaluating a policy against an Input.
@@ -123,16 +126,20 @@ func Evaluate(policy *Policy, in Input) *Result {
 
 	atRisk := stillAtRiskSorted(in.Risks)
 	bySeverity := map[types.RiskSeverity]int{}
+	idsBySeverity := map[types.RiskSeverity][]string{}
+	allAtRiskIDs := make([]string, 0, len(atRisk))
 	for _, r := range atRisk {
 		bySeverity[r.Severity]++
+		idsBySeverity[r.Severity] = append(idsBySeverity[r.Severity], r.SyntheticId)
+		allAtRiskIDs = append(allAtRiskIDs, r.SyntheticId)
 	}
 	result.AtRiskTotal = len(atRisk)
 	for sev, n := range bySeverity {
 		result.AtRiskBySeverity[sev.String()] = n
 	}
 
-	evalMaxSeverityCounts(policy, bySeverity, result)
-	evalMaxTotal(policy, len(atRisk), result)
+	evalMaxSeverityCounts(policy, bySeverity, idsBySeverity, result)
+	evalMaxTotal(policy, len(atRisk), allAtRiskIDs, result)
 	evalRequireTracking(policy, in.Risks, result)
 	evalExpiredAcceptance(policy, in.ExpiredAcceptanceErr, result)
 	evalForbidNew(policy, in, result)
@@ -162,7 +169,7 @@ func evalMinScore(policy *Policy, score *int, result *Result) {
 	}
 }
 
-func evalMaxSeverityCounts(policy *Policy, bySeverity map[types.RiskSeverity]int, result *Result) {
+func evalMaxSeverityCounts(policy *Policy, bySeverity map[types.RiskSeverity]int, idsBySeverity map[types.RiskSeverity][]string, result *Result) {
 	// Normalize keys to their canonical (lower-case) severity name so a policy
 	// written as "Critical: 0" is honoured, not silently ignored. Validation
 	// (below) is case-insensitive via ParseRiskSeverity, so the lookup must be too.
@@ -183,8 +190,9 @@ func evalMaxSeverityCounts(policy *Policy, bySeverity map[types.RiskSeverity]int
 		}
 		if got := bySeverity[sev]; got > max {
 			result.Violations = append(result.Violations, Violation{
-				Rule:    "max_severity_counts",
-				Message: fmt.Sprintf("%d %s finding(s) still at risk, policy allows at most %d", got, sev.String(), max),
+				Rule:     "max_severity_counts",
+				Message:  fmt.Sprintf("%d %s finding(s) still at risk, policy allows at most %d", got, sev.String(), max),
+				Findings: idsBySeverity[sev],
 			})
 		}
 	}
@@ -199,14 +207,15 @@ func evalMaxSeverityCounts(policy *Policy, bySeverity map[types.RiskSeverity]int
 	}
 }
 
-func evalMaxTotal(policy *Policy, total int, result *Result) {
+func evalMaxTotal(policy *Policy, total int, allAtRiskIDs []string, result *Result) {
 	if policy.MaxTotalAtRisk == nil {
 		return
 	}
 	if total > *policy.MaxTotalAtRisk {
 		result.Violations = append(result.Violations, Violation{
-			Rule:    "max_total_at_risk",
-			Message: fmt.Sprintf("%d findings still at risk, policy allows at most %d", total, *policy.MaxTotalAtRisk),
+			Rule:     "max_total_at_risk",
+			Message:  fmt.Sprintf("%d findings still at risk, policy allows at most %d", total, *policy.MaxTotalAtRisk),
+			Findings: allAtRiskIDs,
 		})
 	}
 }
@@ -233,8 +242,9 @@ func evalRequireTracking(policy *Policy, risks map[string]*types.Risk, result *R
 		sort.Strings(untracked)
 		result.Violations = append(result.Violations, Violation{
 			Rule: "require_tracking_at_or_above",
-			Message: fmt.Sprintf("%d finding(s) at or above %s have no tracking decision (status unchecked): %v",
-				len(untracked), threshold.String(), untracked),
+			Message: fmt.Sprintf("%d finding(s) at or above %s have no tracking decision (status unchecked)",
+				len(untracked), threshold.String()),
+			Findings: untracked,
 		})
 	}
 }
@@ -288,8 +298,9 @@ func evalForbidNew(policy *Policy, in Input, result *Result) {
 		sort.Strings(newOnes)
 		result.Violations = append(result.Violations, Violation{
 			Rule: "forbid_new_at_or_above",
-			Message: fmt.Sprintf("%d new/escalated finding(s) at or above %s vs baseline: %v",
-				len(newOnes), threshold.String(), newOnes),
+			Message: fmt.Sprintf("%d new/escalated finding(s) at or above %s vs baseline",
+				len(newOnes), threshold.String()),
+			Findings: newOnes,
 		})
 	}
 }

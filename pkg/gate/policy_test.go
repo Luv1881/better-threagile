@@ -102,6 +102,28 @@ func TestMaxSeverityCountsCaseInsensitive(t *testing.T) {
 	}
 }
 
+// A count violation must list the offending finding IDs so the report is actionable.
+func TestMaxSeverityCountsListsOffendingFindings(t *testing.T) {
+	in := Input{Risks: riskMap(
+		risk("crit-a", types.CriticalSeverity, types.Unchecked),
+		risk("crit-b", types.CriticalSeverity, types.Unchecked),
+	)}
+	r := Evaluate(&Policy{MaxSeverityCounts: map[string]int{"critical": 0}}, in)
+	var v *Violation
+	for i := range r.Violations {
+		if r.Violations[i].Rule == "max_severity_counts" {
+			v = &r.Violations[i]
+		}
+	}
+	if v == nil {
+		t.Fatal("expected max_severity_counts violation")
+	}
+	got := strings.Join(v.Findings, ",")
+	if !strings.Contains(got, "crit-a") || !strings.Contains(got, "crit-b") {
+		t.Fatalf("violation should list offending findings, got %q", got)
+	}
+}
+
 func TestMaxSeverityCountsUnknownKey(t *testing.T) {
 	p := &Policy{MaxSeverityCounts: map[string]int{"catastrophic": 0}}
 	r := Evaluate(p, Input{Risks: riskMap()})
@@ -177,9 +199,9 @@ func TestForbidNewWithBaseline(t *testing.T) {
 	if !hasViolation(r, "forbid_new_at_or_above") {
 		t.Fatalf("expected forbid_new violation, got %v", r.Violations)
 	}
-	msg := r.Violations[0].Message
-	if !strings.Contains(msg, "new-high") || strings.Contains(msg, "new-medium") || strings.Contains(msg, "old-high") {
-		t.Fatalf("should flag new-high only, got %q", msg)
+	got := strings.Join(r.Violations[0].Findings, ",")
+	if !strings.Contains(got, "new-high") || strings.Contains(got, "new-medium") || strings.Contains(got, "old-high") {
+		t.Fatalf("should flag new-high only, got %q", got)
 	}
 }
 

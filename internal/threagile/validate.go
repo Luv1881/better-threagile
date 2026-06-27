@@ -1,8 +1,10 @@
 package threagile
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -10,8 +12,23 @@ import (
 	"github.com/threagile/threagile/pkg/secretscan"
 )
 
+// ValidateReport is the machine-readable result of `validate --json`.
+type ValidateReport struct {
+	Model   string           `json:"model"`
+	Valid   bool             `json:"valid"`
+	Errors  []string         `json:"errors"`
+	Secrets []ValidateSecret `json:"secrets,omitempty"`
+}
+
+type ValidateSecret struct {
+	Line    int    `json:"line"`
+	Rule    string `json:"rule"`
+	Preview string `json:"preview"`
+}
+
 func (what *Threagile) initValidate() *Threagile {
 	var failOnSecrets bool
+	var jsonOutput bool
 	validate := &cobra.Command{
 		Use:     ValidateCommand,
 		Short:   "Parse and validate the model YAML without running risk rules",
@@ -20,23 +37,34 @@ func (what *Threagile) initValidate() *Threagile {
 			what.processArgs(cmd, args)
 
 			modelFile := what.config.GetInputFile()
-			cmd.Printf("Validating model: %s\n", modelFile)
 
 			errs := validateModel(modelFile)
-
 			// Secrets do not belong in a model file. Surface any that slipped in
 			// (redacted), and optionally fail the build.
 			secrets := scanModelForSecrets(modelFile)
-			for _, s := range secrets {
-				cmd.Printf("⚠ possible secret at line %d (%s): %s\n", s.Line, s.Rule, s.Preview)
-			}
 
-			if len(errs) == 0 {
-				cmd.Println("✓ Model is valid")
+			if jsonOutput {
+				report := ValidateReport{Model: modelFile, Valid: len(errs) == 0, Errors: errs}
+				for _, s := range secrets {
+					report.Secrets = append(report.Secrets, ValidateSecret{Line: s.Line, Rule: s.Rule, Preview: s.Preview})
+				}
+				enc := json.NewEncoder(cmd.OutOrStdout())
+				enc.SetIndent("", "  ")
+				if err := enc.Encode(report); err != nil {
+					return err
+				}
 			} else {
-				cmd.Printf("✗ Found %d validation error(s):\n\n", len(errs))
-				for i, e := range errs {
-					cmd.Printf("  %d. %s\n", i+1, e)
+				cmd.Printf("Validating model: %s\n", modelFile)
+				for _, s := range secrets {
+					cmd.Printf("⚠ possible secret at line %d (%s): %s\n", s.Line, s.Rule, s.Preview)
+				}
+				if len(errs) == 0 {
+					cmd.Println("✓ Model is valid")
+				} else {
+					cmd.Printf("✗ Found %d validation error(s):\n\n", len(errs))
+					for i, e := range errs {
+						cmd.Printf("  %d. %s\n", i+1, e)
+					}
 				}
 			}
 
@@ -50,6 +78,7 @@ func (what *Threagile) initValidate() *Threagile {
 		},
 	}
 	validate.Flags().BoolVar(&failOnSecrets, "fail-on-secrets", false, "exit 3 if a possible secret is found in the model file")
+	validate.Flags().BoolVar(&jsonOutput, "json", false, "output the validation result as JSON")
 
 	what.rootCmd.AddCommand(validate)
 	return what
@@ -189,5 +218,8 @@ func validateModel(modelFile string) []string {
 		}
 	}
 
+	// Errors are collected while iterating maps, so sort for deterministic,
+	// diffable output (matters for the JSON output and any CI that diffs it).
+	sort.Strings(errs)
 	return errs
 }

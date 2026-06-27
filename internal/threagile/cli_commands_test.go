@@ -1,6 +1,7 @@
 package threagile
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -21,6 +22,38 @@ func TestValidateCommand_ValidModel(t *testing.T) {
 	out, err := executeCmd(app, ValidateCommand, "--model", demoModelPath(t))
 	require.NoError(t, err)
 	assert.Contains(t, out, "Model is valid")
+}
+
+func TestValidateCommand_JSONOutput(t *testing.T) {
+	app := newTestAppWithArgs(ValidateCommand, "--model", demoModelPath(t), "--json")
+	out, err := executeCmd(app, ValidateCommand, "--model", demoModelPath(t), "--json")
+	require.NoError(t, err)
+	assert.Contains(t, out, `"valid": true`)
+}
+
+// A model that loads but has dangling references across multiple (map-keyed)
+// assets exercises the deterministic ordering of validation errors.
+func TestValidateCommand_DeterministicErrorOrder(t *testing.T) {
+	model := `title: Determinism Test
+technical_assets:
+  Zeta Asset:
+    id: zeta-asset
+    data_assets_processed:
+      - missing-data
+  Alpha Asset:
+    id: alpha-asset
+    data_assets_processed:
+      - missing-data
+`
+	path := filepath.Join(t.TempDir(), "threagile.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(model), 0600))
+
+	app := newTestAppWithArgs(ValidateCommand, "--model", path, "--json")
+	out, err := executeCmd(app, ValidateCommand, "--model", path, "--json")
+	require.Error(t, err) // invalid model -> non-zero exit
+	assert.Contains(t, out, `"valid": false`)
+	// Errors are sorted, so "Alpha Asset" must appear before "Zeta Asset".
+	assert.Less(t, strings.Index(out, "Alpha Asset"), strings.Index(out, "Zeta Asset"))
 }
 
 func TestLintCommand_Runs(t *testing.T) {

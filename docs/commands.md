@@ -5,7 +5,7 @@
 | Command                  | Description                                                                         | Aliases                                      |
 |--------------------------|-------------------------------------------------------------------------------------|----------------------------------------------|
 | `analyze-model`          | Run threat model analysis; produces PDF, Excel, JSON, diagrams                      | `analyze`, `analyse`, `run`, `analyse-model` |
-| `validate`               | Parse and validate the model YAML without running risk rules (fast, CI-safe); also scans for committed secrets (`--fail-on-secrets`) | `check` |
+| `validate`               | Parse and validate the model YAML without running risk rules (fast, CI-safe); `--json` for machine output; also scans for committed secrets (`--fail-on-secrets`) | `check` |
 | `lint`                   | Check the model for style and best-practice issues; `--fix` applies mechanical fixes; `--json` for machine output |                               |
 | `diff <old> <new>`       | Show the risk delta (added / removed / unchanged) between two model versions; `--format text\|markdown\|json`, `--output <file>` (Markdown is PR-comment ready, with a "how to fix the new findings" remediation list) |                          |
 | `gate`                   | [Policy-as-code CI gate](./gate.md): evaluate `--policy policy.yaml`, exit 3 on violation; `--baseline risks.json`, `--format text\|markdown\|json` |              |

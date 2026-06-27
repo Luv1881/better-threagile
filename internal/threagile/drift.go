@@ -2,7 +2,6 @@ package threagile
 
 import (
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 
@@ -27,10 +26,10 @@ Examples:
   threagile drift --baseline baseline.yaml --current threagile.yaml
   threagile drift --baseline baseline.yaml --current threagile.yaml --fail-on-new-high
 
-Exit codes:
+Exit codes (see docs/exit-codes.md):
   0   No new high/critical risks (or flags not set)
-  1   New high or critical findings found (with --fail-on-new-high or --fail-on-new-critical)
-  2   Analysis error`,
+  1   Analysis / usage error
+  3   New high or critical findings found (with --fail-on-new-high or --fail-on-new-critical)`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			what.processArgs(cmd, args)
 
@@ -47,15 +46,13 @@ Exit codes:
 			what.config.SetInputFile(baseline)
 			baseRisks, err := analyzeForDiff(what.config, builtinRules, progressReporter)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "drift: baseline analysis failed: %v\n", err)
-				os.Exit(2)
+				return fmt.Errorf("drift: baseline analysis failed: %w", err)
 			}
 
 			what.config.SetInputFile(current)
 			currRisks, err := analyzeForDiff(what.config, builtinRules, progressReporter)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "drift: current analysis failed: %v\n", err)
-				os.Exit(2)
+				return fmt.Errorf("drift: current analysis failed: %w", err)
 			}
 
 			// diffRisks now classifies severity changes separately; drift keeps its
@@ -109,11 +106,11 @@ Exit codes:
 
 			if failOnNewCritical && hasNewCritical {
 				cmd.Println("\nCI gate FAILED: new critical-severity findings introduced.")
-				os.Exit(1)
+				return &exitCodeError{code: 3, msg: "drift gate failed: new critical-severity findings"}
 			}
 			if failOnNewHigh && hasNewHigh {
 				cmd.Println("\nCI gate FAILED: new high-or-critical-severity findings introduced.")
-				os.Exit(1)
+				return &exitCodeError{code: 3, msg: "drift gate failed: new high-or-critical-severity findings"}
 			}
 			return nil
 		},
@@ -121,8 +118,8 @@ Exit codes:
 
 	cmd.Flags().StringVar(&baseline, "baseline", "", "Approved baseline model YAML (required)")
 	cmd.Flags().StringVar(&current, "current", "", "Current model YAML to compare against baseline (required)")
-	cmd.Flags().BoolVar(&failOnNewHigh, "fail-on-new-high", false, "Exit 1 if any new High or Critical findings are introduced")
-	cmd.Flags().BoolVar(&failOnNewCritical, "fail-on-new-critical", false, "Exit 1 only if new Critical findings are introduced")
+	cmd.Flags().BoolVar(&failOnNewHigh, "fail-on-new-high", false, "Exit 3 if any new High or Critical findings are introduced")
+	cmd.Flags().BoolVar(&failOnNewCritical, "fail-on-new-critical", false, "Exit 3 only if new Critical findings are introduced")
 	_ = cmd.MarkFlagRequired("baseline")
 	_ = cmd.MarkFlagRequired("current")
 

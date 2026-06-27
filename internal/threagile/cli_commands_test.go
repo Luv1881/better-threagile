@@ -129,6 +129,30 @@ func TestDefaultProjectConfig_FlagOverrides(t *testing.T) {
 	assert.Contains(t, app.config.GetInputFile(), "from-flag.yaml")
 }
 
+func TestDriftCommand_FailOnNewHighExits3(t *testing.T) {
+	// Empty baseline vs the demo model => demo's high/critical findings are all
+	// "new" => the gate must fail with the standard gate exit code 3.
+	baseline := filepath.Join(t.TempDir(), "baseline.yaml")
+	require.NoError(t, os.WriteFile(baseline, []byte("title: Empty Baseline\nbusiness_criticality: important\n"), 0600))
+	args := []string{"drift", "--baseline", baseline, "--current", demoModelPath(t),
+		"--fail-on-new-high", "--ignore-orphaned-risk-tracking"}
+	app := newTestAppWithArgs(args...)
+	_, err := executeCmd(app, args...)
+	require.Error(t, err)
+	var ece *exitCodeError
+	require.ErrorAs(t, err, &ece)
+	assert.Equal(t, 3, ece.code)
+}
+
+func TestDriftCommand_NoDriftExitsZero(t *testing.T) {
+	args := []string{"drift", "--baseline", demoModelPath(t), "--current", demoModelPath(t),
+		"--fail-on-new-high", "--ignore-orphaned-risk-tracking"}
+	app := newTestAppWithArgs(args...)
+	out, err := executeCmd(app, args...)
+	require.NoError(t, err)
+	assert.Contains(t, out, "No risk drift detected")
+}
+
 func TestExplainRulesCommand_Runs(t *testing.T) {
 	app := newTestApp()
 	out, err := executeCmd(app, ExplainCommand, RulesItem)

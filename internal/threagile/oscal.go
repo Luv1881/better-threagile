@@ -1,6 +1,8 @@
 package threagile
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -37,7 +39,8 @@ Example:
 				return fmt.Errorf("oscal: failed to read and analyze model: %w", err)
 			}
 
-			doc := oscal.Build(r.ParsedModel, r.ParsedModel.AllRisks())
+			doc := oscal.Build(r.ParsedModel, r.ParsedModel.AllRisks(),
+				what.config.GetThreagileVersion(), fileSHA256(what.config.GetInputFile()))
 			jsonBytes, marshalErr := json.MarshalIndent(doc, "", "  ")
 			if marshalErr != nil {
 				return fmt.Errorf("oscal: marshal document: %w", marshalErr)
@@ -60,4 +63,14 @@ Example:
 
 	what.rootCmd.AddCommand(cmd)
 	return what
+}
+
+// fileSHA256 returns the hex SHA-256 of a file, or "" if it cannot be read.
+func fileSHA256(path string) string {
+	data, err := os.ReadFile(filepath.Clean(path)) // #nosec G304 -- operator-supplied model path
+	if err != nil {
+		return ""
+	}
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
 }

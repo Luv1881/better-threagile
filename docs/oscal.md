@@ -25,5 +25,10 @@ and diffs cleanly in version control. The output round-trips as JSON and follows
 the OSCAL `assessment-results` model (`oscal-version: 1.1.2`); pair it with your
 assessment plan via the `import-ap` reference.
 
+The metadata carries provenance props — `threagile-version` and `model-sha256`
+(the SHA-256 of the analysed model file) — so each evidence document records
+exactly which model, at which tool version, produced it. The hash is
+deterministic, so reproducible output is preserved.
+
 This complements the [STIX export](./stix.md) (threat-intel interop) with the
 compliance/GRC side of the same analysis.

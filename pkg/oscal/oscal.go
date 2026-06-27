@@ -40,6 +40,7 @@ type Metadata struct {
 	LastModified string `json:"last-modified"`
 	Version      string `json:"version"`
 	OSCALVersion string `json:"oscal-version"`
+	Props        []Prop `json:"props,omitempty"`
 }
 
 type ImportAP struct {
@@ -78,9 +79,22 @@ type Status struct {
 }
 
 // Build produces the OSCAL assessment-results document for an analyzed model.
-func Build(model *types.Model, risks []*types.Risk) *Document {
+//
+// version and modelSHA256 are recorded in the metadata as provenance props
+// ("which model, which tool version produced this evidence"). Either may be
+// empty, in which case that prop is omitted. The model hash is deterministic
+// for a given model file, so output stays byte-identical across runs.
+func Build(model *types.Model, risks []*types.Risk, version, modelSHA256 string) *Document {
 	id := func(seed string) string {
 		return uuid.NewSHA1(oscalNamespace, []byte(seed)).String()
+	}
+
+	var provenance []Prop
+	if version != "" {
+		provenance = append(provenance, Prop{Name: "threagile-version", Value: version})
+	}
+	if modelSHA256 != "" {
+		provenance = append(provenance, Prop{Name: "model-sha256", Value: modelSHA256})
 	}
 
 	sorted := append([]*types.Risk{}, risks...)
@@ -129,6 +143,7 @@ func Build(model *types.Model, risks []*types.Risk) *Document {
 				LastModified: fixedTimestamp,
 				Version:      "1.0.0",
 				OSCALVersion: oscalVersion,
+				Props:        provenance,
 			},
 			ImportAP: ImportAP{Href: "#threagile-assessment-plan"},
 			Results:  []ResultEntry{result},

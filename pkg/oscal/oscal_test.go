@@ -22,7 +22,7 @@ func sampleModel() *types.Model {
 }
 
 func TestBuildShapeAndStatuses(t *testing.T) {
-	doc := Build(sampleModel(), sampleModel().AllRisks())
+	doc := Build(sampleModel(), sampleModel().AllRisks(), "", "")
 	ar := doc.AssessmentResults
 	if ar.UUID == "" || ar.Metadata.OSCALVersion != oscalVersion {
 		t.Fatalf("bad metadata: %+v", ar.Metadata)
@@ -47,12 +47,12 @@ func TestBuildShapeAndStatuses(t *testing.T) {
 }
 
 func TestDeterministicAndValidJSON(t *testing.T) {
-	first, err := json.Marshal(Build(sampleModel(), sampleModel().AllRisks()))
+	first, err := json.Marshal(Build(sampleModel(), sampleModel().AllRisks(), "", ""))
 	if err != nil {
 		t.Fatal(err)
 	}
 	for i := 0; i < 10; i++ {
-		got, _ := json.Marshal(Build(sampleModel(), sampleModel().AllRisks()))
+		got, _ := json.Marshal(Build(sampleModel(), sampleModel().AllRisks(), "", ""))
 		if string(got) != string(first) {
 			t.Fatal("non-deterministic OSCAL output")
 		}
@@ -67,8 +67,24 @@ func TestDeterministicAndValidJSON(t *testing.T) {
 	}
 }
 
+func TestBuildRecordsProvenance(t *testing.T) {
+	doc := Build(sampleModel(), sampleModel().AllRisks(), "1.2.3", "abc123")
+	props := doc.AssessmentResults.Metadata.Props
+	got := map[string]string{}
+	for _, p := range props {
+		got[p.Name] = p.Value
+	}
+	if got["threagile-version"] != "1.2.3" || got["model-sha256"] != "abc123" {
+		t.Fatalf("expected provenance props, got %+v", props)
+	}
+	// empty provenance must be omitted, not emitted as empty props
+	if Build(sampleModel(), sampleModel().AllRisks(), "", "").AssessmentResults.Metadata.Props != nil {
+		t.Error("expected no props when version/hash are empty")
+	}
+}
+
 func TestEmptyModelProducesValidDocument(t *testing.T) {
-	doc := Build(&types.Model{Title: "Empty"}, nil)
+	doc := Build(&types.Model{Title: "Empty"}, nil, "", "")
 	if len(doc.AssessmentResults.Results) != 1 {
 		t.Errorf("should still emit one result entry, got %d", len(doc.AssessmentResults.Results))
 	}

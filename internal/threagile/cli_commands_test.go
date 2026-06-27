@@ -88,6 +88,27 @@ technical_assets:
 	assert.Less(t, strings.Index(out, "Alpha Asset"), strings.Index(out, "Zeta Asset"))
 }
 
+func TestDefaultProjectConfig_AutoLoaded(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, defaultProjectConfigFile),
+		[]byte("InputFile: from-project-config.yaml\n"), 0600))
+	t.Chdir(dir)
+
+	app := newTestApp() // Init() runs processArgs, which auto-loads the config
+	assert.Equal(t, "from-project-config.yaml", app.config.GetInputFile())
+}
+
+func TestDefaultProjectConfig_FlagOverrides(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, defaultProjectConfigFile),
+		[]byte("InputFile: from-project-config.yaml\n"), 0600))
+	t.Chdir(dir)
+
+	// An explicit --model on the command line must win over the project config.
+	app := newTestAppWithArgs("--model", "from-flag.yaml")
+	assert.Contains(t, app.config.GetInputFile(), "from-flag.yaml")
+}
+
 func TestExplainRulesCommand_Runs(t *testing.T) {
 	app := newTestApp()
 	out, err := executeCmd(app, ExplainCommand, RulesItem)

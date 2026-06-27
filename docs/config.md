@@ -6,6 +6,23 @@ Config values will override flag values.
 
 All config keys are case insensitive.
 
+## Per-project config (`.threagile.yaml`)
+
+If you do **not** pass `--config`, threagile automatically loads a
+`.threagile.yaml` from the current working directory (if present). This lets a
+repo keep its common settings (e.g. `InputFile`, `OutputFolder`) in one place
+instead of repeating flags on every invocation:
+
+```yaml
+# .threagile.yaml — per-project defaults
+InputFile: threat-model/threagile.yaml
+OutputFolder: threat-model/output
+```
+
+Precedence (lowest to highest): built-in defaults → `.threagile.yaml` →
+explicit `--config <file>` → command-line flags. So a flag like
+`--model other.yaml` always overrides the project config.
+
 ## Common config keys
 
 | Key                              | Type                           | Description                                                          | Default Values          |

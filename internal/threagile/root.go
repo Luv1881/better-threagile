@@ -284,6 +284,19 @@ func (what *Threagile) processSystemArgs(cmd *cobra.Command) *Threagile {
 	return what
 }
 
+// defaultProjectConfigFile is the per-project config auto-loaded from the
+// current working directory when no explicit --config is given.
+const defaultProjectConfigFile = ".threagile.yaml"
+
+// defaultConfigFile returns defaultProjectConfigFile if it exists as a regular
+// file in the working directory, else "".
+func defaultConfigFile() string {
+	if info, err := os.Stat(defaultProjectConfigFile); err == nil && !info.IsDir() {
+		return defaultProjectConfigFile
+	}
+	return ""
+}
+
 func (what *Threagile) processArgs(cmd *cobra.Command, args []string) bool {
 	// This pass only EXTRACTS root persistent-flag values (real validation happens
 	// later in Execute). Whitelisting unknown flags stops pflag from halting at the
@@ -296,6 +309,14 @@ func (what *Threagile) processArgs(cmd *cobra.Command, args []string) bool {
 		configError := what.config.Load(what.flags.configFlag)
 		if configError != nil {
 			what.rootCmd.Printf("WARNING: failed to load config file %q: %v\n", what.flags.configFlag, configError)
+		}
+	} else if defaultConfig := defaultConfigFile(); defaultConfig != "" {
+		// Per-project defaults: auto-load .threagile.yaml from the working
+		// directory so common settings (InputFile, OutputFolder, ...) need not
+		// be repeated on every run. An explicit --config takes precedence over
+		// this, and CLI flags still override either (they are applied below).
+		if configError := what.config.Load(defaultConfig); configError != nil {
+			what.rootCmd.Printf("WARNING: failed to load default config %q: %v\n", defaultConfig, configError)
 		}
 	}
 

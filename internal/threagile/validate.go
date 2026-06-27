@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/threagile/threagile/pkg/input"
 	"github.com/threagile/threagile/pkg/secretscan"
+	"gopkg.in/yaml.v3"
 )
 
 // ValidateReport is the machine-readable result of `validate --json`.
@@ -94,6 +95,44 @@ func scanModelForSecrets(modelFile string) []secretscan.Finding {
 	return secretscan.Scan(data)
 }
 
+// modelEntityLines maps each top-level named entity (technical asset, data
+// asset, trust boundary, ...) to its source line in the model YAML, so
+// validation errors can point at the offending element. Best-effort: returns an
+// empty map on any read/parse error (the caller degrades gracefully).
+func modelEntityLines(modelFile string) map[string]int {
+	lines := map[string]int{}
+	data, err := os.ReadFile(modelFile) // #nosec G304 -- operator-supplied model path
+	if err != nil {
+		return lines
+	}
+	var root yaml.Node
+	if err := yaml.Unmarshal(data, &root); err != nil || len(root.Content) == 0 {
+		return lines
+	}
+	doc := root.Content[0]
+	if doc.Kind != yaml.MappingNode {
+		return lines
+	}
+	sections := map[string]bool{
+		"technical_assets": true, "data_assets": true, "trust_boundaries": true,
+		"shared_runtimes": true, "threat_scenarios": true, "business_processes": true,
+	}
+	for i := 0; i+1 < len(doc.Content); i += 2 {
+		key, val := doc.Content[i], doc.Content[i+1]
+		if !sections[key.Value] || val.Kind != yaml.MappingNode {
+			continue
+		}
+		for j := 0; j+1 < len(val.Content); j += 2 {
+			if title := val.Content[j].Value; title != "" {
+				if _, exists := lines[title]; !exists {
+					lines[title] = val.Content[j].Line
+				}
+			}
+		}
+	}
+	return lines
+}
+
 // validateModel loads and parses the model, returning human-readable error strings.
 func validateModel(modelFile string) []string {
 	var errs []string
@@ -101,6 +140,16 @@ func validateModel(modelFile string) []string {
 	modelInput := new(input.Model).Defaults()
 	if err := modelInput.Load(modelFile); err != nil {
 		return []string{fmt.Sprintf("failed to load model: %v", err)}
+	}
+
+	// Source line of each named entity (best-effort), so errors can point at the
+	// offending element. Empty/absent => no suffix (graceful degradation).
+	entityLines := modelEntityLines(modelFile)
+	loc := func(title string) string {
+		if n, ok := entityLines[title]; ok {
+			return fmt.Sprintf(" (line %d)", n)
+		}
+		return ""
 	}
 
 	// Check for dangling data asset references in technical assets
@@ -117,26 +166,26 @@ func validateModel(modelFile string) []string {
 	for taTitle, ta := range modelInput.TechnicalAssets {
 		for _, ref := range ta.DataAssetsProcessed {
 			if !knownDataAssets[ref] {
-				errs = append(errs, fmt.Sprintf("technical asset %q references unknown data asset %q in data_assets_processed", taTitle, ref))
+				errs = append(errs, fmt.Sprintf("technical asset %q references unknown data asset %q in data_assets_processed%s", taTitle, ref, loc(taTitle)))
 			}
 		}
 		for _, ref := range ta.DataAssetsStored {
 			if !knownDataAssets[ref] {
-				errs = append(errs, fmt.Sprintf("technical asset %q references unknown data asset %q in data_assets_stored", taTitle, ref))
+				errs = append(errs, fmt.Sprintf("technical asset %q references unknown data asset %q in data_assets_stored%s", taTitle, ref, loc(taTitle)))
 			}
 		}
 		for linkTitle, link := range ta.CommunicationLinks {
 			if link.Target != "" && !knownTechAssets[link.Target] {
-				errs = append(errs, fmt.Sprintf("communication link %q of %q references unknown target asset %q", linkTitle, taTitle, link.Target))
+				errs = append(errs, fmt.Sprintf("communication link %q of %q references unknown target asset %q%s", linkTitle, taTitle, link.Target, loc(taTitle)))
 			}
 			for _, ref := range link.DataAssetsSent {
 				if !knownDataAssets[ref] {
-					errs = append(errs, fmt.Sprintf("communication link %q of %q references unknown data asset %q in data_assets_sent", linkTitle, taTitle, ref))
+					errs = append(errs, fmt.Sprintf("communication link %q of %q references unknown data asset %q in data_assets_sent%s", linkTitle, taTitle, ref, loc(taTitle)))
 				}
 			}
 			for _, ref := range link.DataAssetsReceived {
 				if !knownDataAssets[ref] {
-					errs = append(errs, fmt.Sprintf("communication link %q of %q references unknown data asset %q in data_assets_received", linkTitle, taTitle, ref))
+					errs = append(errs, fmt.Sprintf("communication link %q of %q references unknown data asset %q in data_assets_received%s", linkTitle, taTitle, ref, loc(taTitle)))
 				}
 			}
 		}
@@ -146,7 +195,7 @@ func validateModel(modelFile string) []string {
 	for tbTitle, tb := range modelInput.TrustBoundaries {
 		for _, ref := range tb.TechnicalAssetsInside {
 			if !knownTechAssets[ref] {
-				errs = append(errs, fmt.Sprintf("trust boundary %q references unknown technical asset %q", tbTitle, ref))
+				errs = append(errs, fmt.Sprintf("trust boundary %q references unknown technical asset %q%s", tbTitle, ref, loc(tbTitle)))
 			}
 		}
 	}
@@ -155,7 +204,7 @@ func validateModel(modelFile string) []string {
 	for srTitle, sr := range modelInput.SharedRuntimes {
 		for _, ref := range sr.TechnicalAssetsRunning {
 			if !knownTechAssets[ref] {
-				errs = append(errs, fmt.Sprintf("shared runtime %q references unknown technical asset %q", srTitle, ref))
+				errs = append(errs, fmt.Sprintf("shared runtime %q references unknown technical asset %q%s", srTitle, ref, loc(srTitle)))
 			}
 		}
 	}
@@ -164,7 +213,7 @@ func validateModel(modelFile string) []string {
 	for title, ts := range modelInput.ThreatScenarios {
 		for _, ref := range ts.EntryAssets {
 			if !knownTechAssets[ref] {
-				errs = append(errs, fmt.Sprintf("threat scenario %q references unknown entry asset %q", title, ref))
+				errs = append(errs, fmt.Sprintf("threat scenario %q references unknown entry asset %q%s", title, ref, loc(title)))
 			}
 		}
 	}
@@ -173,7 +222,7 @@ func validateModel(modelFile string) []string {
 	for title, bp := range modelInput.BusinessProcesses {
 		for _, ref := range bp.SupportedByTechnicalAssets {
 			if !knownTechAssets[ref] {
-				errs = append(errs, fmt.Sprintf("business process %q references unknown technical asset %q", title, ref))
+				errs = append(errs, fmt.Sprintf("business process %q references unknown technical asset %q%s", title, ref, loc(title)))
 			}
 		}
 	}
@@ -203,18 +252,18 @@ func validateModel(modelFile string) []string {
 		tagSet[strings.ToLower(t)] = true
 	}
 	if len(tagSet) > 0 {
-		checkTagRefs := func(tags []string, context string) {
+		checkTagRefs := func(tags []string, context, suffix string) {
 			for _, tag := range tags {
 				if !tagSet[strings.ToLower(tag)] {
-					errs = append(errs, fmt.Sprintf("%s uses tag %q that is not in tags_available", context, tag))
+					errs = append(errs, fmt.Sprintf("%s uses tag %q that is not in tags_available%s", context, tag, suffix))
 				}
 			}
 		}
 		for taTitle, ta := range modelInput.TechnicalAssets {
-			checkTagRefs(ta.Tags, fmt.Sprintf("technical asset %q", taTitle))
+			checkTagRefs(ta.Tags, fmt.Sprintf("technical asset %q", taTitle), loc(taTitle))
 		}
 		for daTitle, da := range modelInput.DataAssets {
-			checkTagRefs(da.Tags, fmt.Sprintf("data asset %q", daTitle))
+			checkTagRefs(da.Tags, fmt.Sprintf("data asset %q", daTitle), loc(daTitle))
 		}
 	}
 

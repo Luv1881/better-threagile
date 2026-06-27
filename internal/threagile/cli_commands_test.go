@@ -54,6 +54,8 @@ technical_assets:
 	assert.Contains(t, out, `"valid": false`)
 	// Errors are sorted, so "Alpha Asset" must appear before "Zeta Asset".
 	assert.Less(t, strings.Index(out, "Alpha Asset"), strings.Index(out, "Zeta Asset"))
+	// Each error points at the offending asset's source line.
+	assert.Contains(t, out, "(line ")
 }
 
 func TestLintCommand_Runs(t *testing.T) {

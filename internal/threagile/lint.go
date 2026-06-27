@@ -3,6 +3,7 @@ package threagile
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -158,5 +159,17 @@ func lintModel(modelFile string) []LintFinding {
 		}
 	}
 
+	// Findings are collected while iterating maps, so sort for deterministic,
+	// diffable output (same reasoning as validate).
+	sort.Slice(findings, func(i, j int) bool {
+		a, b := findings[i], findings[j]
+		if a.Asset != b.Asset {
+			return a.Asset < b.Asset
+		}
+		if a.Message != b.Message {
+			return a.Message < b.Message
+		}
+		return a.Severity < b.Severity
+	})
 	return findings
 }

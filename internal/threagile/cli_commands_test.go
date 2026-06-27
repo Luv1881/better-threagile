@@ -70,6 +70,24 @@ func TestLintCommand_JSONOutput(t *testing.T) {
 	assert.True(t, strings.HasPrefix(strings.TrimSpace(out), "[") || strings.TrimSpace(out) == "null")
 }
 
+func TestLintCommand_DeterministicOrder(t *testing.T) {
+	model := `title: Determinism Test
+technical_assets:
+  Zeta Asset:
+    id: zeta-asset
+  Alpha Asset:
+    id: alpha-asset
+`
+	path := filepath.Join(t.TempDir(), "threagile.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(model), 0600))
+
+	app := newTestAppWithArgs(LintCommand, "--model", path, "--json")
+	out, err := executeCmd(app, LintCommand, "--model", path, "--json")
+	require.NoError(t, err)
+	// Findings are sorted by asset, so "Alpha Asset" must precede "Zeta Asset".
+	assert.Less(t, strings.Index(out, "Alpha Asset"), strings.Index(out, "Zeta Asset"))
+}
+
 func TestExplainRulesCommand_Runs(t *testing.T) {
 	app := newTestApp()
 	out, err := executeCmd(app, ExplainCommand, RulesItem)

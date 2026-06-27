@@ -88,6 +88,8 @@ technical_assets:
 	require.NoError(t, err)
 	// Findings are sorted by asset, so "Alpha Asset" must precede "Zeta Asset".
 	assert.Less(t, strings.Index(out, "Alpha Asset"), strings.Index(out, "Zeta Asset"))
+	// Asset findings carry their source line.
+	assert.Contains(t, out, `"line"`)
 }
 
 func TestDefaultProjectConfig_AutoLoaded(t *testing.T) {

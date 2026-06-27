@@ -58,6 +58,22 @@ technical_assets:
 	assert.Contains(t, out, "(line ")
 }
 
+// Diagnostics must resolve the source file:line for entities pulled in via the
+// fork's includes: directive, not just the top-level model file.
+func TestValidateCommand_ResolvesIncludeLocation(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "feature.yaml"),
+		[]byte("technical_assets:\n  Split Asset:\n    id: split\n    data_assets_processed:\n      - missing\n"), 0600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "threagile.yaml"),
+		[]byte("title: Split Model\nincludes:\n  - feature.yaml\n"), 0600))
+
+	path := filepath.Join(dir, "threagile.yaml")
+	app := newTestAppWithArgs(ValidateCommand, "--model", path, "--json")
+	out, err := executeCmd(app, ValidateCommand, "--model", path, "--json")
+	require.Error(t, err)
+	assert.Contains(t, out, "feature.yaml:") // file:line, not just line
+}
+
 func TestLintCommand_Runs(t *testing.T) {
 	app := newTestAppWithArgs(LintCommand, "--model", demoModelPath(t))
 	out, err := executeCmd(app, LintCommand, "--model", demoModelPath(t))

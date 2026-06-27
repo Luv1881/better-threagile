@@ -13,6 +13,7 @@ import (
 type LintFinding struct {
 	Severity string `json:"severity"`
 	Asset    string `json:"asset,omitempty"`
+	File     string `json:"file,omitempty"`
 	Line     int    `json:"line,omitempty"`
 	Message  string `json:"message"`
 	Fix      string `json:"fix,omitempty"`
@@ -52,7 +53,11 @@ func (what *Threagile) initLint() *Threagile {
 				}
 				where := f.Asset
 				if f.Line > 0 {
-					where = fmt.Sprintf("%s:line %d", f.Asset, f.Line)
+					if f.File != "" {
+						where = fmt.Sprintf("%s (%s:%d)", f.Asset, f.File, f.Line)
+					} else {
+						where = fmt.Sprintf("%s:line %d", f.Asset, f.Line)
+					}
 				}
 				if f.Asset != "" {
 					cmd.Printf("%s [%s] %s\n", icon, where, f.Message)
@@ -79,7 +84,8 @@ func lintModel(modelFile string) []LintFinding {
 	// point at the offending element just like validate.
 	entityLines := modelEntityLines(modelFile)
 	add := func(sev, asset, msg, fix string) {
-		findings = append(findings, LintFinding{Severity: sev, Asset: asset, Line: entityLines[asset], Message: msg, Fix: fix})
+		l := entityLines[asset]
+		findings = append(findings, LintFinding{Severity: sev, Asset: asset, File: l.File, Line: l.Line, Message: msg, Fix: fix})
 	}
 	warn := func(asset, msg, fix string) { add("warning", asset, msg, fix) }
 	info := func(asset, msg, fix string) { add("info", asset, msg, fix) }

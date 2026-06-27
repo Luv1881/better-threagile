@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -95,42 +96,72 @@ func scanModelForSecrets(modelFile string) []secretscan.Finding {
 	return secretscan.Scan(data)
 }
 
+// entityLoc is where a named model entity is defined. File is "" for the main
+// model file and the include's base name for entities pulled in via includes:.
+type entityLoc struct {
+	File string
+	Line int
+}
+
+// String renders a compact source location: "file:line", or "line N" for the
+// main file.
+func (l entityLoc) String() string {
+	if l.File != "" {
+		return fmt.Sprintf("%s:%d", l.File, l.Line)
+	}
+	return fmt.Sprintf("line %d", l.Line)
+}
+
 // modelEntityLines maps each top-level named entity (technical asset, data
-// asset, trust boundary, ...) to its source line in the model YAML, so
-// validation errors can point at the offending element. Best-effort: returns an
+// asset, trust boundary, ...) to its source location, following the fork's
+// includes: directive so split models resolve too. Best-effort: returns an
 // empty map on any read/parse error (the caller degrades gracefully).
-func modelEntityLines(modelFile string) map[string]int {
-	lines := map[string]int{}
-	data, err := os.ReadFile(modelFile) // #nosec G304 -- operator-supplied model path
-	if err != nil {
-		return lines
-	}
-	var root yaml.Node
-	if err := yaml.Unmarshal(data, &root); err != nil || len(root.Content) == 0 {
-		return lines
-	}
-	doc := root.Content[0]
-	if doc.Kind != yaml.MappingNode {
-		return lines
-	}
+func modelEntityLines(modelFile string) map[string]entityLoc {
+	locs := map[string]entityLoc{}
 	sections := map[string]bool{
 		"technical_assets": true, "data_assets": true, "trust_boundaries": true,
 		"shared_runtimes": true, "threat_scenarios": true, "business_processes": true,
 	}
-	for i := 0; i+1 < len(doc.Content); i += 2 {
-		key, val := doc.Content[i], doc.Content[i+1]
-		if !sections[key.Value] || val.Kind != yaml.MappingNode {
-			continue
+	baseDir := filepath.Dir(modelFile)
+
+	var scan func(path, label string, followIncludes bool)
+	scan = func(path, label string, followIncludes bool) {
+		data, err := os.ReadFile(filepath.Clean(path)) // #nosec G304 -- operator-supplied model path
+		if err != nil {
+			return
 		}
-		for j := 0; j+1 < len(val.Content); j += 2 {
-			if title := val.Content[j].Value; title != "" {
-				if _, exists := lines[title]; !exists {
-					lines[title] = val.Content[j].Line
+		var root yaml.Node
+		if err := yaml.Unmarshal(data, &root); err != nil || len(root.Content) == 0 {
+			return
+		}
+		doc := root.Content[0]
+		if doc.Kind != yaml.MappingNode {
+			return
+		}
+		for i := 0; i+1 < len(doc.Content); i += 2 {
+			key, val := doc.Content[i], doc.Content[i+1]
+			if key.Value == "includes" && followIncludes && val.Kind == yaml.SequenceNode {
+				for _, inc := range val.Content {
+					if inc.Value != "" {
+						scan(filepath.Join(baseDir, inc.Value), filepath.Base(inc.Value), false)
+					}
+				}
+				continue
+			}
+			if !sections[key.Value] || val.Kind != yaml.MappingNode {
+				continue
+			}
+			for j := 0; j+1 < len(val.Content); j += 2 {
+				if title := val.Content[j].Value; title != "" {
+					if _, exists := locs[title]; !exists {
+						locs[title] = entityLoc{File: label, Line: val.Content[j].Line}
+					}
 				}
 			}
 		}
 	}
-	return lines
+	scan(modelFile, "", true)
+	return locs
 }
 
 // validateModel loads and parses the model, returning human-readable error strings.
@@ -146,8 +177,8 @@ func validateModel(modelFile string) []string {
 	// offending element. Empty/absent => no suffix (graceful degradation).
 	entityLines := modelEntityLines(modelFile)
 	loc := func(title string) string {
-		if n, ok := entityLines[title]; ok {
-			return fmt.Sprintf(" (line %d)", n)
+		if l, ok := entityLines[title]; ok {
+			return fmt.Sprintf(" (%s)", l.String())
 		}
 		return ""
 	}

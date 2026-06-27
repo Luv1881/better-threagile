@@ -2,7 +2,9 @@
 
 `--config` [flag](./flags.md) is specifying the [JSON](https://www.w3schools.com/js/js_json_syntax.asp) file with configuration. It's more detailed than flags and allow to customize the application even more.
 
-Config values will override flag values.
+Command-line flags override config-file values, which override the built-in
+defaults (the config is loaded first, then any explicitly-set flag is applied on
+top). So a flag like `--model other.yaml` always wins over the config file.
 
 All config keys are case insensitive.
 

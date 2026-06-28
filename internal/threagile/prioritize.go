@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/threagile/threagile/pkg/model"
 	"github.com/threagile/threagile/pkg/prioritize"
+	"github.com/threagile/threagile/pkg/source"
 	"github.com/threagile/threagile/pkg/types"
 )
 
@@ -44,6 +45,18 @@ Examples:
 			}
 
 			result := prioritize.Analyze(r.ParsedModel)
+
+			// Annotate each finding with the source file:line of its asset so the
+			// reader can jump straight to what needs fixing (best-effort).
+			locs := source.EntityLines(what.config.GetInputFile())
+			for i := range result.Items {
+				it := &result.Items[i]
+				if l, ok := locs[it.AssetTitle]; ok {
+					it.SourceFile, it.SourceLine = l.File, l.Line
+				} else if l, ok := locs[it.AssetID]; ok {
+					it.SourceFile, it.SourceLine = l.File, l.Line
+				}
+			}
 
 			items := result.Items
 			if minSeverity != "" {

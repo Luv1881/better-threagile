@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/threagile/threagile/pkg/input"
+	"github.com/threagile/threagile/pkg/source"
 )
 
 type LintFinding struct {
@@ -82,7 +83,7 @@ func lintModel(modelFile string) []LintFinding {
 	var findings []LintFinding
 	// Best-effort source line per named entity (0 => omitted), so lint findings
 	// point at the offending element just like validate.
-	entityLines := modelEntityLines(modelFile)
+	entityLines := source.EntityLines(modelFile)
 	add := func(sev, asset, msg, fix string) {
 		l := entityLines[asset]
 		findings = append(findings, LintFinding{Severity: sev, Asset: asset, File: l.File, Line: l.Line, Message: msg, Fix: fix})

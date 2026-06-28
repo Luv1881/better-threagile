@@ -74,6 +74,15 @@ func TestValidateCommand_ResolvesIncludeLocation(t *testing.T) {
 	assert.Contains(t, out, "feature.yaml:") // file:line, not just line
 }
 
+func TestPrioritizeCommand_JSONHasSourceLine(t *testing.T) {
+	args := []string{"prioritize", "--model", demoModelPath(t),
+		"--ignore-orphaned-risk-tracking", "--format", "json"}
+	app := newTestAppWithArgs(args...)
+	out, err := executeCmd(app, args...)
+	require.NoError(t, err)
+	assert.Contains(t, out, "source_line") // findings carry their asset's source line
+}
+
 func TestLintCommand_Runs(t *testing.T) {
 	app := newTestAppWithArgs(LintCommand, "--model", demoModelPath(t))
 	out, err := executeCmd(app, LintCommand, "--model", demoModelPath(t))

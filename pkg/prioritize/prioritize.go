@@ -50,7 +50,9 @@ type Item struct {
 	Status      string      `json:"status"`
 	AssetID     string      `json:"asset_id,omitempty"`
 	AssetTitle  string      `json:"asset_title,omitempty"`
-	Score       int         `json:"score"` // 0–100
+	SourceFile  string      `json:"source_file,omitempty"` // model file the asset is defined in (via includes:)
+	SourceLine  int         `json:"source_line,omitempty"` // line of the asset definition
+	Score       int         `json:"score"`                 // 0–100
 	Factors     []Factor    `json:"factors"`
 	Remediation Remediation `json:"remediation"`
 }

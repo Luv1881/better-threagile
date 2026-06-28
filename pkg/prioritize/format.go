@@ -25,7 +25,11 @@ func FormatText(items []Item, totalAtRisk int) string {
 	for i, it := range items {
 		fmt.Fprintf(&b, "  %d. [%3d] %-9s %s\n", i+1, it.Score, strings.ToUpper(it.Severity), plain(it.Title))
 		if it.AssetTitle != "" {
-			fmt.Fprintf(&b, "        asset: %s (%s)\n", it.AssetTitle, it.AssetID)
+			at := fmt.Sprintf("%s (%s)", it.AssetTitle, it.AssetID)
+			if it.SourceLine > 0 {
+				at += "  @ " + sourceRef(it)
+			}
+			fmt.Fprintf(&b, "        asset: %s\n", at)
 		}
 		fmt.Fprintf(&b, "        why:   %s\n", whyLine(it.Factors))
 		if fix := fixLine(it.Remediation); fix != "" {
@@ -39,9 +43,9 @@ func FormatText(items []Item, totalAtRisk int) string {
 func FormatMarkdown(items []Item, totalAtRisk int) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "## Fix these first — top %d of %d still-at-risk findings\n\n", len(items), totalAtRisk)
-	b.WriteString("| # | Score | Severity | Finding | Asset |\n|--:|--:|---|---|---|\n")
+	b.WriteString("| # | Score | Severity | Finding | Asset | Source |\n|--:|--:|---|---|---|---|\n")
 	for i, it := range items {
-		fmt.Fprintf(&b, "| %d | %d | %s | %s | %s |\n", i+1, it.Score, it.Severity, mdEscape(plain(it.Title)), mdEscape(it.AssetTitle))
+		fmt.Fprintf(&b, "| %d | %d | %s | %s | %s | %s |\n", i+1, it.Score, it.Severity, mdEscape(plain(it.Title)), mdEscape(it.AssetTitle), mdEscape(sourceRef(it)))
 	}
 	b.WriteString("\n")
 	for i, it := range items {
@@ -50,6 +54,18 @@ func FormatMarkdown(items []Item, totalAtRisk int) string {
 		}
 	}
 	return b.String()
+}
+
+// sourceRef renders an item's source location ("feature_api.yaml:42" or
+// "line 42"), or "" when unknown.
+func sourceRef(it Item) string {
+	if it.SourceLine <= 0 {
+		return ""
+	}
+	if it.SourceFile != "" {
+		return fmt.Sprintf("%s:%d", it.SourceFile, it.SourceLine)
+	}
+	return fmt.Sprintf("line %d", it.SourceLine)
 }
 
 // FormatJSON renders the full ranked result (already top-N-sliced by the caller).

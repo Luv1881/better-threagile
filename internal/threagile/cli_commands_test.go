@@ -1,6 +1,7 @@
 package threagile
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -72,6 +73,20 @@ func TestValidateCommand_ResolvesIncludeLocation(t *testing.T) {
 	out, err := executeCmd(app, ValidateCommand, "--model", path, "--json")
 	require.Error(t, err)
 	assert.Contains(t, out, "feature.yaml:") // file:line, not just line
+}
+
+func TestLintCommand_SARIFOutput(t *testing.T) {
+	args := []string{LintCommand, "--model", demoModelPath(t), "--format", "sarif"}
+	app := newTestAppWithArgs(args...)
+	out, err := executeCmd(app, args...)
+	require.NoError(t, err)
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal([]byte(out), &doc))
+	assert.Equal(t, "2.1.0", doc["version"])
+	runs := doc["runs"].([]any)
+	require.NotEmpty(t, runs)
+	driver := runs[0].(map[string]any)["tool"].(map[string]any)["driver"].(map[string]any)
+	assert.Equal(t, "threagile-lint", driver["name"])
 }
 
 func TestPrioritizeCommand_JSONHasSourceLine(t *testing.T) {

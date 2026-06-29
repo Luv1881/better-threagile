@@ -96,10 +96,18 @@ policies that don't use it.
 threagile gate ... --format text       # default, for CI logs
 threagile gate ... --format json       # machine-readable result
 threagile gate ... --format markdown --output gate.md   # post as a PR comment
+threagile gate ... --format junit --output gate.xml     # JUnit XML for CI test reports
 ```
 
 The Markdown form is designed to be dropped straight into a pull-request comment
 by a CI job (see `threagile generate-ci`).
+
+The **JUnit XML** form turns each configured policy rule into a `<testcase>` (a
+rule that fired becomes a `<failure>` listing the offending finding IDs), so the
+threat-model gate shows up alongside your unit tests in any CI that renders JUnit
+— Jenkins, GitLab CI (`artifacts:reports:junit`), CircleCI, Azure DevOps,
+Buildkite, etc. The exit code is still `3` on a violation, so the gate also fails
+the job, not just the test report.
 
 ## Secure-by-default starter policies (`policy init`)
 

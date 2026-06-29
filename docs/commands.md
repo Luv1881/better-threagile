@@ -8,7 +8,7 @@
 | `validate`               | Parse and validate the model YAML without running risk rules (fast, CI-safe); `--json` for machine output; also scans for committed secrets (`--fail-on-secrets`) | `check` |
 | `lint`                   | Check the model for style and best-practice issues (suggests fixes inline; does not modify files); `--format text\|json\|sarif` (SARIF for code-scanning, with file:line) |                               |
 | `diff <old> <new>`       | Show the risk delta (added / removed / unchanged) between two model versions; `--format text\|markdown\|json`, `--output <file>` (Markdown is PR-comment ready, with a "how to fix the new findings" remediation list) |                          |
-| `gate`                   | [Policy-as-code CI gate](./gate.md): evaluate `--policy policy.yaml`, exit 3 on violation; `--baseline risks.json`, `--format text\|markdown\|json` |              |
+| `gate`                   | [Policy-as-code CI gate](./gate.md): evaluate `--policy policy.yaml`, exit 3 on violation; `--baseline risks.json`, `--format text\|markdown\|json\|junit` |              |
 | `explain risk <id>`      | Print full explanation of a specific risk by synthetic ID                           |                                              |
 | `watch`                  | Watch the model directory and re-analyze on every save                              |                                              |
 | `fmt [files...]`         | Canonicalise YAML whitespace and field ordering                                     |                                              |

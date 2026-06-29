@@ -112,6 +112,8 @@ Examples:
 				rendered = gate.FormatText(result)
 			case "markdown", "md":
 				rendered = gate.FormatMarkdown(result)
+			case "junit":
+				rendered = gate.FormatJUnit(policy, result)
 			case "json":
 				jsonBytes, marshalErr := json.MarshalIndent(result, "", "  ")
 				if marshalErr != nil {
@@ -119,7 +121,7 @@ Examples:
 				}
 				rendered = string(jsonBytes) + "\n"
 			default:
-				return fmt.Errorf("gate: unknown --format %q (want text, markdown, or json)", format)
+				return fmt.Errorf("gate: unknown --format %q (want text, markdown, json, or junit)", format)
 			}
 
 			if outputFile != "" {
@@ -139,7 +141,7 @@ Examples:
 
 	cmd.Flags().StringVar(&policyFile, "policy", "", "policy YAML file (required)")
 	cmd.Flags().StringVar(&baselineFile, "baseline", "", "baseline risks.json to diff against (for forbid_new_at_or_above)")
-	cmd.Flags().StringVar(&format, "format", "text", "output format: text, markdown, or json")
+	cmd.Flags().StringVar(&format, "format", "text", "output format: text, markdown, json, or junit")
 	cmd.Flags().StringVar(&outputFile, "output", "", "also write the rendered report to this file")
 	_ = cmd.MarkFlagRequired("policy")
 

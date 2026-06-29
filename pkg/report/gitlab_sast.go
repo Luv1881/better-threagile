@@ -101,7 +101,14 @@ func gitlabSeverity(severity types.RiskSeverity) string {
 // BuildGitLabSAST renders the model's generated risks as a GitLab SAST report.
 // modelFileURI is the path vulnerabilities point at; version is the tool version.
 func BuildGitLabSAST(parsedModel *types.Model, modelFileURI string, version string) ([]byte, error) {
-	now := time.Now().UTC().Format("2006-01-02T15:04:05")
+	// Use the model's date (falling back to now) so the artifact is byte-stable
+	// across runs of the same model — important for caching, hashing and clean
+	// diffs. RFC 3339 (with timezone) is what the GitLab schema's date-time wants.
+	scanTime := parsedModel.Date.Time
+	if scanTime.IsZero() {
+		scanTime = time.Now()
+	}
+	now := scanTime.UTC().Format(time.RFC3339)
 
 	categoryIDs := make([]string, 0, len(parsedModel.GeneratedRisksByCategory))
 	for categoryID := range parsedModel.GeneratedRisksByCategory {

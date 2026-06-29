@@ -165,8 +165,10 @@ func FormatJUnit(policy *Policy, r *Result) string {
 
 	out, err := xml.MarshalIndent(&suites, "", "  ")
 	if err != nil {
-		// xml.Marshal of this fixed structure cannot realistically fail; degrade safely.
-		return xml.Header
+		// xml.Marshal of this fixed structure cannot realistically fail; degrade to
+		// a well-formed empty document (a bare header has no root element, which
+		// makes CI JUnit parsers fail with "premature end of file").
+		return xml.Header + "<testsuites/>\n"
 	}
 	return xml.Header + string(out) + "\n"
 }

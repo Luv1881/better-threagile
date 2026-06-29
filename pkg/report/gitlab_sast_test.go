@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/threagile/threagile/pkg/report"
 )
@@ -56,6 +57,10 @@ func TestBuildGitLabSAST_ValidStructure(t *testing.T) {
 	}
 	if rep.Scan.StartTime == "" || rep.Scan.EndTime == "" {
 		t.Error("scan start/end time must be set")
+	}
+	// GitLab's date-time format requires RFC 3339 (with timezone designator).
+	if _, err := time.Parse(time.RFC3339, rep.Scan.StartTime); err != nil {
+		t.Errorf("scan start_time %q is not RFC3339: %v", rep.Scan.StartTime, err)
 	}
 	if len(rep.Vulnerabilities) == 0 {
 		t.Fatal("expected at least one vulnerability for the demo model")

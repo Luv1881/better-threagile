@@ -17,6 +17,7 @@ const (
 	ExcelTagsFilename           = "tags.xlsx"
 	JsonRisksFilename           = "risks.json"
 	SarifRisksFilename          = "risks.sarif"
+	GitLabSASTRisksFilename     = "risks.gl-sast.json"
 	JsonTechnicalAssetsFilename = "technical-assets.json"
 	JsonStatsFilename           = "stats.json"
 	TemplateFilename            = "background.pdf"

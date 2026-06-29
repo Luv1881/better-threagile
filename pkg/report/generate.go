@@ -18,6 +18,7 @@ type GenerateCommands struct {
 	DataAssetDiagram    bool
 	RisksJSON           bool
 	RisksSARIF          bool
+	RisksGitLabSAST     bool
 	TechnicalAssetsJSON bool
 	StatsJSON           bool
 	RisksExcel          bool
@@ -32,6 +33,7 @@ func (c *GenerateCommands) Defaults() *GenerateCommands {
 		DataAssetDiagram:    true,
 		RisksJSON:           true,
 		RisksSARIF:          true,
+		RisksGitLabSAST:     true,
 		TechnicalAssetsJSON: true,
 		StatsJSON:           true,
 		RisksExcel:          true,
@@ -60,6 +62,7 @@ type reportConfigReader interface {
 	GetExcelTagsFilename() string
 	GetJsonRisksFilename() string
 	GetSarifRisksFilename() string
+	GetGitLabSASTRisksFilename() string
 	GetJsonTechnicalAssetsFilename() string
 	GetJsonStatsFilename() string
 	GetTemplateFilename() string
@@ -179,6 +182,16 @@ func Generate(config reportConfigReader, readResult *model.ReadResult, commands 
 			filepath.Join(config.GetOutputFolder(), config.GetSarifRisksFilename()))
 		if err != nil {
 			return fmt.Errorf("error while writing risks sarif: %w", err)
+		}
+	}
+
+	// risks as a GitLab SAST report (for the GitLab MR security widget)
+	if commands.RisksGitLabSAST {
+		progressReporter.Info("Writing risks gitlab sast")
+		err := WriteRisksGitLabSAST(readResult.ParsedModel, config.GetInputFile(), config.GetThreagileVersion(),
+			filepath.Join(config.GetOutputFolder(), config.GetGitLabSASTRisksFilename()))
+		if err != nil {
+			return fmt.Errorf("error while writing risks gitlab sast: %w", err)
 		}
 	}
 

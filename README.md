@@ -32,7 +32,7 @@ threat intel — without any model changes.
 | Secret hygiene | — | `validate` scans the model for committed credentials (`--fail-on-secrets`) |
 | Compliance evidence | — | `oscal` — NIST OSCAL assessment-results export for GRC pipelines |
 | Risk quantification | — | `quantify` — FAIR Monte-Carlo ALE (p10/p50/p90) + portfolio summary |
-| CI / code-scanning output | — | SARIF 2.1.0 (`risks.sarif`), suppressions from tracking status |
+| CI / code-scanning output | — | SARIF 2.1.0 (`risks.sarif`) for GitHub, GitLab SAST report (`risks.gl-sast.json`) for the GitLab MR security widget; suppressions from tracking status |
 | Policy-as-code gate | — | `gate` — declarative `policy.yaml`, exits 3 on violation (severity caps, require-tracking, expired-acceptance, no-new-vs-baseline, framework coverage) |
 | PR-bot / risk delta | — | `diff --format markdown` + `generate-ci gate-pr` — posts the risk delta / gate report as a PR comment |
 | MITRE ATT&CK / CAPEC | — | `attack-navigator` (ATT&CK Navigator layer) + curated ATT&CK & CAPEC mappings surfaced in the STIX export |
@@ -252,7 +252,8 @@ done
 
 ### Outputs per run
 
-Each directory receives `report.pdf`, `risks.json`, **`risks.sarif`**, `risks.xlsx`,
+Each directory receives `report.pdf`, `risks.json`, **`risks.sarif`**, **`risks.gl-sast.json`**
+(GitLab SAST report), `risks.xlsx`,
 `tags.xlsx`, `technical-assets.json`, `stats.json`, the two diagram PNGs, and `adocReport/`
 (raw AsciiDoc). Diagrams/PDF can be skipped with `--skip-report-pdf --skip-report-adoc
 --skip-data-flow-diagram --skip-data-asset-diagram` for fast JSON/SARIF-only runs.

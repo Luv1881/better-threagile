@@ -108,6 +108,7 @@ func (what *Threagile) initFlags() *Threagile {
 	what.rootCmd.PersistentFlags().BoolVar(&what.flags.SkipDataAssetDiagramValue, skipDataAssetDiagramFlagName, what.config.GetSkipDataAssetDiagram(), "skip generating data asset diagram")
 	what.rootCmd.PersistentFlags().BoolVar(&what.flags.SkipRisksJSONValue, skipRisksJSONFlagName, what.config.GetSkipRisksJSON(), "skip generating risks json")
 	what.rootCmd.PersistentFlags().BoolVar(&what.flags.SkipRisksSARIFValue, skipRisksSARIFFlagName, what.config.GetSkipRisksSARIF(), "skip generating risks sarif")
+	what.rootCmd.PersistentFlags().BoolVar(&what.flags.SkipRisksGitLabSASTValue, skipRisksGitLabSASTFlagName, what.config.GetSkipRisksGitLabSAST(), "skip generating risks gitlab sast report")
 	what.rootCmd.PersistentFlags().BoolVar(&what.flags.SkipTechnicalAssetsJSONValue, skipTechnicalAssetsJSONFlagName, what.config.GetSkipTechnicalAssetsJSON(), "skip generating technical assets json")
 	what.rootCmd.PersistentFlags().BoolVar(&what.flags.SkipStatsJSONValue, skipStatsJSONFlagName, what.config.GetSkipStatsJSON(), "skip generating stats json")
 	what.rootCmd.PersistentFlags().BoolVar(&what.flags.SkipRisksExcelValue, skipRisksExcelFlagName, what.config.GetSkipRisksExcel(), "skip generating risks excel")
@@ -270,6 +271,7 @@ func (what *Threagile) readCommands() *report.GenerateCommands {
 	commands.DataAssetDiagram = !what.flags.SkipDataAssetDiagramValue
 	commands.RisksJSON = !what.flags.SkipRisksJSONValue
 	commands.RisksSARIF = !what.flags.SkipRisksSARIFValue
+	commands.RisksGitLabSAST = !what.flags.SkipRisksGitLabSASTValue
 	commands.StatsJSON = !what.flags.SkipStatsJSONValue
 	commands.TechnicalAssetsJSON = !what.flags.SkipTechnicalAssetsJSONValue
 	commands.RisksExcel = !what.flags.SkipRisksExcelValue
@@ -516,6 +518,10 @@ func (what *Threagile) processArgs(cmd *cobra.Command, args []string) bool {
 
 	if what.isFlagOverridden(cmd, skipRisksSARIFFlagName) {
 		what.config.SkipRisksSARIFValue = what.flags.SkipRisksSARIFValue
+	}
+
+	if what.isFlagOverridden(cmd, skipRisksGitLabSASTFlagName) {
+		what.config.SkipRisksGitLabSASTValue = what.flags.SkipRisksGitLabSASTValue
 	}
 
 	if what.isFlagOverridden(cmd, skipTechnicalAssetsJSONFlagName) {

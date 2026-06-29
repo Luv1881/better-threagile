@@ -67,6 +67,7 @@ const (
 	skipDataAssetDiagramFlagName    = "skip-data-asset-diagram"
 	skipRisksJSONFlagName           = "skip-risks-json"
 	skipRisksSARIFFlagName          = "skip-risks-sarif"
+	skipRisksGitLabSASTFlagName     = "skip-risks-gl-sast"
 	skipTechnicalAssetsJSONFlagName = "skip-technical-assets-json"
 	skipStatsJSONFlagName           = "skip-stats-json"
 	skipRisksExcelFlagName          = "skip-risks-excel"

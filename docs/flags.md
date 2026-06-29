@@ -47,6 +47,7 @@ Used by [`analyze-model`](./mode-analyze.md) (and shared by `diff`, `watch`, `li
 | `--report`                        | string               | PDF report file name                                                      | `report.pdf`                    |
 | `--risks-json`                    | string               | risks JSON file name                                                      | `risks.json`                    |
 | `--risks-sarif`                   | string               | risks SARIF 2.1.0 file name (for code-scanning upload)                    | `risks.sarif`                   |
+| `--skip-risks-gl-sast`            | bool                 | skip generating the risks GitLab SAST report (`risks.gl-sast.json`)       | `false`                         |
 | `--technical-assets-json`         | string               | technical assets JSON file name                                           | `technical-assets.json`         |
 | `--stats-json`                    | string               | risk statistics JSON file name                                            | `stats.json`                    |
 | `--risks-excel`                   | string               | risks Excel file name                                                     | `risks.xlsx`                    |

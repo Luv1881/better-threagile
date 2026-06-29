@@ -43,6 +43,7 @@ type Config struct {
 	ExcelTagsFilenameValue           string `json:"ExcelTagsFilename,omitempty" yaml:"ExcelTagsFilename"`
 	JsonRisksFilenameValue           string `json:"JsonRisksFilename,omitempty" yaml:"JsonRisksFilename"`
 	SarifRisksFilenameValue          string `json:"SarifRisksFilename,omitempty" yaml:"SarifRisksFilename"`
+	GitLabSASTRisksFilenameValue     string `json:"GitLabSASTRisksFilename,omitempty" yaml:"GitLabSASTRisksFilename"`
 	JsonTechnicalAssetsFilenameValue string `json:"JsonTechnicalAssetsFilename,omitempty" yaml:"JsonTechnicalAssetsFilename"`
 	JsonStatsFilenameValue           string `json:"JsonStatsFilename,omitempty" yaml:"JsonStatsFilename"`
 	TemplateFilenameValue            string `json:"TemplateFilename,omitempty" yaml:"TemplateFilename"`
@@ -80,6 +81,7 @@ type Config struct {
 	SkipDataAssetDiagramValue    bool `json:"SkipDataAssetDiagram,omitempty" yaml:"SkipDataAssetDiagram"`
 	SkipRisksJSONValue           bool `json:"SkipRisksJSON,omitempty" yaml:"SkipRisksJSON"`
 	SkipRisksSARIFValue          bool `json:"SkipRisksSARIF,omitempty" yaml:"SkipRisksSARIF"`
+	SkipRisksGitLabSASTValue     bool `json:"SkipRisksGitLabSAST,omitempty" yaml:"SkipRisksGitLabSAST"`
 	SkipTechnicalAssetsJSONValue bool `json:"SkipTechnicalAssetsJSON,omitempty" yaml:"SkipTechnicalAssetsJSON"`
 	SkipStatsJSONValue           bool `json:"SkipStatsJSON,omitempty" yaml:"SkipStatsJSON"`
 	SkipRisksExcelValue          bool `json:"SkipRisksExcel,omitempty" yaml:"SkipRisksExcel"`
@@ -114,6 +116,7 @@ type ConfigGetter interface {
 	GetExcelTagsFilename() string
 	GetJsonRisksFilename() string
 	GetSarifRisksFilename() string
+	GetGitLabSASTRisksFilename() string
 	GetJsonTechnicalAssetsFilename() string
 	GetJsonStatsFilename() string
 	GetReportLogoImagePath() string
@@ -151,6 +154,7 @@ type ConfigGetter interface {
 	GetSkipDataAssetDiagram() bool
 	GetSkipRisksJSON() bool
 	GetSkipRisksSARIF() bool
+	GetSkipRisksGitLabSAST() bool
 	GetSkipTechnicalAssetsJSON() bool
 	GetSkipStatsJSON() bool
 	GetSkipRisksExcel() bool
@@ -205,6 +209,7 @@ func (c *Config) Defaults(buildTimestamp string) *Config {
 		ExcelTagsFilenameValue:           ExcelTagsFilename,
 		JsonRisksFilenameValue:           JsonRisksFilename,
 		SarifRisksFilenameValue:          SarifRisksFilename,
+		GitLabSASTRisksFilenameValue:     GitLabSASTRisksFilename,
 		JsonTechnicalAssetsFilenameValue: JsonTechnicalAssetsFilename,
 		JsonStatsFilenameValue:           JsonStatsFilename,
 		TemplateFilenameValue:            TemplateFilename,
@@ -432,8 +437,14 @@ func (c *Config) Merge(config Config, values map[string]any) {
 		case strings.ToLower("SarifRisksFilename"):
 			c.SarifRisksFilenameValue = config.SarifRisksFilenameValue
 
+		case strings.ToLower("GitLabSASTRisksFilename"):
+			c.GitLabSASTRisksFilenameValue = config.GitLabSASTRisksFilenameValue
+
 		case strings.ToLower("SkipRisksSARIF"):
 			c.SkipRisksSARIFValue = config.SkipRisksSARIFValue
+
+		case strings.ToLower("SkipRisksGitLabSAST"):
+			c.SkipRisksGitLabSASTValue = config.SkipRisksGitLabSASTValue
 
 		case strings.ToLower("IgnoreExpiredRiskAcceptance"):
 			c.IgnoreExpiredRiskAcceptanceValue = config.IgnoreExpiredRiskAcceptanceValue

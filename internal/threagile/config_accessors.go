@@ -135,6 +135,10 @@ func (c *Config) GetSarifRisksFilename() string {
 	return c.SarifRisksFilenameValue
 }
 
+func (c *Config) GetGitLabSASTRisksFilename() string {
+	return c.GitLabSASTRisksFilenameValue
+}
+
 func (c *Config) GetJsonTechnicalAssetsFilename() string {
 	return c.JsonTechnicalAssetsFilenameValue
 }
@@ -337,6 +341,10 @@ func (c *Config) GetSkipRisksJSON() bool {
 
 func (c *Config) GetSkipRisksSARIF() bool {
 	return c.SkipRisksSARIFValue
+}
+
+func (c *Config) GetSkipRisksGitLabSAST() bool {
+	return c.SkipRisksGitLabSASTValue
 }
 
 func (c *Config) GetSkipTechnicalAssetsJSON() bool {

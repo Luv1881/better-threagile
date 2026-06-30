@@ -62,24 +62,19 @@ func (what *Threagile) Init(buildTimestamp string) *Threagile {
 		initCalibrate().
 		initQuantify().
 		initGate().
-		initAttackNavigator().
 		initPaths().
 		initAttackTree().
 		initSBOM().
-		initSTIX().
-		initD3FEND().
 		initMermaid().
 		initPolicy().
 		initHooks().
 		initScore().
 		initBootstrap().
-		initOSCAL().
 		initPrioritize().
 		initSummary().
 		initRequirements().
 		initSeverityProfile().
 		initDrift().
-		initSync().
 		initCompletion().
 		initLSP().
 		processSystemArgs(what.rootCmd)

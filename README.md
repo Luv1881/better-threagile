@@ -30,15 +30,11 @@ threat intel — without any model changes.
 | Prioritization | — | `prioritize` — "fix these first, here's how": ranks findings by exploitability (severity × exposure × reachability × data) with remediation + CWE + cheat sheet |
 | Security backlog | — | `requirements` — turns still-at-risk findings into a deduplicated security-requirements backlog / test cases (Markdown checklist, Gherkin, or JSON) |
 | Secret hygiene | — | `validate` scans the model for committed credentials (`--fail-on-secrets`) |
-| Compliance evidence | — | `oscal` — NIST OSCAL assessment-results export for GRC pipelines |
 | Risk quantification | — | `quantify` — FAIR Monte-Carlo ALE (p10/p50/p90) + portfolio summary |
 | CI / code-scanning output | — | SARIF 2.1.0 (`risks.sarif`) for GitHub, GitLab SAST report (`risks.gl-sast.json`) for the GitLab MR security widget; suppressions from tracking status |
 | Policy-as-code gate | — | `gate` — declarative `policy.yaml`, exits 3 on violation (severity caps, require-tracking, expired-acceptance, no-new-vs-baseline, framework coverage) |
 | PR-bot / risk delta | — | `diff --format markdown` + `generate-ci gate-pr` — posts the risk delta / gate report as a PR comment |
-| MITRE ATT&CK / CAPEC | — | `attack-navigator` (ATT&CK Navigator layer) + curated ATT&CK & CAPEC mappings surfaced in the STIX export |
-| STIX 2.1 export | — | `stix` — deterministic STIX 2.1 bundle (assets, vulnerabilities+CWE, ATT&CK/CAPEC attack-patterns, mitigations) for OpenCTI / TIP interop |
 | Attack-path / attack-tree | — | `paths` (shortest routes) + `attack-tree` (goal-oriented OR-trees, Graphviz DOT) from internet-facing assets to crown-jewel data |
-| MITRE D3FEND | — | `d3fend` — maps findings to D3FEND defensive countermeasures (defensive complement of ATT&CK/CAPEC) |
 | Architecture importers | — | `import terraform \| openapi \| kubernetes \| compose` → analyzable model fragments |
 | Diagram → model (no AI) | — | `import threat-dragon` (OWASP Threat Dragon JSON) and `import drawio` (mxGraph) — deterministic diagram-to-YAML conversion |
 | Model → diagram (no Graphviz) | Graphviz PNG only | `mermaid` — GitHub/GitLab-renderable data-flow flowchart (trust boundaries, shaped nodes, encrypted/cleartext edges, risk colouring) for PRs/READMEs/CI |
@@ -156,21 +152,12 @@ These commands are built to run in a pipeline — they write machine-readable ou
 ./bin/threagile diff old.yaml new.yaml --format markdown > delta.md
 ./bin/threagile generate-ci --model model.yaml --target gate-pr --policy-path policy.yaml
 
-# MITRE ATT&CK Navigator layer from the model's findings:
-./bin/threagile attack-navigator --model model.yaml > attack-layer.json   # docs/attack-navigator.md
-
 # Attack paths / goal-oriented attack trees to crown-jewel data:
 ./bin/threagile paths       --model model.yaml                        # docs/attack-paths.md
 ./bin/threagile attack-tree --model model.yaml --format dot > tree.dot # docs/attack-tree.md
 
-# MITRE D3FEND defensive countermeasures for the findings:
-./bin/threagile d3fend --model model.yaml                             # docs/d3fend.md
-
 # SBOM + threat intel: rank a CycloneDX SBOM's CVEs by KEV/EPSS; gate on KEV.
 ./bin/threagile sbom --sbom sbom.cdx.json --refresh-kev --epss --fail-on-kev   # docs/sbom.md
-
-# STIX 2.1 bundle (assets, vulns+CWE, ATT&CK/CAPEC attack-patterns, mitigations):
-./bin/threagile stix --model model.yaml > stix-bundle.json                # docs/stix.md
 
 # Mermaid data-flow diagram (renders natively in GitHub/GitLab Markdown, no Graphviz):
 ./bin/threagile mermaid --model model.yaml --format markdown > diagram.md  # docs/mermaid.md
@@ -280,9 +267,9 @@ quantification (`fair-estimates.yaml`) puts the portfolio median ALE at ≈ $787
 The reference model also exercises the CI-native workflows and importers end-to-end —
 see `../Threat-model/threagile/`: `gate-policy.yaml` (gate PASSes; tightening fails exit-3),
 `imports/vaultnote-attack-paths.txt` (internet → `postgresql-db` / `minio` paths),
-`output/attack-navigator.json` (STRIDE → ATT&CK techniques), `imports/vaultnote-sbom.cdx.json`
-(SBOM correlation with live EPSS), and the Kubernetes/docker-compose imports of the stack
-(`imports/vaultnote-k8s.yaml`, generated from the real `docker-compose.yml`).
+`imports/vaultnote-sbom.cdx.json` (SBOM correlation with live EPSS), and the
+Kubernetes/docker-compose imports of the stack (`imports/vaultnote-k8s.yaml`, generated from
+the real `docker-compose.yml`).
 
 ### Continuous threat modeling in CI → GitHub Issues
 

@@ -13,13 +13,9 @@
 | `watch`                  | Watch the model directory and re-analyze on every save                              |                                              |
 | `fmt [files...]`         | Canonicalise YAML whitespace and field ordering                                     |                                              |
 | `quantify`               | FAIR Monte-Carlo ALE simulation over generated risks (`--estimates` YAML file; `--output-json` for full result) |                  |
-| `attack-navigator`       | Export a [MITRE ATT&CK Navigator layer](./attack-navigator.md) mapping findings to ATT&CK techniques (`--output`) |              |
 | `paths`                  | [Attack-path analysis](./attack-paths.md): shortest routes from internet-facing assets to crown-jewel data (`--from`, `--to`, `--format`) |       |
 | `attack-tree`            | [Goal-oriented attack trees](./attack-tree.md) per crown-jewel asset; `--format text\|markdown\|json\|dot` |       |
-| `d3fend`                 | [D3FEND defensive recommendations](./d3fend.md): map findings to MITRE D3FEND countermeasures |       |
 | `sbom`                   | [SBOM + threat-intel correlation](./sbom.md): correlate a CycloneDX SBOM's CVEs with KEV/EPSS, VEX-aware, `--fail-on-kev` gate |       |
-| `stix`                   | [STIX 2.1 export](./stix.md): deterministic bundle (assets, vulnerabilities+CWE, ATT&CK/CAPEC attack-patterns, mitigations) for TIP/OpenCTI interop |       |
-| `oscal`                  | [OSCAL assessment-results export](./oscal.md): findings → objectives with satisfied/not-satisfied status, for GRC/compliance pipelines |       |
 | `mermaid`                | [Mermaid data-flow diagram](./mermaid.md): GitHub/GitLab-renderable flowchart of the model (no Graphviz needed); `--format flowchart\|markdown`, `--direction`, `--with-risks` |       |
 | `policy init` / `policy list` | Scaffold a [secure-by-default gate policy](./gate.md#secure-by-default-starter-policies-policy-init): `--profile prototype\|balanced\|strict\|regulated` |       |
 | `score`                  | [Threat-model health score](./score.md) 0-100 + A-F grade (completeness + risk posture); `--min` gates CI, `--format shields` for a badge |       |

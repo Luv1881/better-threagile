@@ -19,16 +19,18 @@ func (what *Threagile) Execute() {
 	if err != nil {
 		var ec *exitCodeError
 		if errors.As(err, &ec) {
-			what.rootCmd.Println(ec.msg)
+			what.rootCmd.PrintErrln(ec.msg)
 			os.Exit(ec.code)
 		}
-		what.rootCmd.Println(err)
+		what.rootCmd.PrintErrln(err)
 		os.Exit(1)
 	}
 
 	if what.config.GetServerMode() {
 		serverError := what.runServer()
-		what.rootCmd.Println(serverError)
+		if serverError != nil {
+			what.rootCmd.PrintErrln(serverError)
+		}
 	} else if what.config.GetInteractive() {
 		what.run(what.rootCmd, nil)
 	}

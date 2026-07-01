@@ -51,6 +51,13 @@ func (what *Threagile) initRoot() *Threagile {
 		},
 	}
 
+	// Route cobra's cmd.Print* to stdout (it defaults to stderr via OutOrStderr),
+	// so data-emitting commands (coverage, explain, intel, fmt, drift, import) work
+	// with `threagile <cmd> > file` in CI. Errors/usage are silenced above and
+	// handled by main on stderr, so this doesn't leak errors onto stdout.
+	what.rootCmd.SetOut(os.Stdout)
+	what.rootCmd.SetErr(os.Stderr)
+
 	what.config = new(Config).Defaults(what.buildTimestamp)
 	return what.initFlags()
 }

@@ -32,7 +32,7 @@ this page is a curated overview grouped by purpose.
 
 ## Analyze flags
 
-Used by [`analyze-model`](./mode-analyze.md) (and shared by `diff`, `watch`, `lint`,
+Used by [`analyze-model`](./mode-analyze.md) (and shared by `diff`, `lint`,
 `validate`, `test-rules` where applicable):
 
 | Flag                              | Type                 | Description                                                              | Default Value               |
@@ -84,7 +84,7 @@ Used by [`server`](./mode-server.md):
 
 ## Methodology and rule-pack flags
 
-Accepted by `analyze-model`, `diff`, `watch`, `lint`, `validate`, and `test-rules`:
+Accepted by `analyze-model`, `diff`, `lint`, `validate`, and `test-rules`:
 
 | Flag                     | Type                          | Description                                                                                                   | Default Value |
 |--------------------------|--------------------------------|------------------------------------------------------------------------------------------------------------------|---------------|

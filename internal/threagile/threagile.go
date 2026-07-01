@@ -52,14 +52,12 @@ func (what *Threagile) Init(buildTimestamp string) *Threagile {
 		initValidate().
 		initLint().
 		initDiff().
-		initWatch().
 		initInit().
 		initFmt().
 		initRulePack().
 		initTestRules().
 		initCoverage().
 		initIntel().
-		initCalibrate().
 		initQuantify().
 		initGate().
 		initPaths().
@@ -73,7 +71,6 @@ func (what *Threagile) Init(buildTimestamp string) *Threagile {
 		initPrioritize().
 		initSummary().
 		initRequirements().
-		initSeverityProfile().
 		initDrift().
 		initCompletion().
 		initLSP().

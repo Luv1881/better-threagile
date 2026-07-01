@@ -10,7 +10,6 @@
 | `diff <old> <new>`       | Show the risk delta (added / removed / unchanged) between two model versions; `--format text\|markdown\|json`, `--output <file>` (Markdown is PR-comment ready, with a "how to fix the new findings" remediation list) |                          |
 | `gate`                   | [Policy-as-code CI gate](./gate.md): evaluate `--policy policy.yaml`, exit 3 on violation; `--baseline risks.json`, `--format text\|markdown\|json\|junit` |              |
 | `explain risk <id>`      | Print full explanation of a specific risk by synthetic ID                           |                                              |
-| `watch`                  | Watch the model directory and re-analyze on every save                              |                                              |
 | `fmt [files...]`         | Canonicalise YAML whitespace and field ordering                                     |                                              |
 | `quantify`               | FAIR Monte-Carlo ALE simulation over generated risks (`--estimates` YAML file; `--output-json` for full result) |                  |
 | `paths`                  | [Attack-path analysis](./attack-paths.md): shortest routes from internet-facing assets to crown-jewel data (`--from`, `--to`, `--format`) |       |

@@ -48,7 +48,6 @@ const (
 	ValidateCommand      = "validate"
 	LintCommand          = "lint"
 	DiffCommand          = "diff"
-	WatchCommand         = "watch"
 	InitCommand          = "init"
 	FmtCommand           = "fmt"
 	LspCommand           = "lsp"

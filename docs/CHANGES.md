@@ -121,7 +121,6 @@ Upstream Threagile exposes `analyze-model`, `create-editing-support`, `server`, 
 | `lint` | `internal/threagile/lint.go` | Lint a model for style issues, orphaned assets, missing fields |
 | `diff` | `internal/threagile/diff.go` | Show structural diff between two model YAML files |
 | `fmt` | `internal/threagile/fmt.go` | Canonically format (normalise) a model YAML in-place |
-| `watch` | `internal/threagile/watch.go` | Watch model files for changes and re-run analysis automatically |
 | `test-rules` | `internal/threagile/test_rules.go` | Run YAML rule unit tests against embedded fixtures |
 | `init` | `internal/threagile/init_cmd.go` | Scaffold a new model from an interactive template |
 | `lsp` | `internal/threagile/lsp.go` | Start a Language Server Protocol server for IDE completion |

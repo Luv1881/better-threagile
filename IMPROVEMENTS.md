@@ -174,9 +174,8 @@ New YAML fields (ignored harmlessly by an upstream binary, used by fork rules):
 Beyond upstream's `analyze-model` / `server`, the fork adds (verified in `--help`):
 
 `quantify` (FAIR ALE), `diff` & `drift` (risk-delta between model versions), `lint` &
-`validate` & `fmt` (fast CI-safe model checks), `calibrate` & `profile-check` &
-`severity-profile` (Bayesian likelihood priors / org risk appetite), `intel` (KEV/EPSS threat
-feeds with TTL-cached fetch), `sync` (findings → GitHub issues), `coverage`
+`validate` & `fmt` (fast CI-safe model checks), `intel` (KEV/EPSS threat
+feeds with TTL-cached fetch), `coverage`
 (control-framework coverage), `rule-pack` (list/show/install packs), `test-rules` (golden
 tests for script packs), `generate-ci` (pipeline scaffolding), `import` / `import-model`
 (Terraform & OpenAPI importers), `init` & `create-*` (scaffolding), `lsp` (IDE language

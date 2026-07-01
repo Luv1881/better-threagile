@@ -145,7 +145,7 @@ Common lint warnings:
 
 ---
 
-## Diffing and watching
+## Diffing
 
 ### Show the risk delta between two model versions
 
@@ -161,14 +161,6 @@ Diff with a specific methodology:
 
 ```bash
 threagile diff old.yaml new.yaml --methodology linddun --rule-pack linddun
-```
-
-### Watch the model directory and re-analyze on every save
-
-```bash
-threagile watch --model-dir Threat-model/ --output /tmp/out
-# Re-runs analyze-model whenever any .yaml in Threat-model/ changes.
-# Ctrl-C to stop.
 ```
 
 ---

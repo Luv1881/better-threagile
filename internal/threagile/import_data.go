@@ -235,6 +235,7 @@ func (what *Threagile) newImportThreatDragonCmd() *cobra.Command {
 	var scaffold bool
 	var mappingFile string
 	var stubDataAssetsFlag bool
+	var mergeFile string
 
 	cmd := &cobra.Command{
 		Use:   "threat-dragon",
@@ -270,6 +271,10 @@ Example:
 				stubDataAssets(model, "threat-dragon")
 			}
 
+			if mergeFile != "" {
+				return runMerge(cmd, model, "threat-dragon", mergeFile)
+			}
+
 			return writeScaffoldedOrDiff(cmd, model, outputFile, diff, scaffold, "threat-dragon", modelFile)
 		},
 	}
@@ -281,6 +286,7 @@ Example:
 	cmd.Flags().BoolVar(&scaffold, "scaffold", true, "Annotate the output with TODO(review) comments on every inferred field (set false for plain output)")
 	cmd.Flags().StringVar(&mappingFile, "mapping", "", "Path to a mapping dictionary YAML file (see docs) to correct/override importer heuristics")
 	cmd.Flags().BoolVar(&stubDataAssetsFlag, "stub-data-assets", true, "Generate stub data assets for datastores and internet-inbound links so the model produces meaningful risks")
+	cmd.Flags().StringVar(&mergeFile, "merge", "", "Reconcile this import against an already-edited model file instead of overwriting it (see docs/import-merge.md)")
 
 	return cmd
 }
@@ -293,6 +299,9 @@ func (what *Threagile) newImportDrawioCmd() *cobra.Command {
 	var scaffold bool
 	var mappingFile string
 	var stubDataAssetsFlag bool
+	var mergeFile string
+	var page string
+	var boundary string
 
 	cmd := &cobra.Command{
 		Use:   "drawio",
@@ -324,13 +333,17 @@ Example:
 				return err
 			}
 
-			opts := drawioimport.ImportOptions{SourceLabel: label, Mapping: ruleset}
+			opts := drawioimport.ImportOptions{SourceLabel: label, Mapping: ruleset, Page: page, Boundary: boundary}
 			model, err := drawioimport.Import(data, opts)
 			if err != nil {
 				return err
 			}
 			if stubDataAssetsFlag {
 				stubDataAssets(model, "drawio")
+			}
+
+			if mergeFile != "" {
+				return runMerge(cmd, model, "drawio", mergeFile)
 			}
 
 			return writeScaffoldedOrDiff(cmd, model, outputFile, diff, scaffold, "drawio", diagramFile)
@@ -344,6 +357,9 @@ Example:
 	cmd.Flags().BoolVar(&scaffold, "scaffold", true, "Annotate the output with TODO(review) comments on every inferred field (set false for plain output)")
 	cmd.Flags().StringVar(&mappingFile, "mapping", "", "Path to a mapping dictionary YAML file (see docs) to correct/override importer heuristics")
 	cmd.Flags().BoolVar(&stubDataAssetsFlag, "stub-data-assets", true, "Generate stub data assets for datastores and internet-inbound links so the model produces meaningful risks")
+	cmd.Flags().StringVar(&mergeFile, "merge", "", "Reconcile this import against an already-edited model file instead of overwriting it (see docs/import-merge.md)")
+	cmd.Flags().StringVar(&page, "page", "", "Import only this <diagram> page (1-based index or page name); default imports and merges every page")
+	cmd.Flags().StringVar(&boundary, "boundary", "", "Import only the elements inside this named trust boundary's subtree, skipping everything else")
 
 	return cmd
 }
@@ -356,6 +372,7 @@ func (what *Threagile) newImportOTMCmd() *cobra.Command {
 	var scaffold bool
 	var mappingFile string
 	var stubDataAssetsFlag bool
+	var mergeFile string
 
 	cmd := &cobra.Command{
 		Use:   "otm",
@@ -393,6 +410,10 @@ Example:
 				stubDataAssets(model, "otm")
 			}
 
+			if mergeFile != "" {
+				return runMerge(cmd, model, "otm", mergeFile)
+			}
+
 			return writeScaffoldedOrDiff(cmd, model, outputFile, diff, scaffold, "otm", modelFile)
 		},
 	}
@@ -404,6 +425,7 @@ Example:
 	cmd.Flags().BoolVar(&scaffold, "scaffold", true, "Annotate the output with TODO(review) comments on every inferred field (set false for plain output)")
 	cmd.Flags().StringVar(&mappingFile, "mapping", "", "Path to a mapping dictionary YAML file (see docs) to correct/override importer heuristics")
 	cmd.Flags().BoolVar(&stubDataAssetsFlag, "stub-data-assets", true, "Generate stub data assets for datastores and internet-inbound links so the model produces meaningful risks")
+	cmd.Flags().StringVar(&mergeFile, "merge", "", "Reconcile this import against an already-edited model file instead of overwriting it (see docs/import-merge.md)")
 
 	return cmd
 }
@@ -416,6 +438,8 @@ func (what *Threagile) newImportMermaidCmd() *cobra.Command {
 	var scaffold bool
 	var mappingFile string
 	var stubDataAssetsFlag bool
+	var mergeFile string
+	var boundary string
 
 	cmd := &cobra.Command{
 		Use:   "mermaid",
@@ -448,13 +472,17 @@ Example:
 				return err
 			}
 
-			opts := mermaidimport.ImportOptions{SourceLabel: label, Mapping: ruleset}
+			opts := mermaidimport.ImportOptions{SourceLabel: label, Mapping: ruleset, Boundary: boundary}
 			model, err := mermaidimport.Import(data, opts)
 			if err != nil {
 				return err
 			}
 			if stubDataAssetsFlag {
 				stubDataAssets(model, "mermaid")
+			}
+
+			if mergeFile != "" {
+				return runMerge(cmd, model, "mermaid", mergeFile)
 			}
 
 			return writeScaffoldedOrDiff(cmd, model, outputFile, diff, scaffold, "mermaid", diagramFile)
@@ -468,8 +496,34 @@ Example:
 	cmd.Flags().BoolVar(&scaffold, "scaffold", true, "Annotate the output with TODO(review) comments on every inferred field (set false for plain output)")
 	cmd.Flags().StringVar(&mappingFile, "mapping", "", "Path to a mapping dictionary YAML file (see docs) to correct/override importer heuristics")
 	cmd.Flags().BoolVar(&stubDataAssetsFlag, "stub-data-assets", true, "Generate stub data assets for datastores and internet-inbound links so the model produces meaningful risks")
+	cmd.Flags().StringVar(&mergeFile, "merge", "", "Reconcile this import against an already-edited model file instead of overwriting it (see docs/import-merge.md)")
+	cmd.Flags().StringVar(&boundary, "boundary", "", "Import only the elements inside this named trust boundary's subtree, skipping everything else")
 
 	return cmd
+}
+
+// runMerge reconciles a freshly imported diagram model against an
+// already-edited model file (P7, see import_merge.go) instead of the normal
+// overwrite output path. --output/--diff are not used in merge mode: the
+// reconciled file(s) are written back in place (main file plus whichever
+// includes contained a matched element), never to an included file for
+// brand-new elements.
+func runMerge(cmd *cobra.Command, model *types.Model, importerName, mergeFile string) error {
+	outcome, err := mergeDiagramImport(model, importerName, mergeFile)
+	if err != nil {
+		return fmt.Errorf("%s import --merge: %w", importerName, err)
+	}
+	for path, m := range outcome.ChangedFiles {
+		out, err := writeMergedFile(m)
+		if err != nil {
+			return fmt.Errorf("failed to marshal merged file %q: %w", path, err)
+		}
+		if err := os.WriteFile(path, out, 0o600); err != nil {
+			return fmt.Errorf("failed to write merged file %q: %w", path, err)
+		}
+	}
+	cmd.Print(outcome.summary())
+	return nil
 }
 
 // readInput reads from a file path or stdin if path is empty.

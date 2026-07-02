@@ -285,3 +285,37 @@ func TestSourceLabelDefaultsAndOverrides(t *testing.T) {
 		t.Fatalf("expected id suffixed with custom label, got %+v", m.TechnicalAssets)
 	}
 }
+
+func TestBoundaryFlagScopesToSubtree(t *testing.T) {
+	src := `flowchart LR
+subgraph Outer["Outer Zone"]
+  subgraph Inner["Inner Zone"]
+    Svc[Service]
+  end
+  Edge[Edge Proxy]
+end
+Edge --> Svc
+`
+	full, err := Import([]byte(src), ImportOptions{Boundary: "Outer Zone"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(full.TechnicalAssets) != 2 {
+		t.Fatalf("scoping to the root boundary should keep both assets, got %d", len(full.TechnicalAssets))
+	}
+
+	inner, err := Import([]byte(src), ImportOptions{Boundary: "Inner Zone"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(inner.TechnicalAssets) != 1 || inner.TechnicalAssets["svc-mermaid"] == nil {
+		t.Fatalf("scoping to 'Inner Zone' should keep only the service, got: %+v", inner.TechnicalAssets)
+	}
+	if len(inner.TrustBoundaries) != 1 {
+		t.Fatalf("scoping to 'Inner Zone' should keep only that one boundary, got %d", len(inner.TrustBoundaries))
+	}
+
+	if _, err := Import([]byte(src), ImportOptions{Boundary: "No Such Zone"}); err == nil {
+		t.Error("unknown boundary name should error")
+	}
+}

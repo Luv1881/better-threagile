@@ -43,6 +43,13 @@ type ImportOptions struct {
 	// carries no style/color metadata, so only Mapping's label matcher will
 	// ever fire here. nil means no mapping rules are applied.
 	Mapping *mapping.Ruleset
+
+	// Boundary, when set, scopes the import to only the elements inside the
+	// named trust boundary's (subgraph's) subtree, skipping everything else.
+	// Matched case-insensitively against the subgraph's title. See
+	// docs/import-mermaid.md and pkg/import/drawio's identical flag for the
+	// full rationale (100+-node diagrams producing unreviewable YAML).
+	Boundary string
 }
 
 // reviewTag flags every imported asset for manual review (mermaid diagrams
@@ -78,6 +85,15 @@ func Import(data []byte, opts ImportOptions) (*types.Model, error) {
 	}
 
 	b.finishBoundaries()
+
+	if opts.Boundary != "" {
+		if err := scopeToBoundary(model, opts.Boundary); err != nil {
+			return nil, err
+		}
+		if len(model.TechnicalAssets) == 0 {
+			return nil, fmt.Errorf("mermaid: trust boundary %q contains no technical assets", opts.Boundary)
+		}
+	}
 
 	da := &types.DataAsset{
 		Id:              toID("data-imported", opts.SourceLabel),
@@ -551,4 +567,70 @@ func (b *builder) finishBoundaries() {
 			TrustBoundariesNested: bi.children,
 		}
 	}
+}
+
+// scopeToBoundary prunes model down to just the elements inside the named
+// trust boundary's subtree — the mermaid counterpart of drawio's identical
+// function (see pkg/import/drawio/importer.go for the full rationale).
+// Matched case-insensitively against a trust boundary's Title.
+func scopeToBoundary(model *types.Model, boundaryName string) error {
+	var rootID string
+	for id, tb := range model.TrustBoundaries {
+		if strings.EqualFold(tb.Title, boundaryName) {
+			rootID = id
+			break
+		}
+	}
+	if rootID == "" {
+		return fmt.Errorf("mermaid: no trust boundary named %q found (case-insensitive match on the subgraph's label)", boundaryName)
+	}
+
+	keepBoundary := map[string]bool{}
+	var walk func(id string)
+	walk = func(id string) {
+		if keepBoundary[id] {
+			return
+		}
+		keepBoundary[id] = true
+		tb, ok := model.TrustBoundaries[id]
+		if !ok {
+			return
+		}
+		for _, child := range tb.TrustBoundariesNested {
+			walk(child)
+		}
+	}
+	walk(rootID)
+
+	keepAsset := map[string]bool{}
+	for id := range keepBoundary {
+		for _, assetID := range model.TrustBoundaries[id].TechnicalAssetsInside {
+			keepAsset[assetID] = true
+		}
+	}
+
+	for id := range model.TrustBoundaries {
+		if !keepBoundary[id] {
+			delete(model.TrustBoundaries, id)
+		}
+	}
+	for id, ta := range model.TechnicalAssets {
+		if !keepAsset[id] {
+			delete(model.TechnicalAssets, id)
+			continue
+		}
+		filtered := ta.CommunicationLinks[:0:0]
+		for _, link := range ta.CommunicationLinks {
+			if keepAsset[link.SourceId] && keepAsset[link.TargetId] {
+				filtered = append(filtered, link)
+			}
+		}
+		ta.CommunicationLinks = filtered
+	}
+	for id, link := range model.CommunicationLinks {
+		if !keepAsset[link.SourceId] || !keepAsset[link.TargetId] {
+			delete(model.CommunicationLinks, id)
+		}
+	}
+	return nil
 }

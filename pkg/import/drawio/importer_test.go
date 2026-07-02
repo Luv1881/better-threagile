@@ -199,3 +199,133 @@ func contains(s []string, want string) bool {
 	}
 	return false
 }
+
+// sampleMultiPage has two <diagram> pages, each with a boundary + two assets
+// numbered identically ("1"/"2") to verify page-local containment (page 2's
+// "Auth" boundary must not absorb page 1's assets) and cumulative unique-ID
+// collision guarding across pages.
+const sampleMultiPage = `<mxfile>
+<diagram name="Page One"><mxGraphModel><root>
+  <mxCell id="0"/><mxCell id="1" parent="0"/>
+  <mxCell id="2" value="Frontend Zone" style="dashed=1;container=1;" vertex="1" parent="1"><mxGeometry x="0" y="0" width="200" height="200" as="geometry"/></mxCell>
+  <mxCell id="a" value="Web App" style="rounded=1;" vertex="1" parent="2"><mxGeometry x="20" y="20" width="80" height="40" as="geometry"/></mxCell>
+</root></mxGraphModel></diagram>
+<diagram name="Page Two"><mxGraphModel><root>
+  <mxCell id="0"/><mxCell id="1" parent="0"/>
+  <mxCell id="2" value="Auth Zone" style="dashed=1;container=1;" vertex="1" parent="1"><mxGeometry x="0" y="0" width="200" height="200" as="geometry"/></mxCell>
+  <mxCell id="b" value="Auth Service" style="rounded=1;" vertex="1" parent="2"><mxGeometry x="20" y="20" width="80" height="40" as="geometry"/></mxCell>
+</root></mxGraphModel></diagram>
+</mxfile>`
+
+func TestMultiPageDefaultImportsAllPagesScoped(t *testing.T) {
+	m, err := Import([]byte(sampleMultiPage), ImportOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(m.TechnicalAssets) != 2 {
+		t.Fatalf("expected 2 assets across both pages, got %d", len(m.TechnicalAssets))
+	}
+	if len(m.TrustBoundaries) != 2 {
+		t.Fatalf("expected 2 boundaries (one per page, no cross-page merge), got %d", len(m.TrustBoundaries))
+	}
+	// Each boundary must contain exactly its own page's asset — never the
+	// other page's same-numbered cell.
+	for _, tb := range m.TrustBoundaries {
+		if len(tb.TechnicalAssetsInside) != 1 {
+			t.Errorf("boundary %q should contain exactly 1 asset (its own page), got %v", tb.Title, tb.TechnicalAssetsInside)
+		}
+	}
+}
+
+func TestPageFlagSelectsSinglePageByIndexAndName(t *testing.T) {
+	byIndex, err := Import([]byte(sampleMultiPage), ImportOptions{Page: "2"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(byIndex.TechnicalAssets) != 1 || byIndex.TechnicalAssets["b-drawio"] == nil {
+		t.Fatalf("--page 2 should import only page two's asset: %+v", byIndex.TechnicalAssets)
+	}
+
+	byName, err := Import([]byte(sampleMultiPage), ImportOptions{Page: "Page One"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(byName.TechnicalAssets) != 1 || byName.TechnicalAssets["a-drawio"] == nil {
+		t.Fatalf("--page 'Page One' should import only page one's asset: %+v", byName.TechnicalAssets)
+	}
+
+	if _, err := Import([]byte(sampleMultiPage), ImportOptions{Page: "3"}); err == nil {
+		t.Error("out-of-range page index should error")
+	}
+	if _, err := Import([]byte(sampleMultiPage), ImportOptions{Page: "No Such Page"}); err == nil {
+		t.Error("unknown page name should error")
+	}
+}
+
+// sampleNestedBoundary has a swimlane-style outer "VPC" boundary containing
+// an inner "Private Subnet" boundary (itself containing an asset) plus one
+// asset directly in the outer boundary — to arbitrary depth two here.
+const sampleNestedBoundary = `<mxfile><diagram><mxGraphModel><root>
+  <mxCell id="0"/><mxCell id="1" parent="0"/>
+  <mxCell id="outer" value="VPC Zone" style="dashed=1;container=1;" vertex="1" parent="1"><mxGeometry x="0" y="0" width="400" height="400" as="geometry"/></mxCell>
+  <mxCell id="inner" value="Private Subnet" style="dashed=1;container=1;" vertex="1" parent="outer"><mxGeometry x="20" y="20" width="200" height="200" as="geometry"/></mxCell>
+  <mxCell id="lb" value="Load Balancer" style="rounded=1;" vertex="1" parent="outer"><mxGeometry x="250" y="20" width="80" height="40" as="geometry"/></mxCell>
+  <mxCell id="db" value="Backend DB" style="shape=cylinder3;" vertex="1" parent="inner"><mxGeometry x="20" y="20" width="80" height="40" as="geometry"/></mxCell>
+</root></mxGraphModel></diagram></mxfile>`
+
+func TestNestedBoundariesBuildParentChildChain(t *testing.T) {
+	m, err := Import([]byte(sampleNestedBoundary), ImportOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var outer, inner *types.TrustBoundary
+	for _, tb := range m.TrustBoundaries {
+		switch tb.Title {
+		case "VPC Zone":
+			outer = tb
+		case "Private Subnet":
+			inner = tb
+		}
+	}
+	if outer == nil || inner == nil {
+		t.Fatalf("expected both outer and inner boundaries, got: %+v", m.TrustBoundaries)
+	}
+	if !contains(outer.TechnicalAssetsInside, "lb-drawio") {
+		t.Errorf("outer boundary should directly contain the load balancer: %v", outer.TechnicalAssetsInside)
+	}
+	if contains(outer.TechnicalAssetsInside, "db-drawio") {
+		t.Errorf("outer boundary should NOT directly list the nested boundary's asset: %v", outer.TechnicalAssetsInside)
+	}
+	if !contains(inner.TechnicalAssetsInside, "db-drawio") {
+		t.Errorf("inner boundary should contain the db: %v", inner.TechnicalAssetsInside)
+	}
+	if !contains(outer.TrustBoundariesNested, inner.Id) {
+		t.Errorf("outer boundary should list inner as a nested boundary: %v", outer.TrustBoundariesNested)
+	}
+}
+
+func TestBoundaryFlagScopesToSubtree(t *testing.T) {
+	m, err := Import([]byte(sampleNestedBoundary), ImportOptions{Boundary: "VPC Zone"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Scoping to the outer boundary keeps everything (it's the root).
+	if len(m.TechnicalAssets) != 2 {
+		t.Fatalf("scoping to the root boundary should keep both assets, got %d", len(m.TechnicalAssets))
+	}
+
+	inner, err := Import([]byte(sampleNestedBoundary), ImportOptions{Boundary: "Private Subnet"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(inner.TechnicalAssets) != 1 || inner.TechnicalAssets["db-drawio"] == nil {
+		t.Fatalf("scoping to 'Private Subnet' should keep only the db, got: %+v", inner.TechnicalAssets)
+	}
+	if len(inner.TrustBoundaries) != 1 {
+		t.Fatalf("scoping to 'Private Subnet' should keep only that one boundary, got %d", len(inner.TrustBoundaries))
+	}
+
+	if _, err := Import([]byte(sampleNestedBoundary), ImportOptions{Boundary: "No Such Zone"}); err == nil {
+		t.Error("unknown boundary name should error")
+	}
+}

@@ -20,6 +20,7 @@ import (
 	"net/url"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/threagile/threagile/pkg/import/mapping"
@@ -41,6 +42,21 @@ type ImportOptions struct {
 	// "MinIO" -> object-storage) land before P4 stub generation runs on the
 	// resulting model. nil means no mapping rules are applied.
 	Mapping *mapping.Ruleset
+
+	// Page selects a single <diagram> page to import, by 1-based index
+	// ("2") or by its draw.io page name (case-insensitive, e.g. "Overview").
+	// Empty (default) processes every page in the file, merging them into
+	// one model — each page's boundary/geometry containment stays scoped to
+	// that page (a page-2 container never absorbs a page-1 shape), while
+	// generated asset IDs stay globally unique across all merged pages.
+	Page string
+
+	// Boundary, when set, scopes the import to only the elements inside the
+	// named trust boundary's subtree (its own contents plus any nested
+	// boundaries' contents), skipping everything else. Matched
+	// case-insensitively against the boundary's label. Applied after
+	// pages/boundaries are built, so it composes with Page.
+	Boundary string
 }
 
 // reviewTag flags every imported asset for manual review (draw.io is lossy).
@@ -55,17 +71,30 @@ type vertex struct {
 	assetID string
 }
 
+// diagramPage is one <diagram> page's flattened cell list.
+type diagramPage struct {
+	name  string
+	cells []mxCell
+}
+
 // Import parses a draw.io XML document and returns a partial *types.Model.
+// By default every page in the file is imported and merged into one model
+// (see ImportOptions.Page to restrict to a single page, and
+// ImportOptions.Boundary to further scope to one trust boundary's subtree).
 func Import(data []byte, opts ImportOptions) (*types.Model, error) {
 	if opts.SourceLabel == "" {
 		opts.SourceLabel = "drawio"
 	}
 
-	cells, err := parseCells(data)
+	pages, err := parsePages(data)
 	if err != nil {
 		return nil, err
 	}
-	if len(cells) == 0 {
+	selected, err := selectPages(pages, opts.Page)
+	if err != nil {
+		return nil, err
+	}
+	if len(selected) == 0 {
 		return nil, errors.New("drawio: no diagram cells found (export as uncompressed XML if your file is compressed)")
 	}
 
@@ -79,35 +108,20 @@ func Import(data []byte, opts ImportOptions) (*types.Model, error) {
 		TagsAvailable:      []string{reviewTag},
 	}
 
-	// Stable order for determinism — sort BEFORE indexing so the byID pointers
-	// remain valid (sorting reorders the backing array).
-	sort.SliceStable(cells, func(i, j int) bool { return cells[i].ID < cells[j].ID })
+	b := &builder{model: model, label: opts.SourceLabel, mapping: opts.Mapping}
 
-	byID := map[string]*mxCell{}
-	for i := range cells {
-		byID[cells[i].ID] = &cells[i]
+	for _, page := range selected {
+		if len(page.cells) == 0 {
+			continue
+		}
+		b.importPage(page.cells)
 	}
 
-	b := &builder{model: model, label: opts.SourceLabel, byID: byID, verticesByCell: map[string]*vertex{}, mapping: opts.Mapping}
-
-	var boundaryCells []mxCell
-	for _, c := range cells {
-		switch {
-		case c.Edge == "1" || (c.Source != "" && c.Target != ""):
-			// handled in the edge pass
-		case c.Vertex == "1" && isBoundary(c):
-			boundaryCells = append(boundaryCells, c)
-		case c.Vertex == "1":
-			b.buildVertexAsset(c)
+	if opts.Boundary != "" {
+		if err := scopeToBoundary(model, opts.Boundary); err != nil {
+			return nil, err
 		}
 	}
-	for _, c := range cells {
-		if c.Edge == "1" || (c.Source != "" && c.Target != "") {
-			b.buildEdgeLink(c)
-		}
-	}
-	b.markInternetExposure(cells)
-	b.assignBoundaries(boundaryCells)
 
 	if len(model.TechnicalAssets) == 0 {
 		return nil, errors.New("drawio: no shapes could be mapped to technical assets")
@@ -127,26 +141,58 @@ func Import(data []byte, opts ImportOptions) (*types.Model, error) {
 	return model, nil
 }
 
-// htmlEntity matches the named HTML entities draw.io emits in labels (notably
-// &nbsp;) that Go's XML parser rejects as undeclared. They are replaced with a
-// space before unmarshalling (labels are whitespace-collapsed anyway).
-var htmlEntity = regexp.MustCompile(`&(nbsp|ensp|emsp|thinsp|hellip|mdash|ndash|rsquo|lsquo|rdquo|ldquo|bull|middot|deg|copy|reg|trade);`)
+// importPage runs the vertex/edge/boundary passes for one page's cells,
+// accumulating results into b.model. byID and verticesByCell are rebuilt
+// per page (fresh, page-local maps) so a page's edges/containment can only
+// ever resolve against that same page's cells — never a same-numbered cell
+// id belonging to a different page. b.usedIDs (via uniqueID) is NOT reset
+// between pages, so generated Threagile IDs stay globally unique across
+// every merged page.
+func (b *builder) importPage(cells []mxCell) {
+	// Stable order for determinism — sort BEFORE indexing so the byID pointers
+	// remain valid (sorting reorders the backing array).
+	cells = append([]mxCell(nil), cells...)
+	sort.SliceStable(cells, func(i, j int) bool { return cells[i].ID < cells[j].ID })
 
-func sanitizeXML(data []byte) []byte {
-	return htmlEntity.ReplaceAll(data, []byte(" "))
+	byID := map[string]*mxCell{}
+	for i := range cells {
+		byID[cells[i].ID] = &cells[i]
+	}
+	b.byID = byID
+	b.verticesByCell = map[string]*vertex{}
+
+	var boundaryCells []mxCell
+	for _, c := range cells {
+		switch {
+		case c.Edge == "1" || (c.Source != "" && c.Target != ""):
+			// handled in the edge pass
+		case c.Vertex == "1" && isBoundary(c):
+			boundaryCells = append(boundaryCells, c)
+		case c.Vertex == "1":
+			b.buildVertexAsset(c)
+		}
+	}
+	for _, c := range cells {
+		if c.Edge == "1" || (c.Source != "" && c.Target != "") {
+			b.buildEdgeLink(c)
+		}
+	}
+	b.markInternetExposure(cells)
+	b.assignBoundaries(boundaryCells)
 }
 
-// parseCells extracts the flat list of mxCells from the first diagram, handling
+// parsePages extracts every <diagram> page's flattened cell list, handling
 // both uncompressed <mxGraphModel> and compressed (deflate+base64) payloads.
-func parseCells(data []byte) ([]mxCell, error) {
+// A bare <mxGraphModel> document (no <mxfile> wrapper) is treated as a
+// single unnamed page.
+func parsePages(data []byte) ([]diagramPage, error) {
 	data = sanitizeXML(data)
-	// Bare <mxGraphModel> document (e.g. "Edit Diagram" copy).
 	if bytes.Contains(data, []byte("<mxGraphModel")) && !bytes.Contains(data, []byte("<mxfile")) {
 		var model mxGraphModel
 		if err := xml.Unmarshal(data, &model); err != nil {
 			return nil, fmt.Errorf("drawio: failed to parse mxGraphModel XML: %w", err)
 		}
-		return flattenRoot(model.Root), nil
+		return []diagramPage{{cells: flattenRoot(model.Root)}}, nil
 	}
 
 	var file mxFile
@@ -156,15 +202,75 @@ func parseCells(data []byte) ([]mxCell, error) {
 	if len(file.Diagrams) == 0 {
 		return nil, errors.New("drawio: no <diagram> elements found")
 	}
+
+	pages := make([]diagramPage, 0, len(file.Diagrams))
 	for _, dg := range file.Diagrams {
-		if dg.Model != nil {
-			return flattenRoot(dg.Model.Root), nil
+		var cells []mxCell
+		switch {
+		case dg.Model != nil:
+			cells = flattenRoot(dg.Model.Root)
+		default:
+			if model := decompressDiagram(dg.Content); model != nil {
+				cells = flattenRoot(model.Root)
+			}
 		}
-		if model := decompressDiagram(dg.Content); model != nil {
-			return flattenRoot(model.Root), nil
+		pages = append(pages, diagramPage{name: dg.Name, cells: cells})
+	}
+
+	anyCells := false
+	for _, p := range pages {
+		if len(p.cells) > 0 {
+			anyCells = true
+			break
 		}
 	}
-	return nil, errors.New("drawio: diagram is compressed and could not be decoded — re-export with Extras → Edit Diagram (uncompressed) or File → Export as → XML (uncompressed)")
+	if !anyCells {
+		return nil, errors.New("drawio: diagram is compressed and could not be decoded — re-export with Extras → Edit Diagram (uncompressed) or File → Export as → XML (uncompressed)")
+	}
+	return pages, nil
+}
+
+// selectPages returns every page in pages when sel is empty, or just the one
+// page matching sel (a 1-based index, e.g. "2", or a page name, matched
+// case-insensitively) otherwise.
+func selectPages(pages []diagramPage, sel string) ([]diagramPage, error) {
+	if sel == "" {
+		return pages, nil
+	}
+	if n, err := strconv.Atoi(sel); err == nil {
+		if n < 1 || n > len(pages) {
+			return nil, fmt.Errorf("drawio: --page %q is out of range (file has %d page(s))", sel, len(pages))
+		}
+		return pages[n-1 : n], nil
+	}
+	for _, p := range pages {
+		if strings.EqualFold(p.name, sel) {
+			return []diagramPage{p}, nil
+		}
+	}
+	return nil, fmt.Errorf("drawio: no page named %q found", sel)
+}
+
+// parseCells is the legacy single-page entry point, kept for callers that
+// only care about the first page's cells (fuzzing, ad-hoc debugging).
+func parseCells(data []byte) ([]mxCell, error) {
+	pages, err := parsePages(data)
+	if err != nil {
+		return nil, err
+	}
+	if len(pages) == 0 {
+		return nil, errors.New("drawio: no <diagram> elements found")
+	}
+	return pages[0].cells, nil
+}
+
+// htmlEntity matches the named HTML entities draw.io emits in labels (notably
+// &nbsp;) that Go's XML parser rejects as undeclared. They are replaced with a
+// space before unmarshalling (labels are whitespace-collapsed anyway).
+var htmlEntity = regexp.MustCompile(`&(nbsp|ensp|emsp|thinsp|hellip|mdash|ndash|rsquo|lsquo|rdquo|ldquo|bull|middot|deg|copy|reg|trade);`)
+
+func sanitizeXML(data []byte) []byte {
+	return htmlEntity.ReplaceAll(data, []byte(" "))
 }
 
 // decompressDiagram decodes draw.io's base64 + raw-deflate + URL-encoded payload.
@@ -383,7 +489,7 @@ func (b *builder) buildEdgeLink(c mxCell) {
 		TargetId:       dst.assetID,
 		Title:          title,
 		Description:    "Imported from draw.io flow (review protocol/auth)",
-		Protocol:       types.HTTPS,
+		Protocol:       guessProtocol(title),
 		Authentication: types.NoneAuthentication,
 		Authorization:  types.NoneAuthorization,
 		Usage:          types.Business,
@@ -416,18 +522,11 @@ func (b *builder) markInternetExposure(cells []mxCell) {
 // smallest boundary box.
 func (b *builder) assignBoundaries(boundaries []mxCell) {
 	boundaryIDs := map[string]string{} // cell id -> threagile boundary id
-	type box struct {
-		cellID           string
-		bID              string
-		x, y, w, h, area float64
-		title, descr     string
-		hasGeom          bool
-	}
-	var boxes []box
+	var boxes []boundaryBox
 	for _, bc := range boundaries {
 		bID := b.uniqueID(toID("boundary", bc.ID, b.label))
 		boundaryIDs[bc.ID] = bID
-		bx := box{cellID: bc.ID, bID: bID, title: cellText(bc), descr: "Imported from draw.io boundary"}
+		bx := boundaryBox{cellID: bc.ID, bID: bID, title: cellText(bc), descr: "Imported from draw.io boundary"}
 		if ax, ay, ok := b.absPos(bc.ID); ok && bc.Geometry != nil {
 			bx.x, bx.y = ax, ay
 			bx.w, bx.h = bc.Geometry.Width, bc.Geometry.Height
@@ -437,6 +536,43 @@ func (b *builder) assignBoundaries(boundaries []mxCell) {
 		boxes = append(boxes, bx)
 	}
 	sort.SliceStable(boxes, func(i, j int) bool { return boxes[i].area < boxes[j].area })
+
+	// parentOf resolves each boundary's own parent boundary (nested
+	// container/swimlane -> nested trust boundary), to arbitrary depth: (a)
+	// the draw.io `parent` attribute, if it names another boundary cell, else
+	// (b) geometry containment in the smallest STRICTLY LARGER boundary box.
+	parentOf := map[string]string{} // child bID -> parent bID
+	for _, bc := range boundaries {
+		childID := boundaryIDs[bc.ID]
+		if pID, ok := boundaryIDs[bc.Parent]; ok && pID != childID {
+			parentOf[childID] = pID
+			continue
+		}
+		ax, ay, ok := b.absPos(bc.ID)
+		if !ok || bc.Geometry == nil {
+			continue
+		}
+		cx := ax + bc.Geometry.Width/2
+		cy := ay + bc.Geometry.Height/2
+		for _, bx := range boxes {
+			if bx.bID == childID || !bx.hasGeom || bx.area <= 0 {
+				continue
+			}
+			// Must be a proper superset in area to avoid a box containing
+			// itself/an equal-area sibling.
+			if bx.area <= boxFor(boxes, childID).area {
+				continue
+			}
+			if cx >= bx.x && cx <= bx.x+bx.w && cy >= bx.y && cy <= bx.y+bx.h {
+				parentOf[childID] = bx.bID
+				break
+			}
+		}
+	}
+	nestedChildren := map[string][]string{} // parent bID -> child bIDs
+	for child, parent := range parentOf {
+		nestedChildren[parent] = append(nestedChildren[parent], child)
+	}
 
 	inside := map[string][]string{}
 	for _, v := range b.sortedVertices() {
@@ -465,10 +601,12 @@ func (b *builder) assignBoundaries(boundaries []mxCell) {
 
 	for _, bx := range boxes {
 		ids := inside[bx.bID]
-		if len(ids) == 0 {
+		children := nestedChildren[bx.bID]
+		if len(ids) == 0 && len(children) == 0 {
 			continue
 		}
 		sort.Strings(ids)
+		sort.Strings(children)
 		title := bx.title
 		if title == "" {
 			title = bx.cellID
@@ -484,8 +622,31 @@ func (b *builder) assignBoundaries(boundaries []mxCell) {
 			Type:                  boundaryType,
 			Tags:                  []string{reviewTag},
 			TechnicalAssetsInside: ids,
+			TrustBoundariesNested: children,
 		}
 	}
+}
+
+// boundaryBox is one boundary cell's Threagile ID plus its absolute geometry
+// (when known), used both for vertex-containment and for resolving
+// boundary-inside-boundary nesting.
+type boundaryBox struct {
+	cellID           string
+	bID              string
+	x, y, w, h, area float64
+	title, descr     string
+	hasGeom          bool
+}
+
+// boxFor looks up a box by its Threagile boundary ID; callers only use this
+// with an ID known to be in boxes, so a zero-value box is a safe fallback.
+func boxFor(boxes []boundaryBox, bID string) boundaryBox {
+	for _, bx := range boxes {
+		if bx.bID == bID {
+			return bx
+		}
+	}
+	return boundaryBox{}
 }
 
 // absPos resolves a cell's absolute top-left position by summing geometry
@@ -551,4 +712,123 @@ func hasWord(text string, needles ...string) bool {
 		}
 	}
 	return false
+}
+
+// scopeToBoundary prunes model down to just the elements inside the named
+// trust boundary's subtree (the boundary's own directly-contained assets,
+// plus every nested boundary's assets, to arbitrary depth) — the answer to
+// "a 100+-node enterprise diagram produces an unreviewable 5000-line YAML":
+// import one subsystem at a time. Matched case-insensitively against a trust
+// boundary's Title. Communication links are kept only when both endpoints
+// survive the prune; each surviving technical asset's own CommunicationLinks
+// slice is filtered the same way so modelToInput doesn't re-emit dangling
+// links.
+func scopeToBoundary(model *types.Model, boundaryName string) error {
+	var rootID string
+	for id, tb := range model.TrustBoundaries {
+		if strings.EqualFold(tb.Title, boundaryName) {
+			rootID = id
+			break
+		}
+	}
+	if rootID == "" {
+		return fmt.Errorf("drawio: no trust boundary named %q found (case-insensitive match on the boundary's label)", boundaryName)
+	}
+
+	keepBoundary := map[string]bool{}
+	var walk func(id string)
+	walk = func(id string) {
+		if keepBoundary[id] {
+			return
+		}
+		keepBoundary[id] = true
+		tb, ok := model.TrustBoundaries[id]
+		if !ok {
+			return
+		}
+		for _, child := range tb.TrustBoundariesNested {
+			walk(child)
+		}
+	}
+	walk(rootID)
+
+	keepAsset := map[string]bool{}
+	for id := range keepBoundary {
+		for _, assetID := range model.TrustBoundaries[id].TechnicalAssetsInside {
+			keepAsset[assetID] = true
+		}
+	}
+
+	for id := range model.TrustBoundaries {
+		if !keepBoundary[id] {
+			delete(model.TrustBoundaries, id)
+		}
+	}
+	for id, ta := range model.TechnicalAssets {
+		if !keepAsset[id] {
+			delete(model.TechnicalAssets, id)
+			continue
+		}
+		filtered := ta.CommunicationLinks[:0:0]
+		for _, link := range ta.CommunicationLinks {
+			if keepAsset[link.SourceId] && keepAsset[link.TargetId] {
+				filtered = append(filtered, link)
+			}
+		}
+		ta.CommunicationLinks = filtered
+	}
+	for id, link := range model.CommunicationLinks {
+		if !keepAsset[link.SourceId] || !keepAsset[link.TargetId] {
+			delete(model.CommunicationLinks, id)
+		}
+	}
+	return nil
+}
+
+// guessProtocol classifies a communication link's protocol from its edge
+// label, defaulting to HTTPS (a conservative "assume encrypted" default)
+// when no keyword matches. Kept in lockstep with mermaid's identically-named
+// function (pkg/import/mermaid/importer.go) so the two lossy diagram
+// importers make the same guess for the same label — see
+// docs/import-drawio.md / docs/import-mermaid.md for the documented table.
+func guessProtocol(label string) types.Protocol {
+	l := strings.ToLower(label)
+	switch {
+	case matchesAny(l, "https", "tls", "ssl"):
+		return types.HTTPS
+	case matchesAny(l, "grpc"):
+		return types.HTTPS
+	case matchesAny(l, "http"):
+		return types.HTTP
+	case matchesAny(l, "ssh"):
+		return types.SSH
+	case matchesAny(l, "sftp"):
+		return types.SFTP
+	case matchesAny(l, "ftps"):
+		return types.FTPS
+	case matchesAny(l, "ftp"):
+		return types.FTP
+	case matchesAny(l, "ldaps"):
+		return types.LDAPS
+	case matchesAny(l, "ldap"):
+		return types.LDAP
+	case matchesAny(l, "smtps", "smtp+tls"):
+		return types.SmtpEncrypted
+	case matchesAny(l, "smtp"):
+		return types.SMTP
+	case matchesAny(l, "mqtt"):
+		return types.MQTT
+	case matchesAny(l, "kafka", "amqp", "queue", "jms"):
+		return types.JMS
+	case matchesAny(l, "nfs"):
+		return types.NFS
+	case matchesAny(l, "smb", "cifs"):
+		return types.SMB
+	case matchesAny(l, "sql", "postgres", "mysql", "jdbc", "odbc"):
+		return types.SqlAccessProtocolEncrypted
+	case matchesAny(l, "nosql", "mongo", "redis"):
+		return types.NosqlAccessProtocolEncrypted
+	default:
+		return types.HTTPS
+	}
 }

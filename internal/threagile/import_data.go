@@ -12,7 +12,9 @@ import (
 	composeimport "github.com/threagile/threagile/pkg/import/compose"
 	drawioimport "github.com/threagile/threagile/pkg/import/drawio"
 	k8simport "github.com/threagile/threagile/pkg/import/kubernetes"
+	"github.com/threagile/threagile/pkg/import/mapping"
 	oaimport "github.com/threagile/threagile/pkg/import/openapi"
+	otmimport "github.com/threagile/threagile/pkg/import/otm"
 	tfimport "github.com/threagile/threagile/pkg/import/terraform"
 	tdimport "github.com/threagile/threagile/pkg/import/threatdragon"
 	"github.com/threagile/threagile/pkg/types"
@@ -34,6 +36,7 @@ Supported sources:
   compose    Parse a docker-compose file
   threat-dragon Parse an OWASP Threat Dragon (v2) diagram model
   drawio     Parse a draw.io / diagrams.net diagram (mxGraph XML; best-effort)
+  otm        Parse an Open Threat Model (OTM) JSON document
 
 By default the generated model fragment is written to stdout. Use --output to
 write it to a file, or --diff to preview a summary without writing.`,
@@ -45,6 +48,7 @@ write it to a file, or --diff to preview a summary without writing.`,
 	importCmd.AddCommand(what.newImportComposeCmd())
 	importCmd.AddCommand(what.newImportThreatDragonCmd())
 	importCmd.AddCommand(what.newImportDrawioCmd())
+	importCmd.AddCommand(what.newImportOTMCmd())
 
 	what.rootCmd.AddCommand(importCmd)
 	return what
@@ -225,6 +229,9 @@ func (what *Threagile) newImportThreatDragonCmd() *cobra.Command {
 	var outputFile string
 	var label string
 	var diff bool
+	var scaffold bool
+	var mappingFile string
+	var stubDataAssetsFlag bool
 
 	cmd := &cobra.Command{
 		Use:   "threat-dragon",
@@ -246,13 +253,21 @@ Example:
 				return fmt.Errorf("threat-dragon import: %w", err)
 			}
 
-			opts := tdimport.ImportOptions{SourceLabel: label}
-			model, err := tdimport.Import(data, opts)
+			ruleset, err := loadMapping(mappingFile)
 			if err != nil {
 				return err
 			}
 
-			return writeOrDiff(cmd, model, outputFile, diff)
+			opts := tdimport.ImportOptions{SourceLabel: label, Mapping: ruleset}
+			model, err := tdimport.Import(data, opts)
+			if err != nil {
+				return err
+			}
+			if stubDataAssetsFlag {
+				stubDataAssets(model, "threat-dragon")
+			}
+
+			return writeScaffoldedOrDiff(cmd, model, outputFile, diff, scaffold, "threat-dragon", modelFile)
 		},
 	}
 
@@ -260,6 +275,9 @@ Example:
 	cmd.Flags().StringVar(&outputFile, "output", "", "Write model YAML to this file (default: stdout)")
 	cmd.Flags().StringVar(&label, "label", "td", "Short label appended to generated asset IDs")
 	cmd.Flags().BoolVar(&diff, "diff", false, "Show a summary of what would be generated without writing output")
+	cmd.Flags().BoolVar(&scaffold, "scaffold", true, "Annotate the output with TODO(review) comments on every inferred field (set false for plain output)")
+	cmd.Flags().StringVar(&mappingFile, "mapping", "", "Path to a mapping dictionary YAML file (see docs) to correct/override importer heuristics")
+	cmd.Flags().BoolVar(&stubDataAssetsFlag, "stub-data-assets", true, "Generate stub data assets for datastores and internet-inbound links so the model produces meaningful risks")
 
 	return cmd
 }
@@ -269,6 +287,9 @@ func (what *Threagile) newImportDrawioCmd() *cobra.Command {
 	var outputFile string
 	var label string
 	var diff bool
+	var scaffold bool
+	var mappingFile string
+	var stubDataAssetsFlag bool
 
 	cmd := &cobra.Command{
 		Use:   "drawio",
@@ -295,13 +316,21 @@ Example:
 				return fmt.Errorf("drawio import: %w", err)
 			}
 
-			opts := drawioimport.ImportOptions{SourceLabel: label}
-			model, err := drawioimport.Import(data, opts)
+			ruleset, err := loadMapping(mappingFile)
 			if err != nil {
 				return err
 			}
 
-			return writeOrDiff(cmd, model, outputFile, diff)
+			opts := drawioimport.ImportOptions{SourceLabel: label, Mapping: ruleset}
+			model, err := drawioimport.Import(data, opts)
+			if err != nil {
+				return err
+			}
+			if stubDataAssetsFlag {
+				stubDataAssets(model, "drawio")
+			}
+
+			return writeScaffoldedOrDiff(cmd, model, outputFile, diff, scaffold, "drawio", diagramFile)
 		},
 	}
 
@@ -309,6 +338,69 @@ Example:
 	cmd.Flags().StringVar(&outputFile, "output", "", "Write model YAML to this file (default: stdout)")
 	cmd.Flags().StringVar(&label, "label", "drawio", "Short label appended to generated asset IDs")
 	cmd.Flags().BoolVar(&diff, "diff", false, "Show a summary of what would be generated without writing output")
+	cmd.Flags().BoolVar(&scaffold, "scaffold", true, "Annotate the output with TODO(review) comments on every inferred field (set false for plain output)")
+	cmd.Flags().StringVar(&mappingFile, "mapping", "", "Path to a mapping dictionary YAML file (see docs) to correct/override importer heuristics")
+	cmd.Flags().BoolVar(&stubDataAssetsFlag, "stub-data-assets", true, "Generate stub data assets for datastores and internet-inbound links so the model produces meaningful risks")
+
+	return cmd
+}
+
+func (what *Threagile) newImportOTMCmd() *cobra.Command {
+	var modelFile string
+	var outputFile string
+	var label string
+	var diff bool
+	var scaffold bool
+	var mappingFile string
+	var stubDataAssetsFlag bool
+
+	cmd := &cobra.Command{
+		Use:   "otm",
+		Short: "Import an Open Threat Model (OTM) document into a Threagile model fragment",
+		Long: `Parse an Open Threat Model (OTM) JSON document — the IriusRisk-led open
+interchange format — and produce a Threagile model fragment. This is a fully
+deterministic, near-lossless conversion (no AI): trust zones become trust
+boundaries (nested via each zone's parent.trustZone reference), components
+become technical assets (classified by their OTM "type" field), dataflows
+become communication links, and OTM assets (which, unlike pure diagrams,
+actually carry data) become data assets. Every generated element is tagged
+"review-otm" — review the fragment before merging.
+
+Example:
+  threagile import otm --file model.otm.json --output model-fragment.yaml`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			what.processArgs(cmd, args)
+
+			data, err := readInput(modelFile)
+			if err != nil {
+				return fmt.Errorf("otm import: %w", err)
+			}
+
+			ruleset, err := loadMapping(mappingFile)
+			if err != nil {
+				return err
+			}
+
+			opts := otmimport.ImportOptions{SourceLabel: label, Mapping: ruleset}
+			model, err := otmimport.Import(data, opts)
+			if err != nil {
+				return err
+			}
+			if stubDataAssetsFlag {
+				stubDataAssets(model, "otm")
+			}
+
+			return writeScaffoldedOrDiff(cmd, model, outputFile, diff, scaffold, "otm", modelFile)
+		},
+	}
+
+	cmd.Flags().StringVar(&modelFile, "file", "", "Path to the OTM JSON model file (default: stdin)")
+	cmd.Flags().StringVar(&outputFile, "output", "", "Write model YAML to this file (default: stdout)")
+	cmd.Flags().StringVar(&label, "label", "otm", "Short label appended to generated asset IDs")
+	cmd.Flags().BoolVar(&diff, "diff", false, "Show a summary of what would be generated without writing output")
+	cmd.Flags().BoolVar(&scaffold, "scaffold", true, "Annotate the output with TODO(review) comments on every inferred field (set false for plain output)")
+	cmd.Flags().StringVar(&mappingFile, "mapping", "", "Path to a mapping dictionary YAML file (see docs) to correct/override importer heuristics")
+	cmd.Flags().BoolVar(&stubDataAssetsFlag, "stub-data-assets", true, "Generate stub data assets for datastores and internet-inbound links so the model produces meaningful risks")
 
 	return cmd
 }
@@ -319,6 +411,20 @@ func readInput(path string) ([]byte, error) {
 		return os.ReadFile("/dev/stdin")
 	}
 	return os.ReadFile(path)
+}
+
+// loadMapping loads a P3 mapping dictionary from path, or returns a nil
+// (no-op) *mapping.Ruleset when path is empty — every importer/apply
+// function treats nil as "no rules configured".
+func loadMapping(path string) (*mapping.Ruleset, error) {
+	if path == "" {
+		return nil, nil
+	}
+	ruleset, err := mapping.Load(path)
+	if err != nil {
+		return nil, err
+	}
+	return ruleset, nil
 }
 
 // writeOrDiff either writes the model as YAML (to file or stdout) or prints a diff summary.
@@ -332,6 +438,41 @@ func writeOrDiff(cmd *cobra.Command, model *types.Model, outputFile string, diff
 	// parseable/analyzable; marshalling a raw types.Model produces YAML that the
 	// model parser cannot read back.
 	out, err := yaml.Marshal(modelToInput(model))
+	if err != nil {
+		return fmt.Errorf("failed to marshal model to YAML: %w", err)
+	}
+
+	if outputFile == "" {
+		cmd.Print(string(out))
+		return nil
+	}
+
+	if err := os.WriteFile(outputFile, out, 0o600); err != nil {
+		return fmt.Errorf("failed to write output file: %w", err)
+	}
+	cmd.Printf("Written %d bytes to %s\n", len(out), outputFile)
+	return nil
+}
+
+// writeScaffoldedOrDiff is writeOrDiff's counterpart for diagram-derived
+// importers (drawio, threat-dragon, otm). When scaffold is true it emits the
+// annotated "scaffold" YAML (see import_scaffold.go): TODO(review)
+// head-comments on every importer-guessed field plus a file-header summary.
+// When scaffold is false it falls back to the exact plain output writeOrDiff
+// produces, so --scaffold=false stays a genuine escape hatch.
+func writeScaffoldedOrDiff(cmd *cobra.Command, model *types.Model, outputFile string, diff bool, scaffold bool, importerName, sourceFile string) error {
+	if diff {
+		printModelSummary(cmd, model)
+		return nil
+	}
+
+	var out []byte
+	var err error
+	if scaffold {
+		out, err = buildScaffoldYAML(model, importerName, sourceFile)
+	} else {
+		out, err = yaml.Marshal(modelToInput(model))
+	}
 	if err != nil {
 		return fmt.Errorf("failed to marshal model to YAML: %w", err)
 	}

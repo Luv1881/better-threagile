@@ -334,7 +334,7 @@ the test suite in-image. (Upstream's Dockerfile cloned the upstream repo — fix
 - All CLI flags: [docs/flags.md](./docs/flags.md)
 - Methodologies & rule packs: [docs/methodologies.md](./docs/methodologies.md)
 - Onboarding: [docs/bootstrap.md](./docs/bootstrap.md) · Git hooks: [docs/hooks.md](./docs/hooks.md) · Score: [docs/score.md](./docs/score.md) · Summary: [docs/summary.md](./docs/summary.md) · Prioritize: [docs/prioritize.md](./docs/prioritize.md) · Requirements: [docs/requirements.md](./docs/requirements.md)
-- Policy gate: [docs/gate.md](./docs/gate.md) · Attack paths: [docs/attack-paths.md](./docs/attack-paths.md) · ATT&CK: [docs/attack-navigator.md](./docs/attack-navigator.md) · SBOM: [docs/sbom.md](./docs/sbom.md) · Mermaid diagram: [docs/mermaid.md](./docs/mermaid.md) · OSCAL: [docs/oscal.md](./docs/oscal.md)
+- Policy gate: [docs/gate.md](./docs/gate.md) · Attack paths: [docs/attack-paths.md](./docs/attack-paths.md) · SBOM: [docs/sbom.md](./docs/sbom.md) · Mermaid diagram: [docs/mermaid.md](./docs/mermaid.md)
 - CI exit codes: [docs/exit-codes.md](./docs/exit-codes.md)
 - Importers: [Kubernetes](./docs/import-kubernetes.md) · [docker-compose](./docs/import-compose.md)
 - JSON Schema for IDE validation: `support/schema.json`

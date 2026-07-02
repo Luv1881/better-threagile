@@ -16,8 +16,8 @@ type DefaultProgressReporter struct {
 }
 
 // Diagnostics (progress, warnings) go to stderr so they never corrupt the
-// machine-readable output that data-emitting commands (mermaid, paths, d3fend,
-// stix, sbom, attack-navigator, ...) write to stdout for `command > file`.
+// machine-readable output that data-emitting commands (mermaid, paths, sbom,
+// coverage, explain, ...) write to stdout for `command > file`.
 func (r DefaultProgressReporter) Info(a ...any) {
 	if r.Verbose {
 		fmt.Fprintln(os.Stderr, a...)

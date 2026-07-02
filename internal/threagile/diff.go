@@ -18,11 +18,25 @@ import (
 func (what *Threagile) initDiff() *Threagile {
 	var format string
 	var outputFile string
+	var failOnNewHigh bool
+	var failOnNewCritical bool
 
 	diff := &cobra.Command{
 		Use:   DiffCommand + " <old-model.yaml> <new-model.yaml>",
 		Short: "Show the risk delta between two versions of a threat model",
-		Args:  cobra.ExactArgs(2),
+		Long: `Compare risk findings between two versions of a threat model (e.g. an
+approved baseline and the current model). Outputs new, resolved, and
+severity-changed findings.
+
+Examples:
+  threagile diff old.yaml new.yaml
+  threagile diff baseline.yaml threagile.yaml --fail-on-new-high
+
+Exit codes (see docs/exit-codes.md):
+  0   No new high/critical risks (or flags not set)
+  1   Analysis / usage error
+  3   New high or critical findings found (with --fail-on-new-high or --fail-on-new-critical)`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			what.processArgs(cmd, args)
 
@@ -84,15 +98,43 @@ func (what *Threagile) initDiff() *Threagile {
 				}
 			}
 			fmt.Fprint(cmd.OutOrStdout(), rendered)
+
+			if failOnNewCritical && hasCritical(added) {
+				return &exitCodeError{code: 3, msg: "diff gate failed: new critical-severity findings"}
+			}
+			if failOnNewHigh && hasHighOrCritical(added) {
+				return &exitCodeError{code: 3, msg: "diff gate failed: new high-or-critical-severity findings"}
+			}
 			return nil
 		},
 	}
 
 	diff.Flags().StringVar(&format, "format", "text", "output format: text, markdown, or json")
 	diff.Flags().StringVar(&outputFile, "output", "", "also write the rendered delta to this file")
+	diff.Flags().BoolVar(&failOnNewHigh, "fail-on-new-high", false, "exit 3 if any new High or Critical findings are introduced")
+	diff.Flags().BoolVar(&failOnNewCritical, "fail-on-new-critical", false, "exit 3 only if new Critical findings are introduced")
 
 	what.rootCmd.AddCommand(diff)
 	return what
+}
+
+func hasHighOrCritical(risks []*types.Risk) bool {
+	for _, r := range risks {
+		s := strings.ToLower(r.Severity.String())
+		if s == "high" || s == "critical" {
+			return true
+		}
+	}
+	return false
+}
+
+func hasCritical(risks []*types.Risk) bool {
+	for _, r := range risks {
+		if strings.ToLower(r.Severity.String()) == "critical" {
+			return true
+		}
+	}
+	return false
 }
 
 // riskDiff holds the computed delta between two analyzed models.

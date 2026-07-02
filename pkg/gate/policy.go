@@ -61,6 +61,12 @@ type Policy struct {
 	// score`) to stay at or above this floor. It lets a team ratchet overall
 	// quality up over time with a single number. nil disables the check.
 	MinScore *int `yaml:"min_score,omitempty" json:"min_score,omitempty"`
+
+	// FailOnUnreviewed fails the gate if the model has any element still
+	// carrying a `review-<importer>` or `stub-data-asset` tag (see
+	// `threagile review` / improvement.md P6) — i.e. a diagram/IaC import
+	// that has never been reviewed and confirmed by a human.
+	FailOnUnreviewed bool `yaml:"fail_on_unreviewed,omitempty" json:"fail_on_unreviewed,omitempty"`
 }
 
 // CoverageThreshold is a minimum control-coverage requirement for one framework.
@@ -92,6 +98,12 @@ type Input struct {
 	// Score is the threat-model health score (0–100) for the min_score rule, or
 	// nil when the CLI did not compute one.
 	Score *int
+
+	// ReviewTags lists one identifier ("kind:name") per model element still
+	// carrying a review-<importer>/stub-data-asset tag, for the
+	// fail_on_unreviewed rule. nil/empty means either there is nothing to
+	// review or the CLI did not compute it (fail_on_unreviewed is off).
+	ReviewTags []string
 }
 
 // Violation is a single failed policy rule.
@@ -145,8 +157,24 @@ func Evaluate(policy *Policy, in Input) *Result {
 	evalForbidNew(policy, in, result)
 	evalFrameworkCoverage(policy, in.CoveragePercents, result)
 	evalMinScore(policy, in.Score, result)
+	evalFailOnUnreviewed(policy, in.ReviewTags, result)
 
 	return result
+}
+
+// evalFailOnUnreviewed fails the gate when the model still has elements
+// flagged for manual review (see Policy.FailOnUnreviewed).
+func evalFailOnUnreviewed(policy *Policy, reviewTags []string, result *Result) {
+	if !policy.FailOnUnreviewed || len(reviewTags) == 0 {
+		return
+	}
+	sorted := append([]string(nil), reviewTags...)
+	sort.Strings(sorted)
+	result.Violations = append(result.Violations, Violation{
+		Rule:     "fail_on_unreviewed",
+		Message:  fmt.Sprintf("%d model element(s) still carry a review-<importer>/stub-data-asset tag — run `threagile review` and clear them", len(sorted)),
+		Findings: sorted,
+	})
 }
 
 // evalMinScore fails the gate when the health score is below the policy floor.

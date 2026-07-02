@@ -54,6 +54,11 @@ forbid_new_at_or_above: high
 framework_coverage:
   - {framework: owasp_top10_2021, min_percent: 70}
   - {framework: nist_800_53,      min_percent: 50}
+
+# Fail if the model still has any element tagged review-<importer> (a
+# diagram/IaC import that was never reviewed) or stub-data-asset (a
+# generated placeholder data asset). See docs/review.md.
+fail_on_unreviewed: true
 ```
 
 Unknown keys are **rejected** at load time — a typo in a rule name fails the
@@ -75,6 +80,15 @@ threagile gate --model threagile.yaml --policy policy.yaml \
 
 `forbid_new_at_or_above` flags any finding (by synthetic ID) at or above the
 named severity that is not present in the baseline.
+
+## Blocking merge on unreviewed imports
+
+`fail_on_unreviewed: true` fails the gate if the model has any element still
+carrying a `review-<importer>` tag (left by `import drawio`/`mermaid`/`otm`/
+`threat-dragon`) or a `stub-data-asset` tag (left by `--stub-data-assets`).
+Run `threagile review --model threagile.yaml` locally to see exactly what's
+still flagged and clear each tag once you've confirmed the field(s) it
+covers — see [docs/review.md](./review.md).
 
 ## Gating on the health score
 

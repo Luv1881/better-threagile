@@ -53,6 +53,7 @@ func (what *Threagile) Init(buildTimestamp string) *Threagile {
 		initGenerateCI().
 		initValidate().
 		initLint().
+		initReview().
 		initDiff().
 		initInit().
 		initFmt().

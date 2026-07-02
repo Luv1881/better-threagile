@@ -40,6 +40,7 @@ Example policy.yaml:
   forbid_new_at_or_above: high             # needs --baseline: no new High+ vs baseline
   framework_coverage:
     - {framework: owasp_top10_2021, min_percent: 70}
+  fail_on_unreviewed: true                 # no review-<importer>/stub-data-asset tags left (see 'threagile review')
 
 Examples:
   # Fail the build if the policy is violated
@@ -102,6 +103,19 @@ Examples:
 			if policy.MinScore != nil {
 				overall := score.Compute(parsedModel).Overall
 				in.Score = &overall
+			}
+
+			// Only scan for review-flagged elements when the policy actually gates
+			// on it — reviewModel does its own (separate) model load, so this is
+			// skipped for the common case where fail_on_unreviewed is unset.
+			if policy.FailOnUnreviewed {
+				reviewItems, reviewErr := reviewModel(what.config.GetInputFile())
+				if reviewErr != nil {
+					return fmt.Errorf("gate: %w", reviewErr)
+				}
+				for _, item := range reviewItems {
+					in.ReviewTags = append(in.ReviewTags, fmt.Sprintf("%s:%s", item.Kind, item.Name))
+				}
 			}
 
 			result := gate.Evaluate(policy, in)

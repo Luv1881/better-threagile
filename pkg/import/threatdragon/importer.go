@@ -16,6 +16,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/threagile/threagile/pkg/import/mapping"
 	"github.com/threagile/threagile/pkg/types"
 )
 
@@ -29,6 +30,13 @@ func toID(parts ...string) string {
 type ImportOptions struct {
 	// SourceLabel is appended to generated asset IDs (default "td").
 	SourceLabel string
+
+	// Mapping is an optional user-supplied mapping dictionary (P3) applied to
+	// every node/flow right after it is classified, so corrections land
+	// before P4 stub generation runs on the resulting model. Threat Dragon
+	// JSON carries no style/color metadata, so only Mapping's label matcher
+	// will ever fire here. nil means no mapping rules are applied.
+	Mapping *mapping.Ruleset
 }
 
 type datastoreNameRule struct {
@@ -90,7 +98,7 @@ func Import(data []byte, opts ImportOptions) (*types.Model, error) {
 		TagsAvailable:      []string{},
 	}
 
-	b := &builder{model: model, label: opts.SourceLabel, nodesByCellID: map[string]*node{}}
+	b := &builder{model: model, label: opts.SourceLabel, nodesByCellID: map[string]*node{}, mapping: opts.Mapping}
 
 	// One flattened pass over every diagram's cells, sorted for determinism.
 	// With multiple diagrams (pages), cell IDs are namespaced per page so a cell
@@ -156,7 +164,8 @@ type builder struct {
 	model         *types.Model
 	label         string
 	nodesByCellID map[string]*node
-	usedIDs       map[string]bool // guards against toID normalisation collisions
+	usedIDs       map[string]bool  // guards against toID normalisation collisions
+	mapping       *mapping.Ruleset // optional user-supplied mapping dictionary (P3)
 }
 
 // uniqueID returns base, or base-2/base-3/… if base is already taken, so two
@@ -215,6 +224,7 @@ func (b *builder) buildNodeAsset(c tdCell) {
 	if assetType == types.ExternalEntity {
 		asset.UsedAsClientByHuman = strings.EqualFold(c.Shape, "actor") || c.Data.Type == "tm.Actor"
 	}
+	mapping.ApplyToTechnicalAsset(b.mapping, asset, mapping.Element{Label: title})
 	b.model.TechnicalAssets[id] = asset
 	b.nodesByCellID[c.ID] = &node{cell: c, assetID: id}
 }
@@ -270,6 +280,7 @@ func (b *builder) buildFlowLink(e tdCell) {
 		Authorization:  types.NoneAuthorization,
 		Usage:          types.Business,
 	}
+	mapping.ApplyToCommunicationLink(b.mapping, link, mapping.Element{Label: title, Edge: true})
 	b.model.CommunicationLinks[linkID] = link
 	srcAsset := b.model.TechnicalAssets[src.assetID]
 	srcAsset.CommunicationLinks = append(srcAsset.CommunicationLinks, link)

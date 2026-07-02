@@ -22,6 +22,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/threagile/threagile/pkg/import/mapping"
 	"github.com/threagile/threagile/pkg/types"
 )
 
@@ -34,6 +35,12 @@ func toID(parts ...string) string {
 // ImportOptions controls import behaviour.
 type ImportOptions struct {
 	SourceLabel string // appended to generated asset IDs (default "drawio")
+
+	// Mapping is an optional user-supplied mapping dictionary (P3) applied to
+	// every vertex/edge right after it is classified, so corrections (e.g.
+	// "MinIO" -> object-storage) land before P4 stub generation runs on the
+	// resulting model. nil means no mapping rules are applied.
+	Mapping *mapping.Ruleset
 }
 
 // reviewTag flags every imported asset for manual review (draw.io is lossy).
@@ -81,7 +88,7 @@ func Import(data []byte, opts ImportOptions) (*types.Model, error) {
 		byID[cells[i].ID] = &cells[i]
 	}
 
-	b := &builder{model: model, label: opts.SourceLabel, byID: byID, verticesByCell: map[string]*vertex{}}
+	b := &builder{model: model, label: opts.SourceLabel, byID: byID, verticesByCell: map[string]*vertex{}, mapping: opts.Mapping}
 
 	var boundaryCells []mxCell
 	for _, c := range cells {
@@ -212,7 +219,44 @@ type builder struct {
 	label          string
 	byID           map[string]*mxCell
 	verticesByCell map[string]*vertex
-	usedIDs        map[string]bool // guards against toID collisions (node_1 vs node-1)
+	usedIDs        map[string]bool  // guards against toID collisions (node_1 vs node-1)
+	mapping        *mapping.Ruleset // optional user-supplied mapping dictionary (P3)
+}
+
+// styleValue extracts the value of a "key=value" pair from a draw.io style
+// string (semicolon-separated, e.g. "fillColor=#00AA00;dashed=1;"). Returns
+// "" if the key is absent.
+func styleValue(style, key string) string {
+	for _, part := range strings.Split(style, ";") {
+		kv := strings.SplitN(part, "=", 2)
+		if len(kv) == 2 && kv[0] == key {
+			return kv[1]
+		}
+	}
+	return ""
+}
+
+// styleIsDashed reports whether a draw.io style marks the shape/edge dashed.
+func styleIsDashed(style string) bool {
+	v := styleValue(style, "dashed")
+	return v == "1" || v == "true"
+}
+
+// mappingElement builds a mapping.Element from a cell's label and style,
+// carrying whatever raw style metadata draw.io retains (fill/stroke color,
+// dash state) — the only importer of the three (drawio/threat-dragon/otm)
+// that has this information at all.
+func mappingElement(label string, edge bool, style string) mapping.Element {
+	el := mapping.Element{Label: label, Edge: edge, FillColor: styleValue(style, "fillColor")}
+	if edge {
+		el.Color = styleValue(style, "strokeColor")
+		if styleIsDashed(style) {
+			el.LineStyle = "dashed"
+		} else {
+			el.LineStyle = "solid"
+		}
+	}
+	return el
 }
 
 // uniqueID returns base, or base-2/base-3/… if base is already taken, so two
@@ -260,6 +304,7 @@ func (b *builder) buildVertexAsset(c mxCell) {
 	if assetType == types.ExternalEntity {
 		asset.UsedAsClientByHuman = true
 	}
+	mapping.ApplyToTechnicalAsset(b.mapping, asset, mappingElement(label, false, c.Style))
 	b.model.TechnicalAssets[id] = asset
 	b.verticesByCell[c.ID] = &vertex{cell: c, label: label, assetID: id}
 }
@@ -344,6 +389,7 @@ func (b *builder) buildEdgeLink(c mxCell) {
 		Usage:          types.Business,
 		Tags:           []string{reviewTag},
 	}
+	mapping.ApplyToCommunicationLink(b.mapping, link, mappingElement(title, true, c.Style))
 	b.model.CommunicationLinks[linkID] = link
 	srcAsset := b.model.TechnicalAssets[src.assetID]
 	srcAsset.CommunicationLinks = append(srcAsset.CommunicationLinks, link)

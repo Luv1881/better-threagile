@@ -32,11 +32,12 @@ threat intel — without any model changes.
 | Secret hygiene | — | `validate` scans the model for committed credentials (`--fail-on-secrets`) |
 | Risk quantification | — | `quantify` — FAIR Monte-Carlo ALE (p10/p50/p90) + portfolio summary |
 | CI / code-scanning output | — | SARIF 2.1.0 (`risks.sarif`) for GitHub, GitLab SAST report (`risks.gl-sast.json`) for the GitLab MR security widget; suppressions from tracking status |
-| Policy-as-code gate | — | `gate` — declarative `policy.yaml`, exits 3 on violation (severity caps, require-tracking, expired-acceptance, no-new-vs-baseline, framework coverage) |
+| Policy-as-code gate | — | `gate` — declarative `policy.yaml`, exits 3 on violation (severity caps, require-tracking, expired-acceptance, no-new-vs-baseline, framework coverage, unreviewed-import elements) |
+| Human-in-the-loop review | — | `review` — lists every element still tagged `review-<importer>`/`stub-data-asset` after a diagram import (`--format json\|markdown`), plus `--fail-on-unreviewed`/gate's `fail_on_unreviewed: true` to block merging an unreviewed import |
 | PR-bot / risk delta | — | `diff --format markdown` + `generate-ci gate-pr` — posts the risk delta / gate report as a PR comment |
 | Attack-path / attack-tree | — | `paths` (shortest routes) + `attack-tree` (goal-oriented OR-trees, Graphviz DOT) from internet-facing assets to crown-jewel data |
 | Architecture importers | — | `import terraform \| openapi \| kubernetes \| compose` → analyzable model fragments |
-| Diagram → model (no AI) | — | `import threat-dragon` (OWASP Threat Dragon JSON), `import drawio` (mxGraph) and `import otm` (Open Threat Model JSON) — deterministic diagram-to-YAML conversion |
+| Diagram → model (no AI) | — | `import threat-dragon` (OWASP Threat Dragon JSON), `import drawio` (mxGraph), `import otm` (Open Threat Model JSON) and `import mermaid` (flowchart/graph) — deterministic diagram-to-YAML conversion |
 | Editable scaffold output | — | `--scaffold` (default on for diagram importers) annotates every heuristically inferred field with a `# TODO(review): …` comment plus a file-header legend, so the emitted YAML reads as a template to finish, not a dump |
 | Diagram nomenclature mapping | — | `--mapping rules.yaml` — ordered label/color/line-style regex rules so teams encode internal naming ("MinIO"→object storage) and diagram color conventions (red dashed edge→unencrypted) into asset type/technology/encryption/tags |
 | Data-asset stubs | — | `--stub-data-assets` (default on) — diagrams rarely show data; generates conservative, review-tagged stub data assets for datastores and internet-inbound links so imported models actually produce risks |
@@ -178,26 +179,35 @@ terraform show -json | ./bin/threagile import terraform                 # Terraf
 ./bin/threagile import threat-dragon --tdmodel model.json               # OWASP Threat Dragon diagram
 ./bin/threagile import drawio        --diagram architecture.drawio      # draw.io / diagrams.net (best-effort)
 ./bin/threagile import otm           --file model.otm.json              # Open Threat Model (IriusRisk et al.)
+./bin/threagile import mermaid       --diagram architecture.mmd         # Mermaid flowchart/graph (best-effort)
 
 # Editable scaffold + team nomenclature + data-asset stubs (diagram importers only):
 ./bin/threagile import drawio --diagram architecture.drawio \
   --mapping mappings.yaml --stub-data-assets --scaffold --output model-fragment.yaml
+
+# Review every element an importer flagged for manual confirmation:
+./bin/threagile review --model model-fragment.yaml --format markdown
 ```
 
-The three **diagram** importers are deterministic, no-AI conversions: Threat
+The four **diagram** importers are deterministic, no-AI conversions: Threat
 Dragon JSON and OTM are threat-model-native interchange formats (high
-fidelity); draw.io is a generic format (lossy best-effort — assets are tagged
-`review-drawio`). All three default to **scaffold output**
-(`--scaffold=false` for a plain fragment): every heuristically inferred field
-gets a `# TODO(review): …` comment, and a header block explains what to check
-before trusting the model. `--mapping <rules.yaml>` lets a team encode its own
-box-label nomenclature and diagram color/line-style conventions (see
-`docs/import-mapping.md`); `--stub-data-assets` (default on) fills in the data
-assets diagrams never draw, since a model with technical assets but no data
-assets on its links analyzes to near-zero risk. See
+fidelity); draw.io and Mermaid are generic diagram formats (lossy best-effort
+— assets are tagged `review-drawio`/`review-mermaid`). All four default to
+**scaffold output** (`--scaffold=false` for a plain fragment): every
+heuristically inferred field gets a `# TODO(review): …` comment, and a header
+block explains what to check before trusting the model. `--mapping
+<rules.yaml>` lets a team encode its own box-label nomenclature and diagram
+color/line-style conventions (see `docs/import-mapping.md`);
+`--stub-data-assets` (default on) fills in the data assets diagrams never
+draw, since a model with technical assets but no data assets on its links
+analyzes to near-zero risk. Run `threagile review` afterwards (see
+[docs/review.md](./docs/review.md)) to list every element still carrying a
+`review-<importer>`/`stub-data-asset` tag before trusting the model — the gate
+policy key `fail_on_unreviewed: true` can block merging until it's clean. See
 [docs/import-threat-dragon.md](./docs/import-threat-dragon.md),
-[docs/import-drawio.md](./docs/import-drawio.md) and
-[docs/import-otm.md](./docs/import-otm.md).
+[docs/import-drawio.md](./docs/import-drawio.md),
+[docs/import-otm.md](./docs/import-otm.md) and
+[docs/import-mermaid.md](./docs/import-mermaid.md).
 
 All four importers emit the authoring YAML format and round-trip through `analyze-model`
 (workloads/services → technical assets, namespaces/networks → trust boundaries, published ports

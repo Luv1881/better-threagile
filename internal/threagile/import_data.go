@@ -13,6 +13,7 @@ import (
 	drawioimport "github.com/threagile/threagile/pkg/import/drawio"
 	k8simport "github.com/threagile/threagile/pkg/import/kubernetes"
 	"github.com/threagile/threagile/pkg/import/mapping"
+	mermaidimport "github.com/threagile/threagile/pkg/import/mermaid"
 	oaimport "github.com/threagile/threagile/pkg/import/openapi"
 	otmimport "github.com/threagile/threagile/pkg/import/otm"
 	tfimport "github.com/threagile/threagile/pkg/import/terraform"
@@ -37,6 +38,7 @@ Supported sources:
   threat-dragon Parse an OWASP Threat Dragon (v2) diagram model
   drawio     Parse a draw.io / diagrams.net diagram (mxGraph XML; best-effort)
   otm        Parse an Open Threat Model (OTM) JSON document
+  mermaid    Parse a Mermaid flowchart/graph diagram (best-effort)
 
 By default the generated model fragment is written to stdout. Use --output to
 write it to a file, or --diff to preview a summary without writing.`,
@@ -49,6 +51,7 @@ write it to a file, or --diff to preview a summary without writing.`,
 	importCmd.AddCommand(what.newImportThreatDragonCmd())
 	importCmd.AddCommand(what.newImportDrawioCmd())
 	importCmd.AddCommand(what.newImportOTMCmd())
+	importCmd.AddCommand(what.newImportMermaidCmd())
 
 	what.rootCmd.AddCommand(importCmd)
 	return what
@@ -397,6 +400,70 @@ Example:
 	cmd.Flags().StringVar(&modelFile, "file", "", "Path to the OTM JSON model file (default: stdin)")
 	cmd.Flags().StringVar(&outputFile, "output", "", "Write model YAML to this file (default: stdout)")
 	cmd.Flags().StringVar(&label, "label", "otm", "Short label appended to generated asset IDs")
+	cmd.Flags().BoolVar(&diff, "diff", false, "Show a summary of what would be generated without writing output")
+	cmd.Flags().BoolVar(&scaffold, "scaffold", true, "Annotate the output with TODO(review) comments on every inferred field (set false for plain output)")
+	cmd.Flags().StringVar(&mappingFile, "mapping", "", "Path to a mapping dictionary YAML file (see docs) to correct/override importer heuristics")
+	cmd.Flags().BoolVar(&stubDataAssetsFlag, "stub-data-assets", true, "Generate stub data assets for datastores and internet-inbound links so the model produces meaningful risks")
+
+	return cmd
+}
+
+func (what *Threagile) newImportMermaidCmd() *cobra.Command {
+	var diagramFile string
+	var outputFile string
+	var label string
+	var diff bool
+	var scaffold bool
+	var mappingFile string
+	var stubDataAssetsFlag bool
+
+	cmd := &cobra.Command{
+		Use:   "mermaid",
+		Short: "Import a Mermaid flowchart/graph diagram into a Threagile model fragment (best-effort)",
+		Long: `Parse a Mermaid flowchart/graph diagram — the text diagram format most often
+embedded in READMEs — and produce a Threagile model fragment. Like draw.io,
+Mermaid is a GENERIC diagram format with no built-in threat-model semantics,
+so this conversion is deterministic but LOSSY: node shapes are classified by
+their bracket syntax and label (stadium "([Label])" -> external entity/user,
+cylinder "[(Label)]" -> datastore classified from the label, rhombus
+"{Label}" -> process, rectangle "[Label]" or a bare id -> process), edges
+("-->", "---", "-.->", "==>", each optionally "|labelled|") -> communication
+links with a protocol guessed from the edge label, and "subgraph ... end"
+blocks (nested subgraphs supported) -> trust boundaries. Every generated
+element is tagged "review-mermaid" — review the fragment before merging.
+There is no AI involved.
+
+Example:
+  threagile import mermaid --diagram diagram.mmd --output model-fragment.yaml`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			what.processArgs(cmd, args)
+
+			data, err := readInput(diagramFile)
+			if err != nil {
+				return fmt.Errorf("mermaid import: %w", err)
+			}
+
+			ruleset, err := loadMapping(mappingFile)
+			if err != nil {
+				return err
+			}
+
+			opts := mermaidimport.ImportOptions{SourceLabel: label, Mapping: ruleset}
+			model, err := mermaidimport.Import(data, opts)
+			if err != nil {
+				return err
+			}
+			if stubDataAssetsFlag {
+				stubDataAssets(model, "mermaid")
+			}
+
+			return writeScaffoldedOrDiff(cmd, model, outputFile, diff, scaffold, "mermaid", diagramFile)
+		},
+	}
+
+	cmd.Flags().StringVar(&diagramFile, "diagram", "", "Path to the Mermaid diagram file (default: stdin)")
+	cmd.Flags().StringVar(&outputFile, "output", "", "Write model YAML to this file (default: stdout)")
+	cmd.Flags().StringVar(&label, "label", "mermaid", "Short label appended to generated asset IDs")
 	cmd.Flags().BoolVar(&diff, "diff", false, "Show a summary of what would be generated without writing output")
 	cmd.Flags().BoolVar(&scaffold, "scaffold", true, "Annotate the output with TODO(review) comments on every inferred field (set false for plain output)")
 	cmd.Flags().StringVar(&mappingFile, "mapping", "", "Path to a mapping dictionary YAML file (see docs) to correct/override importer heuristics")

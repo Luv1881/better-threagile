@@ -49,14 +49,6 @@ func (what *Threagile) initList() *Threagile {
 			cmd.Println(Logo + "\n\n" + fmt.Sprintf(VersionText, what.buildTimestamp))
 			cmd.Println("The following model macros are available (can be extended via custom model macros):")
 			cmd.Println()
-			/* TODO finish plugin stuff
-			cmd.Println("Custom model macros:")
-			for _, macros := range macros.ListCustomMacros() {
-				details := macros.GetMacroDetails()
-				cmd.Println(details.ID, "-->", details.Title)
-			}
-			cmd.Println()
-			*/
 			cmd.Println("----------------------")
 			cmd.Println("Built-in model macros:")
 			cmd.Println("----------------------")

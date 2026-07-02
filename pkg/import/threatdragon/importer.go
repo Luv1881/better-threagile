@@ -16,6 +16,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/threagile/threagile/pkg/import/jsonerr"
 	"github.com/threagile/threagile/pkg/import/mapping"
 	"github.com/threagile/threagile/pkg/types"
 )
@@ -77,7 +78,7 @@ func Import(data []byte, opts ImportOptions) (*types.Model, error) {
 
 	var td tdModel
 	if err := json.Unmarshal(data, &td); err != nil {
-		return nil, fmt.Errorf("threat-dragon: failed to parse JSON: %w", err)
+		return nil, fmt.Errorf("threat-dragon: failed to parse JSON: %w", jsonerr.WithPosition(data, err))
 	}
 	if len(td.Detail.Diagrams) == 0 {
 		return nil, errors.New("threat-dragon: no diagrams found (is this a Threat Dragon v2 model?)")

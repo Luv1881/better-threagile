@@ -19,6 +19,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/threagile/threagile/pkg/import/jsonerr"
 	"github.com/threagile/threagile/pkg/import/mapping"
 	"github.com/threagile/threagile/pkg/types"
 )
@@ -143,7 +144,7 @@ func Import(data []byte, opts ImportOptions) (*types.Model, error) {
 
 	var doc otmDocument
 	if err := json.Unmarshal(data, &doc); err != nil {
-		return nil, fmt.Errorf("otm: failed to parse JSON: %w", err)
+		return nil, fmt.Errorf("otm: failed to parse JSON: %w", jsonerr.WithPosition(data, err))
 	}
 
 	title := doc.Project.Name

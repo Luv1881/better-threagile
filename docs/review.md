@@ -57,3 +57,6 @@ fail_on_unreviewed: true
 `threagile gate` will then fail (exit 3) whenever the model has any
 review-flagged element, using the exact same scan `threagile review` uses —
 the two commands never disagree about what still needs review.
+
+For the full import → review → gate → re-import loop, see
+[docs/cookbook-diagram-to-model.md](./cookbook-diagram-to-model.md).

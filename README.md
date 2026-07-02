@@ -203,11 +203,19 @@ draw, since a model with technical assets but no data assets on its links
 analyzes to near-zero risk. Run `threagile review` afterwards (see
 [docs/review.md](./docs/review.md)) to list every element still carrying a
 `review-<importer>`/`stub-data-asset` tag before trusting the model — the gate
-policy key `fail_on_unreviewed: true` can block merging until it's clean. See
-[docs/import-threat-dragon.md](./docs/import-threat-dragon.md),
+policy key `fail_on_unreviewed: true` can block merging until it's clean.
+When the diagram is later redrawn, `--merge <model.yaml>` reconciles the
+re-import onto your reviewed model instead of overwriting it — confirmed
+fields are never clobbered; disagreements get a `merge-conflict:<field>` tag
+(see [docs/import-merge.md](./docs/import-merge.md)). For large diagrams,
+`--boundary <name>` (drawio/mermaid) imports one trust boundary's subsystem
+at a time, and `--page` (drawio) selects a single page of a multi-page file.
+See [docs/import-threat-dragon.md](./docs/import-threat-dragon.md),
 [docs/import-drawio.md](./docs/import-drawio.md),
-[docs/import-otm.md](./docs/import-otm.md) and
-[docs/import-mermaid.md](./docs/import-mermaid.md).
+[docs/import-otm.md](./docs/import-otm.md),
+[docs/import-mermaid.md](./docs/import-mermaid.md), or the end-to-end
+walkthrough in
+[docs/cookbook-diagram-to-model.md](./docs/cookbook-diagram-to-model.md).
 
 All four importers emit the authoring YAML format and round-trip through `analyze-model`
 (workloads/services → technical assets, namespaces/networks → trust boundaries, published ports
@@ -346,7 +354,7 @@ the test suite in-image. (Upstream's Dockerfile cloned the upstream repo — fix
 - Onboarding: [docs/bootstrap.md](./docs/bootstrap.md) · Git hooks: [docs/hooks.md](./docs/hooks.md) · Score: [docs/score.md](./docs/score.md) · Summary: [docs/summary.md](./docs/summary.md) · Prioritize: [docs/prioritize.md](./docs/prioritize.md) · Requirements: [docs/requirements.md](./docs/requirements.md)
 - Policy gate: [docs/gate.md](./docs/gate.md) · Attack paths: [docs/attack-paths.md](./docs/attack-paths.md) · SBOM: [docs/sbom.md](./docs/sbom.md) · Mermaid diagram: [docs/mermaid.md](./docs/mermaid.md)
 - CI exit codes: [docs/exit-codes.md](./docs/exit-codes.md)
-- Importers: [Kubernetes](./docs/import-kubernetes.md) · [docker-compose](./docs/import-compose.md)
+- Importers: [Kubernetes](./docs/import-kubernetes.md) · [docker-compose](./docs/import-compose.md) · Cookbook: [diagram → model in 10 minutes](./docs/cookbook-diagram-to-model.md)
 - JSON Schema for IDE validation: `support/schema.json`
 - OpenAPI spec (server mode): `support/openapi.yaml`
 

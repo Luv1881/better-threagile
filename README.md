@@ -7,7 +7,7 @@
 `better-threagile` is an enhanced fork of [Threagile](https://threagile.io) that turns the
 original STRIDE-only engine into a multi-methodology, enterprise-grade threat-model-as-code
 platform. The **same YAML model** can be analyzed through nine different methodologies, scored
-with FAIR Monte-Carlo loss estimates, exported as SARIF for code scanning, governed with
+with a deterministic 0-100 health score, exported as SARIF for code scanning, governed with
 expiring risk acceptances, gated in CI against a declarative policy, mapped to MITRE ATT&CK,
 queried for attack paths to your crown-jewel data, generated from your real infrastructure
 (Terraform / OpenAPI / Kubernetes / docker-compose), and correlated against live KEV/EPSS
@@ -30,12 +30,11 @@ threat intel — without any model changes.
 | Prioritization | — | `prioritize` — "fix these first, here's how": ranks findings by exploitability (severity × exposure × reachability × data) with remediation + CWE + cheat sheet |
 | Security backlog | — | `requirements` — turns still-at-risk findings into a deduplicated security-requirements backlog / test cases (Markdown checklist, Gherkin, or JSON) |
 | Secret hygiene | — | `validate` scans the model for committed credentials (`--fail-on-secrets`) |
-| Risk quantification | — | `quantify` — FAIR Monte-Carlo ALE (p10/p50/p90) + portfolio summary |
 | CI / code-scanning output | — | SARIF 2.1.0 (`risks.sarif`) for GitHub, GitLab SAST report (`risks.gl-sast.json`) for the GitLab MR security widget; suppressions from tracking status |
 | Policy-as-code gate | — | `gate` — declarative `policy.yaml`, exits 3 on violation (severity caps, require-tracking, expired-acceptance, no-new-vs-baseline, framework coverage, unreviewed-import elements) |
 | Human-in-the-loop review | — | `review` — lists every element still tagged `review-<importer>`/`stub-data-asset` after a diagram import (`--format json\|markdown`), plus `--fail-on-unreviewed`/gate's `fail_on_unreviewed: true` to block merging an unreviewed import |
-| PR-bot / risk delta | — | `diff --format markdown` + `generate-ci gate-pr` — posts the risk delta / gate report as a PR comment |
-| Attack-path / attack-tree | — | `paths` (shortest routes) + `attack-tree` (goal-oriented OR-trees, Graphviz DOT) from internet-facing assets to crown-jewel data |
+| PR-bot / risk delta / drift gate | — | `diff --format markdown` (added/removed/changed vs. any baseline model) + `generate-ci gate-pr` — posts the risk delta / gate report as a PR comment; `--fail-on-new-high`/`--fail-on-new-critical` turn it into a CI drift gate |
+| Attack-path analysis | — | `paths` — shortest routes from internet-facing assets to crown-jewel data |
 | Architecture importers | — | `import terraform \| openapi \| kubernetes \| compose` → analyzable model fragments |
 | Diagram → model (no AI) | — | `import threat-dragon` (OWASP Threat Dragon JSON), `import drawio` (mxGraph), `import otm` (Open Threat Model JSON) and `import mermaid` (flowchart/graph) — deterministic diagram-to-YAML conversion |
 | Editable scaffold output | — | `--scaffold` (default on for diagram importers) annotates every heuristically inferred field with a `# TODO(review): …` comment plus a file-header legend, so the emitted YAML reads as a template to finish, not a dump |
@@ -75,6 +74,14 @@ diagram in your README, `summary` produces a one-line sprint/PR scorecard,
 `requirements` turns the findings into a security backlog, and
 `diff old new --format markdown` posts a PR comment that says exactly what a
 change introduced and how to fix it.
+
+`score`, `summary`, and `prioritize` all read the same analysis pass, so they
+aren't three overlapping reports — `summary` is the umbrella one-pass scorecard
+(health score + top findings in a single document, ideal for a sprint review or
+PR comment), and `score` and `prioritize` are its two focused entry points:
+`score` is the single gate/badge number (`--min` to fail CI, `--format shields`
+for a README badge), and `prioritize` is the drill-down worklist (`--top`,
+`--min-severity`) for actually working through the backlog.
 
 ## Building from source
 
@@ -118,11 +125,6 @@ requires a rebuild; the packs are embedded **directories** (`//go:embed`), not t
 ## Enterprise workflows
 
 ```shell
-# FAIR Monte-Carlo risk quantification (estimates keyed by synthetic-ID or category-ID).
-./bin/threagile quantify \
-  --model model.yaml --ignore-orphaned-risk-tracking \
-  --estimates fair-estimates.yaml --output-json output/quantify.json
-
 # SARIF is written on every analyze-model run as output/risks.sarif.
 # Upload it in a GitHub Action for native code-scanning alerts:
 #   - uses: github/codeql-action/upload-sarif@v3
@@ -156,9 +158,11 @@ These commands are built to run in a pipeline — they write machine-readable ou
 ./bin/threagile diff old.yaml new.yaml --format markdown > delta.md
 ./bin/threagile generate-ci --model model.yaml --target gate-pr --policy-path policy.yaml
 
-# Attack paths / goal-oriented attack trees to crown-jewel data:
-./bin/threagile paths       --model model.yaml                        # docs/attack-paths.md
-./bin/threagile attack-tree --model model.yaml --format dot > tree.dot # docs/attack-tree.md
+# Drift gate: fail CI if the current model introduces new High/Critical findings vs. an approved baseline:
+./bin/threagile diff baseline.yaml model.yaml --fail-on-new-high
+
+# Attack paths to crown-jewel data:
+./bin/threagile paths --model model.yaml   # docs/attack-paths.md
 
 # SBOM + threat intel: rank a CycloneDX SBOM's CVEs by KEV/EPSS; gate on KEV.
 ./bin/threagile sbom --sbom sbom.cdx.json --refresh-kev --epss --fail-on-kev   # docs/sbom.md

@@ -68,24 +68,6 @@ func TestConfig_CheckServerFolder(t *testing.T) {
 	assert.Error(t, c.CheckServerFolder())
 }
 
-func TestSeverityChanged(t *testing.T) {
-	oldRisks := map[string]*types.Risk{
-		"risk-1": {Severity: types.LowSeverity},
-		"risk-2": {Severity: types.MediumSeverity},
-	}
-	newRisks := map[string]*types.Risk{
-		"risk-1": {Severity: types.HighSeverity},
-		"risk-2": {Severity: types.MediumSeverity},
-		"risk-3": {Severity: types.CriticalSeverity},
-	}
-
-	changes := severityChanged(oldRisks, newRisks)
-	assert.Len(t, changes, 1)
-	assert.Equal(t, "risk-1", changes[0].id)
-	assert.Equal(t, types.LowSeverity.String(), changes[0].oldSev)
-	assert.Equal(t, types.HighSeverity.String(), changes[0].newSev)
-}
-
 func TestHasHighOrCritical(t *testing.T) {
 	assert.False(t, hasHighOrCritical([]*types.Risk{{Severity: types.LowSeverity}}))
 	assert.True(t, hasHighOrCritical([]*types.Risk{{Severity: types.HighSeverity}}))

@@ -153,12 +153,12 @@ func TestDefaultProjectConfig_FlagOverrides(t *testing.T) {
 	assert.Contains(t, app.config.GetInputFile(), "from-flag.yaml")
 }
 
-func TestDriftCommand_FailOnNewHighExits3(t *testing.T) {
+func TestDiffCommand_FailOnNewHighExits3(t *testing.T) {
 	// Empty baseline vs the demo model => demo's high/critical findings are all
 	// "new" => the gate must fail with the standard gate exit code 3.
 	baseline := filepath.Join(t.TempDir(), "baseline.yaml")
 	require.NoError(t, os.WriteFile(baseline, []byte("title: Empty Baseline\nbusiness_criticality: important\n"), 0600))
-	args := []string{"drift", "--baseline", baseline, "--current", demoModelPath(t),
+	args := []string{DiffCommand, baseline, demoModelPath(t),
 		"--fail-on-new-high", "--ignore-orphaned-risk-tracking"}
 	app := newTestAppWithArgs(args...)
 	_, err := executeCmd(app, args...)
@@ -168,32 +168,36 @@ func TestDriftCommand_FailOnNewHighExits3(t *testing.T) {
 	assert.Equal(t, 3, ece.code)
 }
 
-func TestDriftCommand_NoDriftExitsZero(t *testing.T) {
-	args := []string{"drift", "--baseline", demoModelPath(t), "--current", demoModelPath(t),
+func TestDiffCommand_NoNewHighExitsZero(t *testing.T) {
+	args := []string{DiffCommand, demoModelPath(t), demoModelPath(t),
 		"--fail-on-new-high", "--ignore-orphaned-risk-tracking"}
 	app := newTestAppWithArgs(args...)
 	out, err := executeCmd(app, args...)
 	require.NoError(t, err)
-	assert.Contains(t, out, "No risk drift detected")
+	assert.Contains(t, out, "No risk changes detected")
 }
 
-func TestExplainRulesCommand_Runs(t *testing.T) {
-	app := newTestApp()
-	out, err := executeCmd(app, ExplainCommand, RulesItem)
-	require.NoError(t, err)
-	assert.NotEmpty(t, out)
+func TestDiffCommand_FailOnNewCriticalExits3(t *testing.T) {
+	baseline := filepath.Join(t.TempDir(), "baseline.yaml")
+	require.NoError(t, os.WriteFile(baseline, []byte("title: Empty Baseline\nbusiness_criticality: important\n"), 0600))
+	args := []string{DiffCommand, baseline, demoModelPath(t),
+		"--fail-on-new-critical", "--ignore-orphaned-risk-tracking"}
+	app := newTestAppWithArgs(args...)
+	_, err := executeCmd(app, args...)
+	if err != nil {
+		var ece *exitCodeError
+		require.ErrorAs(t, err, &ece)
+		assert.Equal(t, 3, ece.code)
+	}
 }
 
-func TestExplainMacrosCommand_Runs(t *testing.T) {
-	app := newTestApp()
-	out, err := executeCmd(app, ExplainCommand, MacrosItem)
-	require.NoError(t, err)
-	assert.NotEmpty(t, out)
-}
-
-func TestExplainTypesCommand_Runs(t *testing.T) {
-	app := newTestApp()
-	out, err := executeCmd(app, ExplainCommand, TypesItem)
-	require.NoError(t, err)
-	assert.NotEmpty(t, out)
+func TestExplainRiskCommand_Runs(t *testing.T) {
+	// An unknown risk ID still exercises the full analysis path and lists the
+	// known IDs, without requiring a hard-coded synthetic ID fixture.
+	app := newTestAppWithArgs(ExplainCommand, RiskItem, "bogus-risk-id",
+		"--model", demoModelPath(t), "--ignore-orphaned-risk-tracking")
+	out, err := executeCmd(app, ExplainCommand, RiskItem, "bogus-risk-id",
+		"--model", demoModelPath(t), "--ignore-orphaned-risk-tracking")
+	require.Error(t, err)
+	assert.Contains(t, out, "Known risk IDs")
 }

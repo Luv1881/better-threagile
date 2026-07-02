@@ -61,10 +61,8 @@ func (what *Threagile) Init(buildTimestamp string) *Threagile {
 		initTestRules().
 		initCoverage().
 		initIntel().
-		initQuantify().
 		initGate().
 		initPaths().
-		initAttackTree().
 		initSBOM().
 		initMermaid().
 		initPolicy().
@@ -74,7 +72,6 @@ func (what *Threagile) Init(buildTimestamp string) *Threagile {
 		initPrioritize().
 		initSummary().
 		initRequirements().
-		initDrift().
 		initCompletion().
 		initLSP().
 		processSystemArgs(what.rootCmd)

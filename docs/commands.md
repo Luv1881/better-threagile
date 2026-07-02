@@ -8,13 +8,11 @@
 | `validate`               | Parse and validate the model YAML without running risk rules (fast, CI-safe); `--json` for machine output; also scans for committed secrets (`--fail-on-secrets`) | `check` |
 | `lint`                   | Check the model for style and best-practice issues (suggests fixes inline; does not modify files); `--format text\|json\|sarif` (SARIF for code-scanning, with file:line) |                               |
 | `review`                 | [Human-in-the-loop review](./review.md): list every element still tagged `review-<importer>`/`stub-data-asset` after an import; `--format markdown\|json`, `--fail-on-unreviewed` exits 3 |                               |
-| `diff <old> <new>`       | Show the risk delta (added / removed / unchanged) between two model versions; `--format text\|markdown\|json`, `--output <file>` (Markdown is PR-comment ready, with a "how to fix the new findings" remediation list) |                          |
+| `diff <old> <new>`       | Show the risk delta (added / removed / changed / unchanged) between two model versions — e.g. an approved baseline vs. the current model; `--format text\|markdown\|json`, `--output <file>` (Markdown is PR-comment ready, with a "how to fix the new findings" remediation list); `--fail-on-new-high` / `--fail-on-new-critical` turn it into a CI gate (exit 3) |                          |
 | `gate`                   | [Policy-as-code CI gate](./gate.md): evaluate `--policy policy.yaml`, exit 3 on violation; `--baseline risks.json`, `--format text\|markdown\|json\|junit` |              |
 | `explain risk <id>`      | Print full explanation of a specific risk by synthetic ID                           |                                              |
 | `fmt [files...]`         | Canonicalise YAML whitespace and field ordering                                     |                                              |
-| `quantify`               | FAIR Monte-Carlo ALE simulation over generated risks (`--estimates` YAML file; `--output-json` for full result) |                  |
 | `paths`                  | [Attack-path analysis](./attack-paths.md): shortest routes from internet-facing assets to crown-jewel data (`--from`, `--to`, `--format`) |       |
-| `attack-tree`            | [Goal-oriented attack trees](./attack-tree.md) per crown-jewel asset; `--format text\|markdown\|json\|dot` |       |
 | `sbom`                   | [SBOM + threat-intel correlation](./sbom.md): correlate a CycloneDX SBOM's CVEs with KEV/EPSS, VEX-aware, `--fail-on-kev` gate |       |
 | `mermaid`                | [Mermaid data-flow diagram](./mermaid.md): GitHub/GitLab-renderable flowchart of the model (no Graphviz needed); `--format flowchart\|markdown`, `--direction`, `--with-risks` |       |
 | `policy init` / `policy list` | Scaffold a [secure-by-default gate policy](./gate.md#secure-by-default-starter-policies-policy-init): `--profile prototype\|balanced\|strict\|regulated` |       |

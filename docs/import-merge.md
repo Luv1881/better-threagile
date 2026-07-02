@@ -100,3 +100,15 @@ files touched) to stdout.
 ```sh
 threagile import drawio --diagram architecture.drawio --merge model.yaml
 ```
+
+## Known limitation
+
+Ownership is signaled *only* by the presence/absence of the `review-<importer>`
+tag. If you edit an element's fields but forget to remove that tag, the next
+`--merge` run still treats the element as importer-owned and will overwrite
+your edit with whatever the diagram now says — there is no way to distinguish
+"reviewed and confirmed" from "still needs review" other than that one tag.
+**Always remove the `review-<importer>` tag as the last step of confirming an
+element**, not before. `threagile review` (see [docs/review.md](./review.md))
+lists everything still carrying the tag, so run it before merging to catch
+elements you may have edited without releasing.

@@ -1,0 +1,28 @@
+{
+  "version": "2.0",
+  "summary": {"title": "Reference App", "owner": "conformance-suite"},
+  "detail": {
+    "diagrams": [
+      {
+        "id": 0, "title": "Reference App", "cells": [
+          {"shape": "trust-boundary-box", "id": "tb-app", "position": {"x": 250, "y": 0}, "size": {"width": 500, "height": 300},
+           "data": {"type": "tm.BoundaryBox", "name": "App Zone", "description": "internal application zone", "isTrustBoundary": true}},
+          {"shape": "actor", "id": "user", "position": {"x": 0, "y": 100}, "size": {"width": 120, "height": 60},
+           "data": {"type": "tm.Actor", "name": "End User"}},
+          {"shape": "process", "id": "frontend", "position": {"x": 280, "y": 100}, "size": {"width": 120, "height": 60},
+           "data": {"type": "tm.Process", "name": "Web Frontend", "isWebApplication": true}},
+          {"shape": "process", "id": "api", "position": {"x": 440, "y": 100}, "size": {"width": 120, "height": 60},
+           "data": {"type": "tm.Process", "name": "API Server"}},
+          {"shape": "store", "id": "db", "position": {"x": 600, "y": 100}, "size": {"width": 120, "height": 60},
+           "data": {"type": "tm.Store", "name": "Database"}},
+          {"shape": "flow", "id": "f1", "source": {"cell": "user"}, "target": {"cell": "frontend"},
+           "data": {"type": "tm.Flow", "name": "HTTPS", "isEncrypted": true}},
+          {"shape": "flow", "id": "f2", "source": {"cell": "frontend"}, "target": {"cell": "api"},
+           "data": {"type": "tm.Flow", "name": "HTTPS", "isEncrypted": true}},
+          {"shape": "flow", "id": "f3", "source": {"cell": "api"}, "target": {"cell": "db"},
+           "data": {"type": "tm.Flow", "name": "SQL"}}
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+flowchart LR
+  User([End User])
+  Frontend[Web Frontend]
+  API[API Server]
+  DB[(Database)]
+  subgraph "App Zone"
+    Frontend
+    API
+    DB
+  end
+  User -->|HTTPS| Frontend
+  Frontend -->|HTTPS| API
+  API -->|SQL| DB

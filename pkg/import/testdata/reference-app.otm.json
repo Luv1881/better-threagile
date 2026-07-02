@@ -1,0 +1,18 @@
+{
+  "otmVersion": "0.2.0",
+  "project": {"id": "reference-app", "name": "Reference App", "description": "3-tier reference app used by the cross-importer conformance suite"},
+  "trustZones": [
+    {"id": "tz-app", "name": "App Trust Zone", "description": "internal application zone", "risk": {"trustRating": 80}}
+  ],
+  "components": [
+    {"id": "c-user", "name": "End User", "type": "actor"},
+    {"id": "c-frontend", "name": "Web Frontend", "type": "web-application", "parent": {"trustZone": "tz-app"}},
+    {"id": "c-api", "name": "API Server", "type": "web-service", "parent": {"trustZone": "tz-app"}},
+    {"id": "c-db", "name": "Database", "type": "database", "parent": {"trustZone": "tz-app"}}
+  ],
+  "dataflows": [
+    {"id": "df-user-frontend", "name": "HTTPS", "source": "c-user", "destination": "c-frontend", "bidirectional": false},
+    {"id": "df-frontend-api", "name": "HTTPS", "source": "c-frontend", "destination": "c-api", "bidirectional": false},
+    {"id": "df-api-db", "name": "SQL", "source": "c-api", "destination": "c-db", "bidirectional": false}
+  ]
+}

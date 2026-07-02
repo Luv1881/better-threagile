@@ -1,0 +1,12 @@
+<mxfile><diagram name="Reference App"><mxGraphModel><root>
+  <mxCell id="0"/>
+  <mxCell id="1" parent="0"/>
+  <mxCell id="zone" value="App Zone" style="dashed=1;container=1;" vertex="1" parent="1"><mxGeometry x="300" y="0" width="500" height="300" as="geometry"/></mxCell>
+  <mxCell id="user" value="End User" style="shape=actor;" vertex="1" parent="1"><mxGeometry x="0" y="100" width="40" height="80" as="geometry"/></mxCell>
+  <mxCell id="frontend" value="Web Frontend" style="rounded=1;" vertex="1" parent="zone"><mxGeometry x="20" y="100" width="120" height="60" as="geometry"/></mxCell>
+  <mxCell id="api" value="API Server" style="rounded=1;" vertex="1" parent="zone"><mxGeometry x="200" y="100" width="120" height="60" as="geometry"/></mxCell>
+  <mxCell id="db" value="Database" style="shape=cylinder3;" vertex="1" parent="zone"><mxGeometry x="360" y="100" width="120" height="60" as="geometry"/></mxCell>
+  <mxCell id="e1" value="HTTPS" style="endArrow=classic;" edge="1" parent="1" source="user" target="frontend"><mxGeometry relative="1" as="geometry"/></mxCell>
+  <mxCell id="e2" value="HTTPS" style="endArrow=classic;" edge="1" parent="1" source="frontend" target="api"><mxGeometry relative="1" as="geometry"/></mxCell>
+  <mxCell id="e3" value="SQL" style="endArrow=classic;" edge="1" parent="1" source="api" target="db"><mxGeometry relative="1" as="geometry"/></mxCell>
+</root></mxGraphModel></diagram></mxfile>

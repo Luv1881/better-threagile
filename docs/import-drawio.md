@@ -45,3 +45,6 @@ Diagram" copy) is also accepted directly.
 | `--output` | stdout | Write the fragment to a file |
 | `--label` | `drawio` | Short label appended to generated asset IDs |
 | `--diff` | false | Print a summary without writing |
+| `--scaffold` | true | Annotate inferred fields with `# TODO(review): …` comments — see [docs/import-scaffold.md](./import-scaffold.md) |
+| `--mapping` | — | Team nomenclature/color/line-style rules — see [docs/import-mapping.md](./import-mapping.md) |
+| `--stub-data-assets` | true | Generate stub data assets for datastores/internet-inbound links that have none — diagrams rarely draw data assets, and without them the model analyzes to near-zero risk |

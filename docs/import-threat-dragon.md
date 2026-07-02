@@ -33,6 +33,9 @@ internet-facing. CIA ratings default conservatively and encryption defaults to
 | `--output` | stdout | Write the fragment to a file |
 | `--label` | `td` | Short label appended to generated asset IDs |
 | `--diff` | false | Print a summary without writing |
+| `--scaffold` | true | Annotate inferred fields with `# TODO(review): …` comments — see [docs/import-scaffold.md](./import-scaffold.md) |
+| `--mapping` | — | Team nomenclature/style rules — see [docs/import-mapping.md](./import-mapping.md) |
+| `--stub-data-assets` | true | Generate stub data assets for datastores/internet-inbound links that have none |
 
 ## Why no AI
 

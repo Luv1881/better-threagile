@@ -6,13 +6,36 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"sync"
 
 	"github.com/threagile/threagile/pkg/risks/builtin"
 	"github.com/threagile/threagile/pkg/risks/script"
 	"github.com/threagile/threagile/pkg/types"
 )
 
+var (
+	builtInRiskRulesOnce   sync.Once
+	builtInRiskRulesCached types.RiskRules
+)
+
+// GetBuiltInRiskRules returns the full built-in (plus embedded script) risk
+// rule set. The rule set is immutable and expensive to rebuild (dozens of
+// constructor calls plus embedded-YAML parsing), so it is computed once and
+// cached; each call returns a fresh shallow copy so callers that mutate the
+// returned map (e.g. via RiskRules.Merge) never corrupt the shared cache.
 func GetBuiltInRiskRules() types.RiskRules {
+	builtInRiskRulesOnce.Do(func() {
+		builtInRiskRulesCached = buildBuiltInRiskRules()
+	})
+
+	cp := make(types.RiskRules, len(builtInRiskRulesCached))
+	for id, rule := range builtInRiskRulesCached {
+		cp[id] = rule
+	}
+	return cp
+}
+
+func buildBuiltInRiskRules() types.RiskRules {
 	rules := make(types.RiskRules)
 	for _, rule := range []types.RiskRule{
 		builtin.NewAccidentalSecretLeakRule(),

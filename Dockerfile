@@ -48,7 +48,7 @@ RUN chown -R 1000:1000 /app /data
 COPY --from=build --chown=1000:1000 /app/threagile /app/
 COPY --from=build --chown=1000:1000 /app/risk_demo_rule /app/
 COPY --from=build --chown=1000:1000 /app/LICENSE.txt /app/
-COPY --from=build --chown=1000:1000 /app/report/template/background.pdf /app/
+COPY --from=build --chown=1000:1000 /app/pkg/report/template/background.pdf /app/
 COPY --from=build --chown=1000:1000 /app/support/openapi.yaml /app/
 COPY --from=build --chown=1000:1000 /app/support/schema.json /app/
 COPY --from=build --chown=1000:1000 /app/support/live-templates.txt /app/

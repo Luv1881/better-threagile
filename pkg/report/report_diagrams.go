@@ -2,12 +2,34 @@ package report
 
 import (
 	"image"
+	_ "image/png" // register the PNG decoder for image.Decode (diagram PNGs)
 	"os"
 	"strings"
 
 	"github.com/go-pdf/fpdf"
 	"github.com/go-pdf/fpdf/contrib/gofpdi"
 )
+
+// diagramUnavailableNote is shown in place of a diagram whose image file is
+// missing. Diagram rendering is optional (e.g. graphviz "dot" may not be
+// installed), so a missing image must never fail the whole report.
+const diagramUnavailableNote = "The diagram image file is not available (e.g. because diagram rendering was skipped or failed)."
+
+// diagramDimensions returns the bounds of the image file, or a zero rectangle
+// if it cannot be decoded (callers must tolerate a zero rectangle).
+func diagramDimensions(diagramFilenamePNG string) image.Rectangle {
+	/* #nosec diagramFilenamePNG is not tainted */
+	imagePath, openError := os.Open(diagramFilenamePNG)
+	if openError != nil {
+		return image.Rectangle{}
+	}
+	defer func() { _ = imagePath.Close() }()
+	srcImage, _, decodeError := image.Decode(imagePath)
+	if decodeError != nil || srcImage == nil {
+		return image.Rectangle{}
+	}
+	return srcImage.Bounds()
+}
 
 func (r *pdfReporter) embedDataFlowDiagram(diagramFilenamePNG string, _ string) {
 	r.pdf.SetTextColor(0, 0, 0)
@@ -25,12 +47,13 @@ func (r *pdfReporter) embedDataFlowDiagram(diagramFilenamePNG string, _ string) 
 	html := r.pdf.HTMLBasicNew()
 	html.Write(5, intro.String())
 
-	// check to rotate the image if it is wider than high
-	/* #nosec diagramFilenamePNG is not tainted */
-	imagePath, _ := os.Open(diagramFilenamePNG)
-	defer func() { _ = imagePath.Close() }()
-	srcImage, _, _ := image.Decode(imagePath)
-	srcDimensions := srcImage.Bounds()
+	if !fileExists(diagramFilenamePNG) {
+		// diagram rendering is optional: keep the chapter, skip the image
+		html.Write(5, diagramUnavailableNote)
+		return
+	}
+
+	srcDimensions := diagramDimensions(diagramFilenamePNG)
 	// wider than high?
 	muchWiderThanHigh := srcDimensions.Dx() > int(float64(srcDimensions.Dy())*1.25)
 	// fresh page (eventually landscape)?
@@ -80,7 +103,9 @@ func (r *pdfReporter) embedDataFlowDiagram(diagramFilenamePNG string, _ string) 
 		r.pdf.Ln(10)
 		maxWidth, maxHeight = 190, 200 // reduced height as a text paragraph is above
 	}
-	newWidth = srcDimensions.Dx() / (srcDimensions.Dy() / maxHeight)
+	if srcDimensions.Dy() > 0 {
+		newWidth = srcDimensions.Dx() / (srcDimensions.Dy() / maxHeight)
+	}
 	if newWidth <= maxWidth {
 		embedWidth, embedHeight = 0, float64(maxHeight)
 	} else {
@@ -114,13 +139,13 @@ func (r *pdfReporter) embedDataRiskMapping(diagramFilenamePNG string, _ string) 
 	html := r.pdf.HTMLBasicNew()
 	html.Write(5, intro.String())
 
-	// TODO dedupe with code from other diagram embedding (almost same code)
-	// check to rotate the image if it is wider than high
-	/* #nosec diagramFilenamePNG is not tainted */
-	imagePath, _ := os.Open(diagramFilenamePNG)
-	defer func() { _ = imagePath.Close() }()
-	srcImage, _, _ := image.Decode(imagePath)
-	srcDimensions := srcImage.Bounds()
+	if !fileExists(diagramFilenamePNG) {
+		// diagram rendering is optional: keep the chapter, skip the image
+		html.Write(5, diagramUnavailableNote)
+		return
+	}
+
+	srcDimensions := diagramDimensions(diagramFilenamePNG)
 	// wider than high?
 	widerThanHigh := srcDimensions.Dx() > srcDimensions.Dy()
 	pinnedWidth, pinnedHeight := 190.0, 195.0

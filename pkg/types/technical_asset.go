@@ -1,7 +1,3 @@
-/*
-Copyright © 2023 NAME HERE <EMAIL ADDRESS>
-*/
-
 package types
 
 import (
@@ -108,59 +104,3 @@ func (what ByOrderAndIdSort) Less(i, j int) bool {
 	}
 	return what[i].DiagramTweakOrder < what[j].DiagramTweakOrder
 }
-
-/*
-// Loops over all data assets (stored and processed by this technical asset) and determines for each
-// data asset, how many percentage of the data risk is reduced when this technical asset has all risks mitigated.
-// Example: This means if the data asset is loosing a risk and thus getting from red to amber it counts as 1.
-// Other example: When only one out of four lines (see data risk mapping) leading to red tech assets are removed by
-// the mitigations, then this counts as 0.25. The overall sum is returned.
-func (what TechnicalAsset) QuickWins() float64 {
-	result := 0.0
-	uniqueDataAssetsStoredAndProcessed := make(map[string]interface{})
-	for _, dataAssetId := range what.DataAssetsStored {
-		uniqueDataAssetsStoredAndProcessed[dataAssetId] = true
-	}
-	for _, dataAssetId := range what.DataAssetsProcessed {
-		uniqueDataAssetsStoredAndProcessed[dataAssetId] = true
-	}
-	highestSeverity := HighestSeverityStillAtRisk(what.GeneratedRisks())
-	for dataAssetId, _ := range uniqueDataAssetsStoredAndProcessed {
-		dataAsset := ParsedModelRoot.DataAssets[dataAssetId]
-		if dataAsset.IdentifiedRiskSeverityStillAtRisk() <= highestSeverity {
-			howManySameLevelCausingUsagesOfThisData := 0.0
-			for techAssetId, risks := range dataAsset.IdentifiedRisksByResponsibleTechnicalAssetId() {
-				if !ParsedModelRoot.TechnicalAssets[techAssetId].OutOfScope {
-					for _, risk := range risks {
-						if len(risk.MostRelevantTechnicalAssetId) > 0 { // T O D O caching of generated risks inside the method?
-							if HighestSeverityStillAtRisk(ParsedModelRoot.TechnicalAssets[risk.MostRelevantTechnicalAssetId].GeneratedRisks()) == highestSeverity {
-								howManySameLevelCausingUsagesOfThisData++
-								break
-							}
-						}
-					}
-				}
-			}
-			if howManySameLevelCausingUsagesOfThisData > 0 {
-				result += 1.0 / howManySameLevelCausingUsagesOfThisData
-			}
-		}
-	}
-	return result
-}
-*/
-
-/*
-type ByTechnicalAssetQuickWinsAndTitleSort []TechnicalAsset
-
-func (what ByTechnicalAssetQuickWinsAndTitleSort) Len() int      { return len(what) }
-func (what ByTechnicalAssetQuickWinsAndTitleSort) Swap(i, j int) { what[i], what[j] = what[j], what[i] }
-func (what ByTechnicalAssetQuickWinsAndTitleSort) Less(i, j int) bool {
-	qwLeft := what[i].QuickWins()
-	qwRight := what[j].QuickWins()
-	if qwLeft == qwRight {
-		return what[i].Title < what[j].Title
-	}
-	return qwLeft > qwRight
-}
-*/

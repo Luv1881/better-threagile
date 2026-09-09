@@ -82,6 +82,7 @@ func writeReviewableDemoModel(t *testing.T) string {
 	content = strings.Replace(content, daMarker, daMarker+stubAsset, 1)
 
 	path := filepath.Join(t.TempDir(), "threagile.yaml")
+	// #nosec G703 -- path is derived from t.TempDir(), never attacker-controlled
 	require.NoError(t, os.WriteFile(path, []byte(content), 0600))
 	return path
 }

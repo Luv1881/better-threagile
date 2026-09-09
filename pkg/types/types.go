@@ -1,7 +1,3 @@
-/*
-Copyright © 2023 NAME HERE <EMAIL ADDRESS>
-*/
-
 package types
 
 // TypeDescription contains a name for a type and its description

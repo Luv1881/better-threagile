@@ -258,7 +258,7 @@ M=../Threat-model/threagile/threagile.yaml
 OUT=../Threat-model/threagile/output
 
 # STRIDE (default) — full report with PDF + diagrams
-$B analyze-model --app-dir . --background report/template/background.pdf \
+$B analyze-model --app-dir . --background pkg/report/template/background.pdf \
   --model "$M" --ignore-orphaned-risk-tracking --output "$OUT/stride" --methodology stride
 
 # Embedded packs (add --rule-pack; methodology packs also take --methodology)
@@ -314,7 +314,7 @@ the real `docker-compose.yml`).
 
 The VaultNote repo's `.github/workflows/threat-model.yml` (branch `ci-pipeline`) runs the
 fork on every security-relevant change: it builds the binary, installs Graphviz, runs
-`analyze-model` (with `--app-dir . --background report/template/background.pdf`), diffs the
+`analyze-model` (with `--app-dir . --background pkg/report/template/background.pdf`), diffs the
 risks against the committed baseline to post a PR comment, and on `push`/`workflow_dispatch`
 syncs each still-at-risk finding to a **GitHub Issue** (`scripts/create-tickets.py`) with
 CVSS / CISA-KEV / EPSS / RAA severity scoring. Issues are keyed by a `threagile:<synthetic-id>`

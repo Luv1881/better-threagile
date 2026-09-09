@@ -15,7 +15,7 @@ WORKDIR /app
 
 COPY --chown=1000:1000 threagile /app/
 COPY --chown=1000:1000 LICENSE.txt /app/
-COPY --chown=1000:1000 report/template/background.pdf /app/
+COPY --chown=1000:1000 pkg/report/template/background.pdf /app/
 COPY --chown=1000:1000 support/openapi.yaml /app/
 COPY --chown=1000:1000 support/schema.json /app/
 COPY --chown=1000:1000 support/live-templates.txt /app/

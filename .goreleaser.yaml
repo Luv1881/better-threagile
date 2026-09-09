@@ -32,7 +32,7 @@ archives:
         format: zip
     files:
       - LICENSE.txt
-      - report/template/background.pdf
+      - pkg/report/template/background.pdf
       - support/openapi.yaml
       - support/schema.json
       - support/live-templates.txt

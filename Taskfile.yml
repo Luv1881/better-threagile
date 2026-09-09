@@ -71,7 +71,7 @@ tasks:
                 --generate-report-pdf=1
                 --verbose
                 --config ${CONFIG}
-                --background ./report/template/background.pdf
+                --background ./pkg/report/template/background.pdf
 
     golangci-lint:
         desc: run golangci-lint on current code

@@ -73,7 +73,7 @@ APP=.
 # STRIDE (default — 40+ built-in rules)
 $THREAGILE analyze-model \
   --app-dir "$APP" \
-  --background "report/template/background.pdf" \
+  --background "pkg/report/template/background.pdf" \
   --reportLogoImagePath "report/threagile-logo.png" \
   --model "$MODEL" \
   --output ../Threat-model/threagile/output/stride \
@@ -81,19 +81,19 @@ $THREAGILE analyze-model \
   --ignore-orphaned-risk-tracking
 
 # LINDDUN (9 privacy rules)
-$THREAGILE analyze-model --app-dir "$APP" --background "report/template/background.pdf" \
+$THREAGILE analyze-model --app-dir "$APP" --background "pkg/report/template/background.pdf" \
   --reportLogoImagePath "report/threagile-logo.png" \
   --model "$MODEL" --output ../Threat-model/threagile/output/linddun \
   --methodology linddun --rule-pack linddun --ignore-orphaned-risk-tracking
 
 # PASTA (10 attack-surface rules)
-$THREAGILE analyze-model --app-dir "$APP" --background "report/template/background.pdf" \
+$THREAGILE analyze-model --app-dir "$APP" --background "pkg/report/template/background.pdf" \
   --reportLogoImagePath "report/threagile-logo.png" \
   --model "$MODEL" --output ../Threat-model/threagile/output/pasta \
   --methodology pasta --rule-pack pasta --ignore-orphaned-risk-tracking
 
 # VAST (8 operational rules)
-$THREAGILE analyze-model --app-dir "$APP" --background "report/template/background.pdf" \
+$THREAGILE analyze-model --app-dir "$APP" --background "pkg/report/template/background.pdf" \
   --reportLogoImagePath "report/threagile-logo.png" \
   --model "$MODEL" --output ../Threat-model/threagile/output/vast \
   --methodology vast --rule-pack vast --ignore-orphaned-risk-tracking

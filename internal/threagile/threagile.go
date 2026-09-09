@@ -30,6 +30,7 @@ func (what *Threagile) Execute() {
 		serverError := what.runServer()
 		if serverError != nil {
 			what.rootCmd.PrintErrln(serverError)
+			os.Exit(1)
 		}
 	} else if what.config.GetInteractive() {
 		what.run(what.rootCmd, nil)

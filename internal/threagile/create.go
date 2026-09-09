@@ -1,7 +1,3 @@
-/*
-Copyright © 2023 NAME HERE <EMAIL ADDRESS>
-*/
-
 package threagile
 
 import (
@@ -21,19 +17,16 @@ func (what *Threagile) initCreate() *Threagile {
 
 			appDir, err := cmd.Flags().GetString(appDirFlagName)
 			if err != nil {
-				cmd.Printf("Unable to read app-dir flag: %v", err)
-				return err
+				return fmt.Errorf("unable to read app-dir flag: %w", err)
 			}
 			outDir, err := cmd.Flags().GetString(outputFlagName)
 			if err != nil {
-				cmd.Printf("Unable to read output flag: %v", err)
-				return err
+				return fmt.Errorf("unable to read output flag: %w", err)
 			}
 
 			err = examples.CreateExampleModelFile(appDir, outDir, InputFile)
 			if err != nil {
-				cmd.Printf("Unable to copy example model: %v", err)
-				return err
+				return fmt.Errorf("unable to copy example model: %w", err)
 			}
 
 			cmd.Println(Logo + "\n\n" + fmt.Sprintf(VersionText, what.buildTimestamp))
@@ -54,8 +47,7 @@ func (what *Threagile) initCreate() *Threagile {
 
 			err := examples.CreateStubModelFile(what.config.GetAppFolder(), what.config.GetOutputFolder(), InputFile)
 			if err != nil {
-				cmd.Printf("Unable to copy stub model: %v", err)
-				return err
+				return fmt.Errorf("unable to copy stub model: %w", err)
 			}
 
 			if !what.config.GetInteractive() {
@@ -82,19 +74,16 @@ func (what *Threagile) initCreate() *Threagile {
 
 			appDir, err := cmd.Flags().GetString(appDirFlagName)
 			if err != nil {
-				cmd.Printf("Unable to read app-dir flag: %v", err)
-				return err
+				return fmt.Errorf("unable to read app-dir flag: %w", err)
 			}
 			outDir, err := cmd.Flags().GetString(outputFlagName)
 			if err != nil {
-				cmd.Printf("Unable to read output flag: %v", err)
-				return err
+				return fmt.Errorf("unable to read output flag: %w", err)
 			}
 
 			err = examples.CreateEditingSupportFiles(appDir, outDir)
 			if err != nil {
-				cmd.Printf("Unable to copy editing support files: %v", err)
-				return err
+				return fmt.Errorf("unable to copy editing support files: %w", err)
 			}
 
 			cmd.Println(Logo + "\n\n" + fmt.Sprintf(VersionText, what.buildTimestamp))

@@ -246,9 +246,13 @@ func Generate(config reportConfigReader, readResult *model.ReadResult, commands 
 		// report PDF
 		progressReporter.Info("Writing report pdf")
 
+		templateFilename, cleanupTemplate, templateError := resolveTemplateFilename(config.GetAppFolder(), config.GetTemplateFilename(), config.GetTempFolder())
+		if templateError != nil {
+			return templateError
+		}
 		pdfReporter := newPdfReporter(riskRules)
 		err = pdfReporter.WriteReportPDF(filepath.Join(config.GetOutputFolder(), config.GetReportFilename()),
-			filepath.Join(config.GetAppFolder(), config.GetTemplateFilename()),
+			templateFilename,
 			filepath.Join(config.GetOutputFolder(), config.GetDataFlowDiagramFilenamePNG()),
 			filepath.Join(config.GetOutputFolder(), config.GetDataAssetDiagramFilenamePNG()),
 			config.GetInputFile(),
@@ -261,6 +265,7 @@ func Generate(config reportConfigReader, readResult *model.ReadResult, commands 
 			config.GetTempFolder(),
 			readResult.ParsedModel,
 			config.GetReportConfigurationHideChapters())
+		cleanupTemplate()
 		if err != nil {
 			return err
 		}

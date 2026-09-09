@@ -251,19 +251,6 @@ func selectPages(pages []diagramPage, sel string) ([]diagramPage, error) {
 	return nil, fmt.Errorf("drawio: no page named %q found", sel)
 }
 
-// parseCells is the legacy single-page entry point, kept for callers that
-// only care about the first page's cells (fuzzing, ad-hoc debugging).
-func parseCells(data []byte) ([]mxCell, error) {
-	pages, err := parsePages(data)
-	if err != nil {
-		return nil, err
-	}
-	if len(pages) == 0 {
-		return nil, errors.New("drawio: no <diagram> elements found")
-	}
-	return pages[0].cells, nil
-}
-
 // htmlEntity matches the named HTML entities draw.io emits in labels (notably
 // &nbsp;) that Go's XML parser rejects as undeclared. They are replaced with a
 // space before unmarshalling (labels are whitespace-collapsed anyway).

@@ -1,7 +1,3 @@
-/*
-Copyright © 2023 NAME HERE <EMAIL ADDRESS>
-*/
-
 package server
 
 import (
@@ -20,6 +16,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/threagile/threagile/pkg/examples"
 	"github.com/threagile/threagile/pkg/macros"
 	"github.com/threagile/threagile/pkg/model"
 	"github.com/threagile/threagile/pkg/risks"
@@ -135,9 +132,11 @@ func RunServer(config serverConfigReader, builtinRiskRules types.RiskRules) {
 	router.StaticFile("/android-chrome-512x512.png", filepath.Join(s.config.GetServerFolder(), "static", "android-chrome-512x512.png"))
 	router.StaticFile("/android-chrome-192x192.png", filepath.Join(s.config.GetServerFolder(), "static", "android-chrome-192x192.png"))
 
-	router.StaticFile("/schema.json", filepath.Join(s.config.GetAppFolder(), "schema.json"))
-	router.StaticFile("/live-templates.txt", filepath.Join(s.config.GetAppFolder(), "live-templates.txt"))
-	router.StaticFile("/openapi.yaml", filepath.Join(s.config.GetAppFolder(), "openapi.yaml"))
+	// app-folder files win when present; embedded copies keep these routes
+	// working outside Docker (see pkg/examples)
+	router.GET("/schema.json", s.appAssetFile(examples.SchemaAssetName, gin.MIMEJSON))
+	router.GET("/live-templates.txt", s.appAssetFile(examples.LiveTemplatesAssetName, gin.MIMEPlain))
+	router.GET("/openapi.yaml", s.appAssetFile(examples.OpenAPIAssetName, gin.MIMEYAML))
 
 	router.GET("/threagile-example-model.yaml", s.exampleFile)
 	router.GET("/threagile-stub-model.yaml", s.stubFile)
@@ -279,8 +278,21 @@ func RunServer(config serverConfigReader, builtinRiskRules types.RiskRules) {
 	}
 }
 
+// appAssetFile serves a named asset: the app-folder copy when it exists,
+// otherwise the copy embedded into the binary (pkg/examples).
+func (s *server) appAssetFile(assetName, mimeType string) func(*gin.Context) {
+	return func(ginContext *gin.Context) {
+		data, err := examples.ReadAsset(s.config.GetAppFolder(), assetName)
+		if err != nil {
+			handleErrorInServiceCall(err, ginContext)
+			return
+		}
+		ginContext.Data(http.StatusOK, mimeType, data)
+	}
+}
+
 func (s *server) exampleFile(ginContext *gin.Context) {
-	example, err := os.ReadFile(filepath.Join(s.config.GetAppFolder(), "threagile-example-model.yaml"))
+	example, err := examples.ReadAsset(s.config.GetAppFolder(), examples.ExampleModelAssetName)
 	if err != nil {
 		handleErrorInServiceCall(err, ginContext)
 		return
@@ -289,7 +301,7 @@ func (s *server) exampleFile(ginContext *gin.Context) {
 }
 
 func (s *server) stubFile(ginContext *gin.Context) {
-	stub, err := os.ReadFile(filepath.Join(s.config.GetAppFolder(), "threagile-stub-model.yaml"))
+	stub, err := examples.ReadAsset(s.config.GetAppFolder(), examples.StubModelAssetName)
 	if err != nil {
 		handleErrorInServiceCall(err, ginContext)
 		return

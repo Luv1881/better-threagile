@@ -151,7 +151,7 @@ func TestWriteReportPDF_Smoke(t *testing.T) {
 		t.Fatalf("resolve fixture model path: %v", absErr)
 	}
 
-	templatePath, absErr2 := filepath.Abs(filepath.Join("..", "..", "report", "template", "background.pdf"))
+	templatePath, absErr2 := filepath.Abs(filepath.Join("template", "background.pdf"))
 	if absErr2 != nil {
 		t.Fatalf("resolve background template path: %v", absErr2)
 	}

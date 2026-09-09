@@ -109,6 +109,21 @@ func (adoc adocReport) writeDefaultTheme(logoImagePath string) error {
 			if err != nil {
 				return fmt.Errorf("could not copy file: »%s« to »%s«: %w", logoImagePath, logoDestPath, err)
 			}
+		} else if logoImagePath == DefaultReportLogoImagePath {
+			// bare-binary fallback: the built-in logo ships embedded in the
+			// binary, so a missing default file (e.g. outside Docker or a repo
+			// checkout without the loose copy) still renders a complete theme.
+			// Custom logo paths keep failing softly (log line, no logo) below.
+			logoBytes, readError := templateFS.ReadFile("template/" + defaultLogoImageFilename)
+			if readError != nil {
+				return fmt.Errorf("could not read embedded report logo: %w", readError)
+			}
+			adocLogoPath = "logo" + filepath.Ext(defaultLogoImageFilename)
+			logoDestPath := filepath.Join(adoc.targetDirectory, "theme", adocLogoPath)
+			// #nosec G306 -- report logo is a published image, world-readable like the repo copy
+			if writeError := os.WriteFile(logoDestPath, logoBytes, 0644); writeError != nil {
+				return fmt.Errorf("could not write embedded report logo to »%s«: %w", logoDestPath, writeError)
+			}
 		} else {
 			log.Println("logo image path does not exist: " + logoImagePath)
 		}

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-//go:embed template/background.pdf
+//go:embed template/background.pdf template/threagile-logo.png
 var templateFS embed.FS
 
 // defaultBackgroundTemplate is the built-in report background shipped inside
@@ -15,6 +15,15 @@ var templateFS embed.FS
 // exact same name exists, so explicitly configured custom templates keep
 // failing loudly when they are missing instead of silently reverting.
 const defaultBackgroundTemplate = "background.pdf"
+
+// defaultLogoImageFilename is the built-in report logo embedded above.
+const defaultLogoImageFilename = "threagile-logo.png"
+
+// DefaultReportLogoImagePath is the CLI default for the report logo (relative
+// to the working directory, unlike the app-folder-relative template). A file at
+// this path wins; only when it is missing does the adoc theme fall back to the
+// copy embedded into the binary.
+const DefaultReportLogoImagePath = "report/" + defaultLogoImageFilename
 
 // resolveTemplateFilename returns the PDF background template to use for report
 // generation: a file named templateFilename in appFolder takes precedence (so

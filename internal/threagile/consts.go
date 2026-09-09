@@ -1,5 +1,7 @@
 package threagile
 
+import "github.com/threagile/threagile/pkg/report"
+
 const (
 	TempDir   = "/dev/shm"
 	AppDir    = "/app"
@@ -21,7 +23,7 @@ const (
 	JsonTechnicalAssetsFilename = "technical-assets.json"
 	JsonStatsFilename           = "stats.json"
 	TemplateFilename            = "background.pdf"
-	ReportLogoImagePath         = "report/threagile-logo.png"
+	ReportLogoImagePath         = report.DefaultReportLogoImagePath
 	DataFlowDiagramFilenameDOT  = "data-flow-diagram.gv"
 	DataFlowDiagramFilenamePNG  = "data-flow-diagram.png"
 	DataAssetDiagramFilenameDOT = "data-asset-diagram.gv"

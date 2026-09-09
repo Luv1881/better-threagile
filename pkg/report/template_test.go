@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/threagile/threagile/pkg/model"
+	"github.com/threagile/threagile/pkg/types"
 )
 
 func TestResolveTemplateFilename_AppFolderWins(t *testing.T) {
@@ -140,4 +141,53 @@ func TestWriteReportPDF_MissingDiagramsStillProducesReport(t *testing.T) {
 	if string(data[:5]) != "%PDF-" {
 		t.Fatalf("report.pdf does not start with PDF magic bytes: %q", data[:5])
 	}
+}
+
+func TestWriteDefaultTheme_DefaultLogoMissingFallsBackToEmbedded(t *testing.T) {
+	target := t.TempDir()
+	adoc := adocReport{targetDirectory: target, imagesDir: filepath.Join(target, "images"), model: &types.Model{}}
+
+	// go test runs with CWD set to the package dir, so the CWD-relative
+	// default logo path never exists here — assert the precondition anyway
+	_, statErr := os.Stat(DefaultReportLogoImagePath)
+	require.True(t, os.IsNotExist(statErr), "precondition: default logo file must not exist at %q", DefaultReportLogoImagePath)
+
+	require.NoError(t, adoc.writeDefaultTheme(DefaultReportLogoImagePath))
+
+	embedded, readErr := templateFS.ReadFile("template/" + defaultLogoImageFilename)
+	require.NoError(t, readErr)
+	logoData, readErr := os.ReadFile(filepath.Join(target, "theme", "logo.png"))
+	require.NoError(t, readErr, "theme should contain the embedded logo")
+	assert.Equal(t, embedded, logoData)
+
+	theme, readErr := os.ReadFile(filepath.Join(target, "theme", "pdf-theme.yml"))
+	require.NoError(t, readErr)
+	assert.Contains(t, string(theme), "logo:")
+}
+
+func TestWriteDefaultTheme_CustomLogoMissingKeepsThemeWithoutLogo(t *testing.T) {
+	target := t.TempDir()
+	adoc := adocReport{targetDirectory: target, imagesDir: filepath.Join(target, "images"), model: &types.Model{}}
+
+	require.NoError(t, adoc.writeDefaultTheme("custom/does-not-exist.png"))
+
+	_, statErr := os.Stat(filepath.Join(target, "theme", "logo.png"))
+	assert.True(t, os.IsNotExist(statErr))
+
+	theme, readErr := os.ReadFile(filepath.Join(target, "theme", "pdf-theme.yml"))
+	require.NoError(t, readErr)
+	assert.NotContains(t, string(theme), "logo:")
+}
+
+func TestWriteDefaultTheme_ExistingLogoWins(t *testing.T) {
+	target := t.TempDir()
+	logoSrc := filepath.Join(t.TempDir(), "custom-logo.svg")
+	require.NoError(t, os.WriteFile(logoSrc, []byte("<svg/>"), 0600))
+	adoc := adocReport{targetDirectory: target, imagesDir: filepath.Join(target, "images"), model: &types.Model{}}
+
+	require.NoError(t, adoc.writeDefaultTheme(logoSrc))
+
+	data, readErr := os.ReadFile(filepath.Join(target, "theme", "logo.svg"))
+	require.NoError(t, readErr, "theme should contain the custom logo")
+	assert.Equal(t, "<svg/>", string(data))
 }

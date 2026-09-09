@@ -80,7 +80,7 @@ app/
 ├─ [openapi.yaml](./support/openapi.yaml)
 ├─ [schema.json](./support/schema.json)
 ├─ [threagile-example-model.yaml](./demo/example/threagile.yaml)
-├─ [threagile-logo.png](./report/threagile-logo.png)
+├─ [threagile-logo.png](./pkg/report/template/threagile-logo.png)
 ├─ [threagile-stub-model.yaml](./demo/stub/threagile.yaml)
 ```
 

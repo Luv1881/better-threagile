@@ -10,23 +10,21 @@ Read it entirely before writing or editing any threat model YAML, rule YAML, or 
 ```
 better-threagile/
 ├── bin/threagile                          ← compiled binary (built with `go build -o bin/threagile ./cmd/threagile/`)
-├── report/
-│   ├── template/background.pdf           ← PDF report background template
-│   └── threagile-logo.png                ← logo for PDF reports
+├── pkg/report/template/                   ← embedded report assets (go:embed)
+│   ├── background.pdf                     ← PDF report background template
+│   └── threagile-logo.png                  ← report logo
 ├── pkg/risks/
 │   ├── builtin/                           ← built-in Go risk rules (~40 rules)
 │   ├── scripts/                           ← embedded YAML script rules (builtin, auto-loaded)
 │   │   └── *.yaml
 │   └── methodologies/
-│       ├── linddun/                       ← LINDDUN rule sources
+│       ├── linddun/                       ← LINDDUN rule sources (embedded dir)
 │       │   └── *.yaml
-│       ├── linddun.tar.gz                 ← embedded tarball (go:embed)
-│       ├── pasta/                         ← PASTA rule sources
+│       ├── pasta/                         ← PASTA rule sources (embedded dir)
 │       │   └── *.yaml
-│       ├── pasta.tar.gz                   ← embedded tarball
-│       ├── vast/                          ← VAST rule sources
+│       ├── vast/                          ← VAST rule sources (embedded dir)
 │       │   └── *.yaml
-│       └── vast.tar.gz                    ← embedded tarball
+│       └── ...                            ← ai-ml, cloud-native, octave, supply-chain, trike
 ├── pkg/types/                             ← all enum types and model structs
 │   ├── technologies.yaml                  ← technology name → attribute mapping
 │   └── *.go
@@ -70,31 +68,30 @@ THREAGILE=./bin/threagile
 MODEL=../Threat-model/threagile/threagile.yaml
 APP=.
 
+# No --background / --reportLogoImagePath needed: the binary embeds the
+# built-in PDF background template and the report logo and falls back to the
+# embedded copies when the files are missing from the app folder / CWD.
+
 # STRIDE (default — 40+ built-in rules)
 $THREAGILE analyze-model \
   --app-dir "$APP" \
-  --background "pkg/report/template/background.pdf" \
-  --reportLogoImagePath "report/threagile-logo.png" \
   --model "$MODEL" \
   --output ../Threat-model/threagile/output/stride \
   --methodology stride \
   --ignore-orphaned-risk-tracking
 
 # LINDDUN (9 privacy rules)
-$THREAGILE analyze-model --app-dir "$APP" --background "pkg/report/template/background.pdf" \
-  --reportLogoImagePath "report/threagile-logo.png" \
+$THREAGILE analyze-model --app-dir "$APP" \
   --model "$MODEL" --output ../Threat-model/threagile/output/linddun \
   --methodology linddun --rule-pack linddun --ignore-orphaned-risk-tracking
 
 # PASTA (10 attack-surface rules)
-$THREAGILE analyze-model --app-dir "$APP" --background "pkg/report/template/background.pdf" \
-  --reportLogoImagePath "report/threagile-logo.png" \
+$THREAGILE analyze-model --app-dir "$APP" \
   --model "$MODEL" --output ../Threat-model/threagile/output/pasta \
   --methodology pasta --rule-pack pasta --ignore-orphaned-risk-tracking
 
 # VAST (8 operational rules)
-$THREAGILE analyze-model --app-dir "$APP" --background "pkg/report/template/background.pdf" \
-  --reportLogoImagePath "report/threagile-logo.png" \
+$THREAGILE analyze-model --app-dir "$APP" \
   --model "$MODEL" --output ../Threat-model/threagile/output/vast \
   --methodology vast --rule-pack vast --ignore-orphaned-risk-tracking
 ```

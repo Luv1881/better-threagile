@@ -932,6 +932,10 @@ func (model *Model) IsRiskTracked(what *Risk) bool {
 	return false
 }
 
+// GeneratedRisksByCategoryWithCurrentStatus applies the configured risk-tracking
+// statuses to the generated risks and caches the result: the first caller decides
+// what every later caller sees, so it must not run before tracking data is fully
+// populated (the analysis pipeline calls it exactly once, at the end).
 func (model *Model) GeneratedRisksByCategoryWithCurrentStatus() map[string][]*Risk {
 	if !model.statusApplied {
 		for catId, risks := range model.GeneratedRisksByCategory {

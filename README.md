@@ -353,6 +353,7 @@ the test suite in-image. (Upstream's Dockerfile cloned the upstream repo — fix
 
 ## Model schema and tooling
 
+- New to the codebase? [docs/architecture.md](./docs/architecture.md) — data flow, package map, invariants, how to add a rule/importer/report
 - Full model field reference: [docs/model.md](./docs/model.md)
 - CLI command reference: [docs/commands.md](./docs/commands.md)
 - All CLI flags: [docs/flags.md](./docs/flags.md)
@@ -370,5 +371,6 @@ Release history and process: [docs/releases.md](./docs/releases.md).
 
 ## Contribution
 
-Contributions welcome — see the [contribution guide](./CONTRIBUTING.md), or open a GitHub
-discussion or issue.
+Contributions welcome — see the [contribution guide](./CONTRIBUTING.md) and the
+[architecture map](./docs/architecture.md) (data flow, invariants, extension
+points), or open a GitHub discussion or issue.

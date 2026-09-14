@@ -70,6 +70,9 @@ type configReader interface {
 	GetProgressReporter() types.ProgressReporter
 }
 
+// ReadAndAnalyzeModel loads the model file, runs the analysis pipeline and (for
+// debug/inspection) persists the parsed model when an --imported-model file is
+// configured. This is the entry point every analysis command uses.
 func ReadAndAnalyzeModel(config configReader, builtinRiskRules types.RiskRules, progressReporter types.ProgressReporter) (*ReadResult, error) {
 	progressReporter.Infof("Writing into output directory: %v", config.GetOutputFolder())
 	progressReporter.Infof("Parsing model: %v", config.GetInputFile())
@@ -90,6 +93,10 @@ func ReadAndAnalyzeModel(config configReader, builtinRiskRules types.RiskRules, 
 	return result, analysisError
 }
 
+// AnalyzeModel turns a loaded input model into the typed model (ParseModel),
+// computes the RAA values, runs the built-in and custom risk rules in parallel,
+// and applies risk-tracking statuses. Rules only read the model; the pipeline
+// afterwards owns all mutation of it.
 func AnalyzeModel(modelInput *input.Model, config configReader, builtinRiskRules types.RiskRules, customRiskRules types.RiskRules, progressReporter types.ProgressReporter) (*ReadResult, error) {
 
 	parsedModel, parseError := ParseModel(config, modelInput, builtinRiskRules, customRiskRules)

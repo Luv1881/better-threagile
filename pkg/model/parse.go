@@ -16,6 +16,10 @@ type technologyMapConfigReader interface {
 	GetTechnologyFilename() string
 }
 
+// ParseModel validates and converts the raw input model into the typed domain
+// model: every enum value is checked, all referenced IDs are resolved, and trust
+// boundary membership is made exclusive. It runs no risk rules, which is why
+// `validate` can call it directly to guarantee validate/analyze parity.
 func ParseModel(config technologyMapConfigReader, modelInput *input.Model, builtinRiskRules types.RiskRules, customRiskRules types.RiskRules) (*types.Model, error) {
 	technologies := make(types.TechnologyMap)
 	technologiesLoadError := technologies.LoadWithConfig(config, "technologies.yaml")

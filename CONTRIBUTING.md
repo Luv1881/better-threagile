@@ -22,7 +22,22 @@ Before running the project please install
 - [golangci-lint](https://golangci-lint.run/welcome/install/#local-installation)
 - [goimports](https://pkg.go.dev/golang.org/x/tools/cmd/goimports)
 
-Main program is [threagile](./cmd/threagile/main.go).
+Main program is [threagile](./cmd/threagile/main.go). Before changing engine
+code, read [docs/architecture.md](./docs/architecture.md): it maps the packages,
+the analysis data flow and the invariants (determinism, the one-shot risk-status
+cache, embedded-asset sync tests) that are easy to break.
+
+### Before you open a pull request
+
+```sh
+go build ./... && go vet ./...
+go test -race ./...          # full suite, includes the subprocess e2e harness
+go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11 run ./...   # must report 0 issues
+```
+
+Rule of thumb: a change in command behaviour needs an assertion in
+`test/e2e/e2e_test.go`; a change in report output needs a golden update in its
+own commit with a stated reason.
 
 ### Development with Visual Studio Code
 

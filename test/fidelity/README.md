@@ -18,13 +18,16 @@ the result is compared with the project's committed model:
 | Boundaries | share of reference trust boundaries matched |
 | Data assets | share of reference data assets represented |
 
-Matching is normalised titles first (exact, then containment), then
+Matching is normalised titles first (exact, then containment — both sides at
+least 5 characters and the shorter at least half the longer, so a short
+`api`-style name cannot match a long reference title by accident), then
 **structural**: a trust boundary matches when it contains the same matched
-assets (≥50% of the reference side's matched assets), and a data asset matches
-when the same matched assets process or store it. Structural matching matters
-because generated names come from the infrastructure ("`vaultnote/postgres`")
-while references are semantic ("`PostgreSQL Database`"); renaming a generated
-asset can never inflate the score.
+assets (≥50% of the reference side's matched assets, and no more than twice
+its size, so a catch-all namespace boundary cannot absorb every reference),
+and a data asset matches when the same matched assets process or store it.
+Structural matching matters because generated names come from the
+infrastructure ("`vaultnote/postgres`") while references are semantic
+("`PostgreSQL Database`").
 
 **Anti-overfitting rule:** judge changes on the aggregate across all projects.
 A change that improves one project while regressing another does not land.
@@ -51,6 +54,8 @@ YAML parser, not the analyzer.
 
 ## Running
 
+The comparator needs Python 3 and PyYAML (`pip install pyyaml`).
+
 ```sh
 go build -o /tmp/threagile ./cmd/threagile/
 python3 test/fidelity/compare.py test/fidelity/corpus.tsv \
@@ -74,9 +79,18 @@ while the compose service is `eshopwebmvc`. What the numbers are good for:
   (only) missing structure: generated boundaries carry the source construct
   (`Network: frontend-net`) and stub data assets are invented placeholders.
 
+**Baseline revisions are expected.** The first review of this tooling found the
+structural boundary pass was a no-op (translated titles were checked against
+the reference index) and the containment rule accepted short-name accidents;
+fixing both lowered the reported score from 0.237 to **0.176** without any
+change in `bootstrap` behaviour. Treat a score change as meaningful only when
+it comes from a rebuild of the binary, not from comparator edits.
+
 Real fidelity improvements driven by this corpus so far: `validate`↔analyze
 parity, legacy enum aliases, virtualenv/cache skipping, OpenAPI detection
 requiring a version, clean titles for specs without `info.title`, and the
-shared container-image classification table (which is why enduro's Keycloak,
-SeaweedFS, MySQL and Temporal workloads and DevSecOps' SQL Server now carry
-the same technologies and asset types as their reference models).
+shared container-image classification table (token-boundary matching, an
+exporter guard, and datastore preference for pods with sidecars — which is why
+enduro's Keycloak, SeaweedFS, MySQL and Temporal workloads and DevSecOps' SQL
+Server now carry the same technologies and asset types as their reference
+models).

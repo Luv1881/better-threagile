@@ -44,14 +44,19 @@ def normalize(title) -> str:
     return re.sub(r"[^a-z0-9]", "", str(title).lower())
 
 
-def load_model(path: str) -> dict:
+def load_model(path: str, seen: set | None = None) -> dict:
     """Load a model, resolving the fork's includes: directive (multi-file models)."""
+    seen = seen or set()
+    resolved_path = os.path.realpath(path)
+    if resolved_path in seen:
+        return {}
+    seen.add(resolved_path)
     with open(path) as handle:
         model = yaml.safe_load(handle) or {}
     includes = model.pop("includes", None) or []
     for include in includes:
         included_path = os.path.join(os.path.dirname(path), include)
-        included = load_model(included_path)
+        included = load_model(included_path, seen)
         for key, value in included.items():
             if isinstance(value, dict) and isinstance(model.get(key), dict):
                 model[key].update(value)
@@ -87,14 +92,24 @@ def title_match(ref_title: str, candidates: list) -> str | None:
     if len(norm) >= 5:
         for candidate in candidates:
             candidate_norm = normalize(candidate)
-            if candidate_norm and (candidate_norm in norm or norm in candidate_norm):
+            if len(candidate_norm) < 5:
+                continue
+            shorter, longer = sorted((norm, candidate_norm), key=len)
+            if longer and shorter in longer and len(shorter) / len(longer) >= 0.5:
                 return candidate
     return None
 
 
 def overlap(ref_set: set, gen_set: set) -> float:
-    """How much of the reference set is covered by the generated set."""
+    """How much of the reference set is covered by the generated set.
+
+    A generated entity that holds far more assets than the reference one is
+    treated as a catch-all (namespace/default boundaries) and matches nothing:
+    otherwise one big boundary could absorb every reference boundary.
+    """
     if not ref_set or not gen_set:
+        return 0.0
+    if len(gen_set) > 2 * len(ref_set):
         return 0.0
     return len(ref_set & gen_set) / len(ref_set)
 
@@ -161,8 +176,7 @@ def boundary_set(ref_model_index, translation=None) -> dict:
                 asset_title = translation.get(asset_title, translation.get(str(reference)))
                 if asset_title is None:
                     continue
-            if asset_title in ref_model_index["ta"] or translation is None:
-                resolved.add(normalize(asset_title))
+            resolved.add(normalize(asset_title))
         sets[title] = resolved
     return sets
 

@@ -167,3 +167,34 @@ func containsTag(tags []string, tag string) bool {
 	}
 	return false
 }
+
+// Cloud-provider tags come from the resource type prefix; the cloud-hardening
+// and provider-specific rules key off them.
+func TestProviderTags(t *testing.T) {
+	tests := []struct {
+		resourceType string
+		wantTag      string
+	}{
+		{"aws_db_instance", "aws"},
+		{"azurerm_sql_server", "azure"},
+		{"google_storage_bucket", "gcp"},
+	}
+	for _, test := range tests {
+		plan := `{"format_version":"1.0","planned_values":{"root_module":{"resources":[{"address":"` + test.resourceType + `.x","type":"` + test.resourceType + `","name":"x","values":{}}]}}}`
+		model, err := Import([]byte(plan), ImportOptions{})
+		if err != nil {
+			t.Fatalf("import %s failed: %v", test.resourceType, err)
+		}
+		found := false
+		for _, asset := range model.TechnicalAssets {
+			for _, tag := range asset.Tags {
+				if tag == test.wantTag {
+					found = true
+				}
+			}
+		}
+		if !found {
+			t.Errorf("resource %s must carry tag %q", test.resourceType, test.wantTag)
+		}
+	}
+}

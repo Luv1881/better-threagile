@@ -323,3 +323,56 @@ services:
 		}
 	}
 }
+
+// Datastores and volume mounts store data: the importer must attach a stub
+// data asset so storage/encryption rules can fire, and links into a datastore
+// must carry that data (what the communication-encryption rule inspects).
+func TestDatastoreDataFlowAttachment(t *testing.T) {
+	compose := `
+services:
+  web:
+    image: nginx
+    volumes: ["./site:/usr/share/nginx/html"]
+    depends_on: [db]
+  db:
+    image: postgres:16
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+volumes:
+  pgdata: {}
+`
+	m, err := Import([]byte(compose), ImportOptions{})
+	if err != nil {
+		t.Fatalf("import failed: %v", err)
+	}
+
+	db := m.TechnicalAssets["db-compose"]
+	if db == nil || db.Type != types.Datastore {
+		t.Fatalf("db must be a datastore, got %+v", db)
+	}
+	if len(db.DataAssetsStored) == 0 {
+		t.Errorf("datastore must store a data asset, got none")
+	}
+	web := m.TechnicalAssets["web-compose"]
+	if len(web.DataAssetsStored) == 0 {
+		t.Errorf("service with a volume mount must store a data asset, got none")
+	}
+
+	link := m.CommunicationLinks["link-web-to-db-compose"]
+	if link == nil {
+		t.Fatalf("missing web->db link: %v", m.CommunicationLinks)
+	}
+	if len(link.DataAssetsSent) == 0 || len(link.DataAssetsReceived) == 0 {
+		t.Errorf("link into a datastore must carry its data, got sent=%v received=%v", link.DataAssetsSent, link.DataAssetsReceived)
+	}
+}
+
+// docker-compose declares no protocol, so links must default to plain HTTP:
+// assuming HTTPS would silently suppress the unencrypted-communication rule.
+func TestLinksDefaultToHTTP(t *testing.T) {
+	m := importSample(t)
+	for id, link := range m.CommunicationLinks {
+		if link.Protocol != types.HTTP {
+			t.Errorf("link %s protocol = %v, want HTTP (compose states no protocol)", id, link.Protocol)
+		}
+	}
+}

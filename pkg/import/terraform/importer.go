@@ -249,6 +249,19 @@ func guessInternet(r *TFResource) bool {
 func buildTags(r *TFResource) []string {
 	tags := []string{}
 
+	// Cloud provider: the resource type prefix names it. The missing-cloud-
+	// hardening and cloud-specific rules key off these tags.
+	switch {
+	case strings.HasPrefix(r.Type, "aws_"):
+		tags = append(tags, "aws")
+	case strings.HasPrefix(r.Type, "azurerm_"):
+		tags = append(tags, "azure")
+	case strings.HasPrefix(r.Type, "google_"):
+		tags = append(tags, "gcp")
+	case strings.HasPrefix(r.Type, "oci_"):
+		tags = append(tags, "ocp")
+	}
+
 	v := r.Values
 
 	// Detect encryption → has-encryption-at-rest

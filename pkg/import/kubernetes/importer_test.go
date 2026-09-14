@@ -428,3 +428,32 @@ spec:
 		t.Errorf("files: type=%v tech=%+v, want datastore/file-server", asset.Type, asset.Technologies)
 	}
 }
+
+// A datastore container must win over sidecars listed before it in the pod.
+func TestWorkloadDatastoreBeatsSidecar(t *testing.T) {
+	manifest := `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shop
+spec:
+  template:
+    spec:
+      containers:
+        - name: nginx-sidecar
+          image: nginx:1.25
+        - name: db
+          image: postgres:16
+`
+	m, err := Import([]byte(manifest), ImportOptions{})
+	if err != nil {
+		t.Fatalf("import failed: %v", err)
+	}
+	asset := m.TechnicalAssets["default-shop-k8s"]
+	if asset == nil {
+		t.Fatalf("missing asset: %v", m.TechnicalAssets)
+	}
+	if asset.Type != types.Datastore || asset.Technologies[0].Name != "database" {
+		t.Errorf("pod with postgres must classify as datastore/database, got %v/%+v", asset.Type, asset.Technologies)
+	}
+}

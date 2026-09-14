@@ -25,6 +25,12 @@ func TestClassify(t *testing.T) {
 		{"hashicorp/vault:1.16", "vault", false, true},
 		{"jenkins/jenkins:lts", "build-pipeline", false, true},
 		{"prom/prometheus:v2.52", "monitoring", false, true},
+		// Exporter/sidecar images must not be mistaken for the observed product.
+		{"prometheuscommunity/postgres-exporter:v0.15", "monitoring", false, true},
+		{"nginx/nginx-prometheus-exporter:1.1", "monitoring", false, true},
+		{"vaultwarden/server:1.32", "web-application", false, true},
+		{"bitnami/mongodb:7.0", "database", true, true},
+		{"bitnami/postgresql:16", "database", true, true},
 		// Non-matches: unrelated images must not be classified.
 		{"oraclelinux:9", "", false, false}, // "oracle" alone is not a rule
 		{"alpine:3.19", "", false, false},

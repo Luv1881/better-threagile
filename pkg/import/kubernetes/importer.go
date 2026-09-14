@@ -303,13 +303,24 @@ func (b *builder) buildWorkloadAsset(w *workload) {
 // classifyWorkload returns the Threagile technology and asset type for a workload,
 // detecting datastores from container images.
 func classifyWorkload(w *workload) (string, types.TechnicalAssetType) {
+	// Prefer a datastore container over sidecars: a pod running nginx next to
+	// postgres is the database, not a reverse proxy, regardless of list order.
+	var fallback *imageclass.Hint
 	for _, c := range w.pod.Containers {
-		if hint, ok := imageclass.Classify(c.Image); ok {
-			if hint.Datastore {
-				return hint.Technology, types.Datastore
-			}
-			return hint.Technology, types.Process
+		hint, ok := imageclass.Classify(c.Image)
+		if !ok {
+			continue
 		}
+		if hint.Datastore {
+			return hint.Technology, types.Datastore
+		}
+		if fallback == nil {
+			copyOfHint := hint
+			fallback = &copyOfHint
+		}
+	}
+	if fallback != nil {
+		return fallback.Technology, types.Process
 	}
 	return types.ContainerPlatform, types.Process
 }

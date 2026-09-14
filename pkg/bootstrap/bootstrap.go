@@ -63,7 +63,7 @@ func shouldSkipDir(name string) bool {
 	if skipDirs[name] {
 		return true
 	}
-	if strings.HasPrefix(name, ".venv") || strings.HasSuffix(name, ".egg-info") {
+	if strings.HasPrefix(name, ".venv") || strings.HasPrefix(name, "venv") || strings.HasSuffix(name, ".egg-info") {
 		return true
 	}
 	return false
@@ -105,11 +105,12 @@ func Detect(root string) ([]Source, error) {
 }
 
 // classify decides whether a single file is a recognised infrastructure source.
-// openAPIVersion matches an OpenAPI/Swagger declaration together with its
-// version, in YAML (`openapi: 3.0.0`) or JSON (`"openapi": "3.0.0"`) form.
-// Matching the version (not just the key) keeps unrelated files that merely
-// contain an "openapi" section (e.g. .NET launchSettings.json) out.
-var openAPIVersion = regexp.MustCompile(`(?im)("(openapi|swagger)"\s*:\s*['"]?[0-9]|^\s*(openapi|swagger)\s*:\s*['"]?[0-9])`)
+// openAPIVersion matches an OpenAPI/Swagger declaration with a real version
+// (major.minor), in YAML (`openapi: 3.0.0`), JSON (`"openapi": "3.0.0"`) or
+// flow style (`{openapi: 3.0.0}`) form. Requiring the version keeps unrelated
+// files that merely contain an "openapi" section (e.g. .NET launchSettings.json
+// or a `swagger: 8080` port setting) out.
+var openAPIVersion = regexp.MustCompile(`(?im)(^|[\s{,])["']?(?:openapi|swagger)["']?\s*:\s*["']?\d+\.\d+`)
 
 func classify(path, name string) (Kind, bool) {
 	lower := strings.ToLower(name)

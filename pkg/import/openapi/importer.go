@@ -40,7 +40,11 @@ func namedTitle(base, suffix string) string {
 	case base == "" && suffix == "":
 		return "API"
 	case base == "":
-		return strings.TrimLeft(suffix, "- ")
+		trimmed := strings.TrimPrefix(suffix, "- ")
+		if trimmed == "" {
+			return "API"
+		}
+		return trimmed
 	case suffix == "":
 		return base
 	default:

@@ -241,4 +241,16 @@ func TestClassify_OpenAPIRequiresVersion(t *testing.T) {
 	if kind, ok := classify(filepath.Join(dir, "swagger.json"), "swagger.json"); !ok || kind != OpenAPI {
 		t.Errorf("a Swagger 2.0 spec must classify as OpenAPI, got %v/%v", kind, ok)
 	}
+
+	// A numeric key is not a version: `swagger: 8080` is a port setting.
+	writeFile(t, dir, "config.yaml", "server:\n  swagger: 8080\n")
+	if kind, ok := classify(filepath.Join(dir, "config.yaml"), "config.yaml"); ok {
+		t.Errorf("swagger: 8080 must not classify as OpenAPI, got %v", kind)
+	}
+
+	// Flow-style YAML declarations count too.
+	writeFile(t, dir, "flow.yaml", "paths: {}\nopenapi: 3.1.0\n")
+	if kind, ok := classify(filepath.Join(dir, "flow.yaml"), "flow.yaml"); !ok || kind != OpenAPI {
+		t.Errorf("flow-style openapi declaration must classify, got %v/%v", kind, ok)
+	}
 }

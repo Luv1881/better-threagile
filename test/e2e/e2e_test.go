@@ -18,6 +18,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -92,6 +93,7 @@ func writeFile(t *testing.T, dir, name, content string) string {
 	t.Helper()
 	path := filepath.Join(dir, name)
 	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0750))
+	// #nosec G703 -- test helper path built from t.TempDir(), never attacker-controlled
 	require.NoError(t, os.WriteFile(path, []byte(content), 0600))
 	return path
 }
@@ -154,7 +156,6 @@ func TestValidate_ValidModelTextAndJSON(t *testing.T) {
 }
 
 func TestValidate_UnparsableModelFails(t *testing.T) {
-	t.Skip("known gap: validate only loads the input YAML and misses enum errors that analyze-model rejects")
 	dir := t.TempDir()
 	bad := writeFile(t, dir, "bad.yaml", `title: bad
 technical_assets:
@@ -168,16 +169,18 @@ technical_assets:
 
 func TestValidate_SecretsGate(t *testing.T) {
 	dir := t.TempDir()
-	model := writeFile(t, dir, "threagile.yaml", `title: secret test
-technical_assets:
-  app:
-    id: app
-    type: application
-    owner: someone
-    secrets: "AKIAIOSFODNN7EXAMPLE"
-`)
+
+	// Plant a fake GitHub PAT into the shipped stub model (already analyzable),
+	// so --fail-on-secrets is reached with a model validation would accept.
+	stub, err := os.ReadFile(repoPath("demo", "stub", "threagile.yaml"))
+	require.NoError(t, err)
+	const fakePAT = "ghp_1234567890abcdefghijklmnopqrstuvwxyz" // #nosec G101 -- fake token, not a credential
+	content := strings.Replace(string(stub), "title: Model Stub", "title: Model Stub "+fakePAT, 1)
+	require.Contains(t, content, fakePAT)
+	model := writeFile(t, dir, "threagile.yaml", content)
+
 	r := run(t, dir, "validate", "--model", model, "--fail-on-secrets")
-	assert.Equal(t, 3, r.code, "a planted AWS key must fail the secrets gate (stdout: %s)", r.stdout)
+	assert.Equal(t, 3, r.code, "a planted GitHub token must fail the secrets gate (stdout: %s stderr: %s)", r.stdout, r.stderr)
 }
 
 func TestLint_JSONAndSARIF(t *testing.T) {

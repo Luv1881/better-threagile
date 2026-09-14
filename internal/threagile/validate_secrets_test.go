@@ -13,23 +13,22 @@ import (
 // fakeGitHubPAT is assembled from parts so gosec G101 doesn't flag this test file.
 var fakeGitHubPAT = "ghp_" + "1234567890abcdefghijklmnopqrstuvwxyz"
 
-var modelWithSecret = `threagile_version: "1.0.0"
-title: Secret Test
-author:
-  name: Tester
-technical_assets:
-  Web:
-    id: web
-    description: "deploy key ` + fakeGitHubPAT + `"
-    type: process
-    usage: business
-data_assets: {}
-`
+// secretModelFixture returns an analyzable model (the shipped stub model) with
+// a fake GitHub PAT planted in its title. Building on the stub keeps this test
+// focused on the secrets scanner instead of tracking required enum fields.
+func secretModelFixture(t *testing.T) []byte {
+	t.Helper()
+	stub, err := os.ReadFile(filepath.Join("..", "..", "demo", "stub", "threagile.yaml"))
+	require.NoError(t, err)
+	content := strings.Replace(string(stub), "title: Model Stub", "title: Model Stub "+fakeGitHubPAT, 1)
+	require.Contains(t, content, fakeGitHubPAT, "fixture must contain the planted secret")
+	return []byte(content)
+}
 
 func TestValidate_WarnsOnSecretButPassesByDefault(t *testing.T) {
 	dir := t.TempDir()
 	model := filepath.Join(dir, "m.yaml")
-	require.NoError(t, os.WriteFile(model, []byte(modelWithSecret), 0600))
+	require.NoError(t, os.WriteFile(model, secretModelFixture(t), 0600))
 
 	args := []string{"validate", "--model", model}
 	app := newTestAppWithArgs(args...)
@@ -40,7 +39,7 @@ func TestValidate_WarnsOnSecretButPassesByDefault(t *testing.T) {
 func TestValidate_FailOnSecretsExits3(t *testing.T) {
 	dir := t.TempDir()
 	model := filepath.Join(dir, "m.yaml")
-	require.NoError(t, os.WriteFile(model, []byte(modelWithSecret), 0600))
+	require.NoError(t, os.WriteFile(model, secretModelFixture(t), 0600))
 
 	args := []string{"validate", "--model", model, "--fail-on-secrets"}
 	app := newTestAppWithArgs(args...)

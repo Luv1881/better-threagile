@@ -9,9 +9,18 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/threagile/threagile/pkg/input"
+	"github.com/threagile/threagile/pkg/model"
 	"github.com/threagile/threagile/pkg/secretscan"
 	"github.com/threagile/threagile/pkg/source"
 )
+
+// technologyConfigReader is the config surface the model parser needs to load
+// the technology map (app folder / file name). Kept minimal so validate and the
+// LSP can call the parser without depending on the whole CLI config.
+type technologyConfigReader interface {
+	GetAppFolder() string
+	GetTechnologyFilename() string
+}
 
 // ValidateReport is the machine-readable result of `validate --json`.
 type ValidateReport struct {
@@ -39,7 +48,7 @@ func (what *Threagile) initValidate() *Threagile {
 
 			modelFile := what.config.GetInputFile()
 
-			errs := validateModel(modelFile)
+			errs := validateModel(what.config, modelFile)
 			// Secrets do not belong in a model file. Surface any that slipped in
 			// (redacted), and optionally fail the build.
 			secrets := scanModelForSecrets(modelFile)
@@ -96,7 +105,10 @@ func scanModelForSecrets(modelFile string) []secretscan.Finding {
 }
 
 // validateModel loads and parses the model, returning human-readable error strings.
-func validateModel(modelFile string) []string {
+// It runs the same typed conversion as analyze-model (without risk rules), so a
+// model that validate accepts is guaranteed to get past analysis parsing — the
+// only failures left at analyze time are rule/tracking semantics.
+func validateModel(config technologyConfigReader, modelFile string) []string {
 	var errs []string
 
 	modelInput := new(input.Model).Defaults()
@@ -226,6 +238,16 @@ func validateModel(modelFile string) []string {
 		}
 		for daTitle, da := range modelInput.DataAssets {
 			checkTagRefs(da.Tags, fmt.Sprintf("data asset %q", daTitle), loc(daTitle))
+		}
+	}
+
+	// Run the same typed conversion as analyze-model so validate fails wherever
+	// analysis parsing fails (enum values, missing required fields, ...). Only
+	// consulted when the reference checks found nothing, so their actionable
+	// file:line errors are not displaced by the terse parser message.
+	if len(errs) == 0 {
+		if _, parseError := model.ParseModel(config, modelInput, nil, nil); parseError != nil {
+			errs = append(errs, fmt.Sprintf("model is not analyzable: %v", parseError))
 		}
 	}
 

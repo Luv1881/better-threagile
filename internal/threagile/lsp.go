@@ -23,7 +23,7 @@ func (what *Threagile) initLSP() *Threagile {
 		Hidden: true, // experimental; opt-in for IDE plugins
 		RunE: func(cmd *cobra.Command, args []string) error {
 			what.processArgs(cmd, args)
-			return runLSPServer(os.Stdin, os.Stdout)
+			return runLSPServer(what.config, os.Stdin, os.Stdout)
 		},
 	}
 
@@ -46,7 +46,7 @@ type lspError struct {
 	Message string `json:"message"`
 }
 
-func runLSPServer(in io.Reader, out io.Writer) error {
+func runLSPServer(config technologyConfigReader, in io.Reader, out io.Writer) error {
 	reader := bufio.NewReader(in)
 
 	for {
@@ -117,7 +117,7 @@ func runLSPServer(in io.Reader, out io.Writer) error {
 			uri := p.TextDocument.URI
 			path := strings.TrimPrefix(uri, "file://")
 
-			diags := lspDiagnosticsFor(path)
+			diags := lspDiagnosticsFor(config, path)
 			writeLSPNotification(out, "textDocument/publishDiagnostics", map[string]any{
 				"uri":         uri,
 				"diagnostics": diags,
@@ -149,7 +149,7 @@ type lspPosition struct {
 	Character int `json:"character"`
 }
 
-func lspDiagnosticsFor(path string) []lspDiagnostic {
+func lspDiagnosticsFor(config technologyConfigReader, path string) []lspDiagnostic {
 	var diags []lspDiagnostic
 	if path == "" {
 		return diags
@@ -157,7 +157,7 @@ func lspDiagnosticsFor(path string) []lspDiagnostic {
 
 	zeroRange := lspRange{Start: lspPosition{0, 0}, End: lspPosition{0, 80}}
 
-	for _, e := range validateModel(path) {
+	for _, e := range validateModel(config, path) {
 		diags = append(diags, lspDiagnostic{
 			Range:    zeroRange,
 			Severity: 1, // error

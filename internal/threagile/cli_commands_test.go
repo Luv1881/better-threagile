@@ -201,3 +201,25 @@ func TestExplainRiskCommand_Runs(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, out, "Known risk IDs")
 }
+
+// A model whose YAML loads but carries an enum value the analyzer rejects must
+// be reported by validate — otherwise CI validates a model that analyze-model
+// then refuses to run (the real-world gap this test locks shut).
+func TestValidateCommand_RejectsUnanalyzableEnum(t *testing.T) {
+	dir := t.TempDir()
+	model := filepath.Join(dir, "threagile.yaml")
+	require.NoError(t, os.WriteFile(model, []byte(`title: bad enum
+business_criticality: important
+data_assets:
+  customer-data:
+    id: customer-data
+    usage: not-a-real-usage
+`), 0600))
+
+	args := []string{ValidateCommand, "--model", model, "--json"}
+	app := newTestAppWithArgs(args...)
+	out, err := executeCmd(app, args...)
+	require.Error(t, err, "validate must fail on enum values analyze-model rejects")
+	assert.Contains(t, out, `"valid": false`)
+	assert.Contains(t, out, "not analyzable")
+}

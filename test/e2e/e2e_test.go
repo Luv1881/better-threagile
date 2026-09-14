@@ -68,7 +68,9 @@ type result struct {
 // Root persistent flags must come before the subcommand (see HANDOVER.md).
 func run(t *testing.T, dir string, args ...string) result {
 	t.Helper()
-	cmd := exec.CommandContext(context.Background(), binary, args...) // #nosec G204 -- args come from the fixed test table, not from user input
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, binary, args...) // #nosec G204 -- args come from the fixed test table, not from user input
 	cmd.Dir = dir
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -157,14 +159,19 @@ func TestValidate_ValidModelTextAndJSON(t *testing.T) {
 
 func TestValidate_UnparsableModelFails(t *testing.T) {
 	dir := t.TempDir()
-	bad := writeFile(t, dir, "bad.yaml", `title: bad
-technical_assets:
-  app:
-    id: app
-    type: not-a-real-type
+	// Valid in every respect except one enum value: exactly the model that used
+	// to pass validate and then abort analyze-model at parse time.
+	bad := writeFile(t, dir, "bad.yaml", `title: bad enum
+business_criticality: important
+data_assets:
+  customer-data:
+    id: customer-data
+    usage: not-a-real-usage
 `)
 	r := run(t, dir, "validate", "--model", bad)
 	assert.Equal(t, 1, r.code, "an unparsable enum must exit 1 (stderr: %s)", r.stderr)
+	assert.Contains(t, r.stdout, "not analyzable", "validate must name the parse failure")
+	assert.Contains(t, r.stdout, "not-a-real-usage", "validate must quote the offending value")
 }
 
 func TestValidate_SecretsGate(t *testing.T) {
@@ -249,6 +256,8 @@ func TestAnalyzeModel_SkipFlagsProduceLeanOutput(t *testing.T) {
 	require.NoError(t, err)
 	_, err = os.Stat(filepath.Join(out, "report.pdf"))
 	assert.True(t, os.IsNotExist(err), "--skip-report-pdf must not write report.pdf")
+	_, err = os.Stat(filepath.Join(out, "adocReport"))
+	assert.True(t, os.IsNotExist(err), "--skip-report-adoc must not write the adoc report")
 }
 
 func TestAnalyzeModel_MethodologyRulePack(t *testing.T) {
@@ -493,10 +502,13 @@ paths:
 			require.Equal(t, 0, r.code, "%v must import (stderr: %s)", testCase.args, r.stderr)
 			assert.Contains(t, r.stdout, "technical_assets", "import must emit a model fragment")
 
-			// Every importer also supports --diff (preview without output).
-			diffArgs := append(append([]string{}, testCase.args...), "--diff")
+			// Every importer also supports --diff: preview without writing.
+			outputFile := filepath.Join(dir, testCase.name+"-out.yaml")
+			diffArgs := append(append([]string{}, testCase.args...), "--diff", "--output", outputFile)
 			r = run(t, dir, diffArgs...)
 			assert.Equal(t, 0, r.code, "%v --diff must work (stderr: %s)", testCase.args, r.stderr)
+			_, statErr := os.Stat(outputFile)
+			assert.True(t, os.IsNotExist(statErr), "%v --diff must not write --output", testCase.args)
 		})
 	}
 }
@@ -569,15 +581,18 @@ func TestHooks_PrintDryRunInstall(t *testing.T) {
 }
 
 func TestGenerateCI_Targets(t *testing.T) {
-	for _, target := range []string{"github", "gitlab", "jenkins", "generic"} {
+	expected := map[string]string{
+		"github":  filepath.Join(".github", "workflows", "threagile.yml"),
+		"gitlab":  ".gitlab-ci.yml",
+		"jenkins": "Jenkinsfile",
+		"generic": "run-threagile.sh",
+	}
+	for target, artifact := range expected {
 		t.Run(target, func(t *testing.T) {
 			dir := t.TempDir()
 			r := run(t, dir, "generate-ci", "--target", target)
 			require.Equal(t, 0, r.code, r.stderr)
-			// All targets write at least one file into the working directory.
-			entries, err := os.ReadDir(dir)
-			require.NoError(t, err)
-			assert.NotEmpty(t, entries, "generate-ci --target %s must write a file", target)
+			assert.FileExists(t, filepath.Join(dir, artifact), "generate-ci --target %s must write %s", target, artifact)
 		})
 	}
 }

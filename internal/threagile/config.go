@@ -89,8 +89,6 @@ type Config struct {
 	SkipReportPDFValue           bool `json:"SkipReportPDF,omitempty" yaml:"SkipReportPDF"`
 	SkipReportADOCValue          bool `json:"SkipReportADOC,omitempty" yaml:"SkipReportADOC"`
 
-	AttractivenessValue Attractiveness `json:"Attractiveness" yaml:"Attractiveness"`
-
 	ReportConfigurationValue report.ReportConfiguation `json:"ReportConfiguration" yaml:"ReportConfiguration"`
 }
 
@@ -161,7 +159,6 @@ type ConfigGetter interface {
 	GetSkipTagsExcel() bool
 	GetSkipReportPDF() bool
 	GetSkipReportADOC() bool
-	GetAttractiveness() Attractiveness
 	GetReportConfiguration() report.ReportConfiguation
 	GetThreagileVersion() string
 	GetProgressReporter() types.ProgressReporter
@@ -242,25 +239,6 @@ func (c *Config) Defaults(buildTimestamp string) *Config {
 		AddLegendValue:                  false,
 		KeepDiagramSourceFilesValue:     false,
 		IgnoreOrphanedRiskTrackingValue: false,
-
-		AttractivenessValue: Attractiveness{
-			Quantity: 0,
-			Confidentiality: AttackerFocus{
-				Asset:                 0,
-				ProcessedOrStoredData: 0,
-				TransferredData:       0,
-			},
-			Integrity: AttackerFocus{
-				Asset:                 0,
-				ProcessedOrStoredData: 0,
-				TransferredData:       0,
-			},
-			Availability: AttackerFocus{
-				Asset:                 0,
-				ProcessedOrStoredData: 0,
-				TransferredData:       0,
-			},
-		},
 
 		ReportConfigurationValue: report.ReportConfiguation{
 			HideChapter: make(map[report.ChaptersToShowHide]bool),
@@ -563,9 +541,6 @@ func (c *Config) Merge(config Config, values map[string]any) {
 
 		case strings.ToLower("IgnoreOrphanedRiskTracking"):
 			c.IgnoreOrphanedRiskTrackingValue = config.IgnoreOrphanedRiskTrackingValue
-
-		case strings.ToLower("Attractiveness"):
-			c.AttractivenessValue = config.AttractivenessValue
 
 		case strings.ToLower("ReportConfiguration"):
 			configMap, mapOk := values[key].(map[string]any)

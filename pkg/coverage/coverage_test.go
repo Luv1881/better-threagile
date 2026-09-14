@@ -90,27 +90,6 @@ func TestAnalyze_emptyRules(t *testing.T) {
 	}
 }
 
-func TestAnalyzeWithGaps(t *testing.T) {
-	cats := []*types.RiskCategory{
-		makeCategory("rule-a", []string{"SC-8"}, nil),
-	}
-	known := []string{"SC-8", "SC-13", "AC-3"}
-
-	report, err := AnalyzeWithGaps("nist_800_53", cats, known)
-	if err != nil {
-		t.Fatalf("AnalyzeWithGaps failed: %v", err)
-	}
-	if report.CoveredCount != 1 {
-		t.Errorf("expected 1 covered, got %d", report.CoveredCount)
-	}
-	if report.GapCount != 2 {
-		t.Errorf("expected 2 gaps, got %d", report.GapCount)
-	}
-	if len(report.Controls) != 3 {
-		t.Errorf("expected 3 total controls, got %d", len(report.Controls))
-	}
-}
-
 func TestFormatTable(t *testing.T) {
 	cats := []*types.RiskCategory{
 		makeCategory("rule-a", []string{"SC-8"}, nil),

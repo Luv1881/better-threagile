@@ -88,6 +88,31 @@ func run(t *testing.T, dir string, args ...string) result {
 	return result{stdout: stdout.String(), stderr: stderr.String(), code: code}
 }
 
+// runWithInput is like run but feeds stdin (interactive prompts such as the
+// model-macro confirmation).
+func runWithInput(t *testing.T, dir, input string, args ...string) result {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, binary, args...) // #nosec G204 -- args come from the fixed test table, not from user input
+	cmd.Dir = dir
+	cmd.Stdin = strings.NewReader(input)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	runErr := cmd.Run()
+
+	code := 0
+	if runErr != nil {
+		exitErr, ok := runErr.(*exec.ExitError)
+		if !ok {
+			t.Fatalf("e2e: running %v: %v", args, runErr)
+		}
+		code = exitErr.ExitCode()
+	}
+	return result{stdout: stdout.String(), stderr: stderr.String(), code: code}
+}
+
 // demoModel is the example model that ships with the repository.
 func demoModel() string { return repoPath("demo", "example", "threagile.yaml") }
 
@@ -126,6 +151,40 @@ func TestListingCommands(t *testing.T) {
 		assert.Equal(t, 0, r.code, "%v exit code (stderr: %s)", args, r.stderr)
 		assert.NotEmpty(t, r.stdout, "%v must produce output", args)
 	}
+}
+
+func TestRemainingCommands(t *testing.T) {
+	dir := t.TempDir()
+
+	r := run(t, dir, "print-3rd-party-licenses")
+	assert.Equal(t, 0, r.code, r.stderr)
+	assert.NotEmpty(t, r.stdout, "print-3rd-party-licenses must print license text")
+
+	r = run(t, dir, "rule-pack", "show", "linddun")
+	assert.Equal(t, 0, r.code, r.stderr)
+	assert.Contains(t, r.stdout, "linddun")
+
+	r = run(t, dir, "intel", "status")
+	assert.Equal(t, 0, r.code, r.stderr)
+	assert.Contains(t, r.stdout, "Cache directory", "intel status must work offline")
+
+	r = run(t, dir, "coverage", "--framework", "nist_800_53")
+	assert.Equal(t, 0, r.code, r.stderr)
+	assert.NotEmpty(t, r.stdout)
+
+	// Model macros are interactive; confirm the prompt and let it apply.
+	model := writeFile(t, dir, "threagile.yaml", readFile(t, repoPath("demo", "stub", "threagile.yaml")))
+	r = runWithInput(t, dir, "Yes\n", "execute-model-macro", "discover-attack-surface", "--model", model)
+	assert.Equal(t, 0, r.code, "execute-model-macro must apply after confirmation (stderr: %s)", r.stderr)
+	r = run(t, dir, "validate", "--model", model)
+	assert.Equal(t, 0, r.code, "the macro-edited model must still validate")
+}
+
+func readFile(t *testing.T, path string) string {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	return string(data)
 }
 
 func TestPrintLicense_WorksWithoutDocker(t *testing.T) {

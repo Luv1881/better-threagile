@@ -6,10 +6,6 @@ import (
 
 type History []*Event
 
-func NewHistory(item *Event) History {
-	return new(History).New(item)
-}
-
 func (what History) New(item *Event) History {
 	if item != nil {
 		return append(History{item}, what...)

@@ -54,7 +54,6 @@ func TestConfigAccessors_Getters(t *testing.T) {
 	_ = c.GetRiskExcelWrapText()
 	_ = c.GetRiskExcelShrinkColumnsToFit()
 	_ = c.GetRiskExcelColorText()
-	assert.Equal(t, c.AttractivenessValue, c.GetAttractiveness())
 	assert.Equal(t, c.ReportConfigurationValue, c.GetReportConfiguration())
 }
 

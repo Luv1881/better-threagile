@@ -63,7 +63,6 @@ const (
 	GenerateCICommand   = "generate-ci"
 	ListCommand         = "list"
 	PrintCommand        = "print"
-	QuitCommand         = "quit"
 	RunCommand          = "run"
 	PrintVersionCommand = "version"
 )

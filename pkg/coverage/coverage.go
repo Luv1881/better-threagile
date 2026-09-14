@@ -104,46 +104,6 @@ func Analyze(framework string, categories []*types.RiskCategory) (*Report, error
 	}, nil
 }
 
-// AnalyzeWithGaps is like Analyze but also includes a known control list for the framework,
-// so it can report GAP entries for controls not covered by any rule.
-// knownControls is a sorted list of all control IDs in the framework (e.g. from a built-in catalog).
-func AnalyzeWithGaps(framework string, categories []*types.RiskCategory, knownControls []string) (*Report, error) {
-	report, err := Analyze(framework, categories)
-	if err != nil {
-		return nil, err
-	}
-
-	// Index existing covered entries
-	coveredSet := make(map[string][]string)
-	for _, e := range report.Controls {
-		coveredSet[e.ControlID] = e.CoveringRules
-	}
-
-	// Rebuild entries including gaps
-	all := make([]ControlEntry, 0, len(knownControls))
-	covered := 0
-	gaps := 0
-	for _, ctrl := range knownControls {
-		rules := coveredSet[ctrl]
-		isCovered := len(rules) > 0
-		all = append(all, ControlEntry{
-			ControlID:     ctrl,
-			CoveringRules: rules,
-			Covered:       isCovered,
-		})
-		if isCovered {
-			covered++
-		} else {
-			gaps++
-		}
-	}
-
-	report.Controls = all
-	report.CoveredCount = covered
-	report.GapCount = gaps
-	return report, nil
-}
-
 // FormatTable renders a coverage report as a plain-text table string.
 func FormatTable(r *Report) string {
 	sb := &strings.Builder{}

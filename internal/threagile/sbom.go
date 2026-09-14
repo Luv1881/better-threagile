@@ -131,12 +131,19 @@ func loadKEVLookup(cmd *cobra.Command, cacheDir string, refresh bool) sbom.KEVLo
 }
 
 // loadEPSSLookup loads EPSS scores: live batch fetch when --epss is set,
-// otherwise the cached map. Returns nil if neither is available.
+// otherwise the cached map. A successful fetch is written to the cache so later
+// offline runs (and --cache-dir consumers) can reuse it. Returns nil if neither
+// is available.
 func loadEPSSLookup(cmd *cobra.Command, cacheDir string, bom *sbom.BOM, fetch bool) sbom.EPSSLookup {
 	var scores epss.ScoreMap
 	var err error
 	if fetch {
 		scores, err = epss.FetchBatch(bom.CVEIDs(), "")
+		if err == nil && len(scores) > 0 {
+			if saveErr := epss.SaveCached(cacheDir, scores); saveErr != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "warning: could not cache EPSS scores in %q: %v\n", cacheDir, saveErr)
+			}
+		}
 	} else {
 		scores, err = epss.LoadCached(cacheDir)
 	}

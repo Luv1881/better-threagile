@@ -371,10 +371,6 @@ func (c *Config) GetSkipReportADOC() bool {
 	return c.SkipReportADOCValue
 }
 
-func (c *Config) GetAttractiveness() Attractiveness {
-	return c.AttractivenessValue
-}
-
 func (c *Config) GetReportConfiguration() report.ReportConfiguation {
 	return c.ReportConfigurationValue
 }

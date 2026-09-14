@@ -71,6 +71,5 @@
 |--------------------------|-------------------------------------------------------------------------------------|-----------------------|
 | `server`                 | Run in [server mode](./mode-server.md) with REST API and Web UI                     |                       |
 | `print-license`          | Print the software license                                                          |                       |
-| `quit`                   | Exit interactive mode                                                               | `exit`, `bye`, `x`, `q` |
 
 See [CLI Cookbook](./cli-cookbook.md) for real examples of every command.

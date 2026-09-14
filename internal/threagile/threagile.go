@@ -48,7 +48,6 @@ func (what *Threagile) Init(buildTimestamp string) *Threagile {
 		initExplain().
 		initList().
 		initPrint().
-		initQuit().
 		initServer().
 		initVersion().
 		initGenerateCI().

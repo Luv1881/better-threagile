@@ -125,7 +125,6 @@ func TestListingCommands(t *testing.T) {
 }
 
 func TestPrintLicense_WorksWithoutDocker(t *testing.T) {
-	t.Skip("known gap: print-license reads /app/LICENSE.txt; a bare binary has no license file — embed it")
 	dir := t.TempDir()
 	r := run(t, dir, "print-license")
 	assert.Equal(t, 0, r.code, "print-license must work outside Docker (stderr: %s)", r.stderr)

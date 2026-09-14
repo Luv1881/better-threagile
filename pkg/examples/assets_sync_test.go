@@ -19,6 +19,7 @@ func TestAssetsSyncedWithRepoFiles(t *testing.T) {
 		"schema.json":                  filepath.Join("..", "..", "support", "schema.json"),
 		"live-templates.txt":           filepath.Join("..", "..", "support", "live-templates.txt"),
 		"openapi.yaml":                 filepath.Join("..", "..", "support", "openapi.yaml"),
+		"LICENSE.txt":                  filepath.Join("..", "..", "LICENSE.txt"),
 	}
 
 	for assetName, canonicalPath := range canonicalFiles {

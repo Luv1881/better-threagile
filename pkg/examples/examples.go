@@ -18,6 +18,7 @@ const (
 	SchemaAssetName        = "schema.json"
 	LiveTemplatesAssetName = "live-templates.txt"
 	OpenAPIAssetName       = "openapi.yaml"
+	LicenseAssetName       = "LICENSE.txt"
 )
 
 // ReadAsset returns the named built-in asset: the file in appFolder wins if it

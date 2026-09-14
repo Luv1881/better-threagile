@@ -2,10 +2,10 @@ package threagile
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"github.com/threagile/threagile/pkg/examples"
 )
 
 func (what *Threagile) initPrint() *Threagile {
@@ -33,7 +33,7 @@ func (what *Threagile) initPrint() *Threagile {
 				return fmt.Errorf("weird app folder")
 			}
 
-			content, err := os.ReadFile(filepath.Clean(filepath.Join(appDir, "LICENSE.txt")))
+			content, err := examples.ReadAsset(appDir, examples.LicenseAssetName)
 			if err != nil {
 				return fmt.Errorf("unable to read license file: %w", err)
 			}

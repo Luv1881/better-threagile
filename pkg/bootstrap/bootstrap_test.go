@@ -72,6 +72,33 @@ func TestDetectClassifiesSources(t *testing.T) {
 	}
 }
 
+func TestDetectSkipsVendoredAndCacheDirs(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "docker-compose.yml", composeYML)
+	// Python/env noise copied from real repositories: a checked-out virtualenv
+	// and a package cache full of unrelated .tf/.yaml files.
+	vendored := []string{
+		"venv/lib/python3.12/site-packages/slp_tf/terraform_sample.tf",
+		".venv-3.12/lib/boto3.tf",
+		"__pycache__/cached.tf",
+		"site-packages/pkg/openapi.yaml",
+		".mypy_cache/3.12/module.tf",
+		"node_modules/pkg/docker-compose.yml",
+		"bower_components/lib/k8s.yaml",
+	}
+	for _, rel := range vendored {
+		writeFile(t, dir, rel, `resource "aws_s3_bucket" "b" {}`)
+	}
+
+	sources, err := Detect(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sources) != 1 || sources[0].Kind != Compose {
+		t.Fatalf("vendored/cache dirs must be skipped, got %+v", sources)
+	}
+}
+
 func TestDetectIgnoresOwnOutputs(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, "threagile.yaml", "title: x\n")

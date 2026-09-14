@@ -41,10 +41,31 @@ type Source struct {
 // and import, so a stray multi-GB file can't blow up onboarding.
 const maxScanFileSize = 8 << 20 // 8 MiB
 
-// skipDirs are never descended into during the scan.
+// skipDirs are never descended into during the scan: version control, vendored
+// dependencies and build/cache directories. Keeping this list tight matters
+// for Python and JS repos in particular, where a checked-out virtualenv or
+// package cache can contain hundreds of unrelated .tf/.yaml files.
 var skipDirs = map[string]bool{
 	".git": true, "node_modules": true, "vendor": true, ".terraform": true,
 	"dist": true, "build": true, "target": true, ".idea": true, ".vscode": true,
+	// Python: virtualenvs, package stores, caches.
+	"venv": true, "virtualenv": true, "site-packages": true, "__pycache__": true,
+	".venv": true, ".tox": true, ".nox": true, ".eggs": true,
+	".mypy_cache": true, ".pytest_cache": true, ".ruff_cache": true, ".hypothesis": true,
+	// JS/build caches.
+	".cache": true, ".gradle": true, "bower_components": true,
+}
+
+// shouldSkipDir extends the exact-name list with the versioned/derived folder
+// names seen in real repos (.venv-3.12, foo.egg-info, ...).
+func shouldSkipDir(name string) bool {
+	if skipDirs[name] {
+		return true
+	}
+	if strings.HasPrefix(name, ".venv") || strings.HasSuffix(name, ".egg-info") {
+		return true
+	}
+	return false
 }
 
 // Detect walks root and classifies the infrastructure files it recognises. The
@@ -56,7 +77,7 @@ func Detect(root string) ([]Source, error) {
 			return nil // skip unreadable entries rather than aborting onboarding
 		}
 		if d.IsDir() {
-			if path != root && skipDirs[d.Name()] {
+			if path != root && shouldSkipDir(d.Name()) {
 				return filepath.SkipDir
 			}
 			return nil

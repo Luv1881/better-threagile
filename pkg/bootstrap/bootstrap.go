@@ -19,6 +19,7 @@ import (
 	"github.com/threagile/threagile/pkg/import/compose"
 	"github.com/threagile/threagile/pkg/import/kubernetes"
 	"github.com/threagile/threagile/pkg/import/openapi"
+	"github.com/threagile/threagile/pkg/import/terraform"
 	"github.com/threagile/threagile/pkg/types"
 )
 
@@ -26,10 +27,11 @@ import (
 type Kind string
 
 const (
-	Compose    Kind = "compose"
-	Kubernetes Kind = "kubernetes"
-	OpenAPI    Kind = "openapi"
-	Terraform  Kind = "terraform"
+	Compose       Kind = "compose"
+	Kubernetes    Kind = "kubernetes"
+	OpenAPI       Kind = "openapi"
+	Terraform     Kind = "terraform"
+	TerraformPlan Kind = "terraform-plan"
 )
 
 // Source is one detected infrastructure descriptor.
@@ -130,7 +132,7 @@ func classify(path, name string) (Kind, bool) {
 	}
 
 	isYAML := strings.HasSuffix(lower, ".yaml") || strings.HasSuffix(lower, ".yml")
-	isJSON := strings.HasSuffix(lower, ".json")
+	isJSON := strings.HasSuffix(lower, ".json") || strings.Contains(lower, ".tfstate")
 	if !isYAML && !isJSON {
 		return "", false
 	}
@@ -138,6 +140,14 @@ func classify(path, name string) (Kind, bool) {
 	head := readHead(path)
 	if head == "" {
 		return "", false
+	}
+	// `terraform show -json` output (plans and state files) is importable
+	// directly: format_version plus terraform_version plus values/planned_values
+	// is the shape of every plan/state document, and no other JSON we classify
+	// uses all three keys together.
+	if isJSON && strings.Contains(head, `"format_version"`) && strings.Contains(head, `"terraform_version"`) &&
+		(strings.Contains(head, `"planned_values"`) || strings.Contains(head, `"values"`)) {
+		return TerraformPlan, true
 	}
 	// OpenAPI / Swagger specs declare their version near the top.
 	if openAPIVersion.MatchString(head) {
@@ -162,7 +172,7 @@ func readHead(path string) string {
 }
 
 // BuildModel imports every auto-importable source and merges the fragments into
-// one model. It returns the merged model plus advisory notes (e.g. Terraform,
+// one model. It returns the merged model plus advisory notes (e.g. .tf files,
 // which must be imported from `terraform show -json` and so cannot be read
 // directly from .tf files here).
 func BuildModel(root string, sources []Source) (*types.Model, []string, error) {
@@ -176,12 +186,26 @@ func BuildModel(root string, sources []Source) (*types.Model, []string, error) {
 	var notes []string
 	var k8sManifests [][]byte
 	sawTerraform := false
+	sawTerraformPlan := false
 
 	for _, s := range sources {
 		full := filepath.Join(root, s.Path)
 		switch s.Kind {
 		case Terraform:
 			sawTerraform = true
+		case TerraformPlan:
+			sawTerraformPlan = true
+			data, err := readLimited(full)
+			if err != nil {
+				notes = append(notes, fmt.Sprintf("skipped %s: %v", s.Path, err))
+				continue
+			}
+			frag, err := terraform.Import(data, terraform.ImportOptions{SourceLabel: "tf"})
+			if err != nil {
+				notes = append(notes, fmt.Sprintf("terraform plan %s: %v", s.Path, err))
+				continue
+			}
+			mergeInto(merged, frag)
 		case Compose:
 			data, err := readLimited(full)
 			if err != nil {
@@ -229,7 +253,11 @@ func BuildModel(root string, sources []Source) (*types.Model, []string, error) {
 	}
 
 	if sawTerraform {
-		notes = append(notes, "Terraform files detected: run `terraform show -json | threagile import terraform` and merge the result (HCL can't be imported directly).")
+		if sawTerraformPlan {
+			notes = append(notes, "Terraform: plan/state JSON imported; the .tf sources beside it were left out to avoid duplicates.")
+		} else {
+			notes = append(notes, "Terraform files detected: run `terraform show -json | threagile import terraform` and merge the result (HCL can't be imported directly).")
+		}
 	}
 
 	// Drop the empty shared-runtimes map so it doesn't serialize as `{}`.

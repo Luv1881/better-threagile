@@ -254,3 +254,54 @@ func TestClassify_OpenAPIRequiresVersion(t *testing.T) {
 		t.Errorf("flow-style openapi declaration must classify, got %v/%v", kind, ok)
 	}
 }
+
+// `terraform show -json` plan/state files are importable directly (while bare
+// .tf stays advisory): the classifier must recognise their shape.
+func TestClassify_TerraformPlan(t *testing.T) {
+	dir := t.TempDir()
+
+	writeFile(t, dir, "plan.json", `{"format_version":"1.1","terraform_version":"1.7.0","planned_values":{"root_module":{"resources":[{"address":"aws_s3_bucket.b","type":"aws_s3_bucket","name":"b","values":{}}]}}}`)
+	if kind, ok := classify(filepath.Join(dir, "plan.json"), "plan.json"); !ok || kind != TerraformPlan {
+		t.Errorf("a terraform plan must classify as TerraformPlan, got %v/%v", kind, ok)
+	}
+
+	writeFile(t, dir, "terraform.tfstate", `{"format_version":"4","terraform_version":"1.7.0","values":{"root_module":{"resources":[{"address":"aws_s3_bucket.b","type":"aws_s3_bucket","name":"b"}]}}}`)
+	if kind, ok := classify(filepath.Join(dir, "terraform.tfstate"), "terraform.tfstate"); !ok || kind != TerraformPlan {
+		t.Errorf("a terraform state file must classify as TerraformPlan, got %v/%v", kind, ok)
+	}
+
+	// format_version alone (no terraform_version) is somebody else's JSON.
+	writeFile(t, dir, "other.json", `{"format_version":"1.1","values":{"a":1}}`)
+	if kind, ok := classify(filepath.Join(dir, "other.json"), "other.json"); ok {
+		t.Errorf("unrelated JSON must not classify as TerraformPlan, got %v", kind)
+	}
+}
+
+func TestBuildModelImportsTerraformPlan(t *testing.T) {
+	dir := t.TempDir()
+	plan := `{"format_version":"1.1","terraform_version":"1.7.0","planned_values":{"root_module":{"resources":[
+	  {"address":"aws_db_instance.pg","type":"aws_db_instance","name":"pg","values":{"engine":"postgres"}},
+	  {"address":"aws_s3_bucket.assets","type":"aws_s3_bucket","name":"assets","values":{}}
+	]}}}`
+	writeFile(t, dir, "threagile-plan.json", plan)
+	writeFile(t, dir, "infra/main.tf", `resource "aws_s3_bucket" "b" {}`)
+
+	sources, err := Detect(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	model, notes, err := BuildModel(dir, sources)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(model.TechnicalAssets) == 0 {
+		t.Fatalf("plan resources must become assets, got none (notes=%v)", notes)
+	}
+	joined := strings.Join(notes, " ")
+	if !strings.Contains(joined, "plan/state JSON imported") {
+		t.Errorf("notes should say the plan was imported, got %v", notes)
+	}
+	if strings.Contains(joined, "run `terraform show -json") {
+		t.Errorf("plan import must replace the advisory note, got %v", notes)
+	}
+}

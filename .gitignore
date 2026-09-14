@@ -43,3 +43,7 @@ stats.json
 /config.yaml
 /tmp/
 /threagile.yaml
+
+# Python bytecode caches (fidelity tooling)
+__pycache__/
+*.pyc

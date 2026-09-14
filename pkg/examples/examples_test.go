@@ -141,20 +141,20 @@ func TestCreateEditingSupportFiles_EmbeddedFallback(t *testing.T) {
 	assert.Equal(t, string(embeddedTemplates), string(templates))
 }
 
-// CreateExampleModelFile fails if the output directory does not exist
-// (the file is not created on demand) — this test pins that behavior.
-func TestCreateExampleModelFile_MissingOutputDir(t *testing.T) {
+// CreateExampleModelFile creates the output directory when it is missing,
+// matching analyze-model and bootstrap (which both create their output dirs).
+func TestCreateExampleModelFile_CreatesMissingOutputDir(t *testing.T) {
 	appFolder := t.TempDir()
 	outputDir := filepath.Join(t.TempDir(), "does", "not", "exist")
 
-	err := CreateExampleModelFile(appFolder, outputDir, "input.yaml")
-	assert.Error(t, err)
+	require.NoError(t, CreateExampleModelFile(appFolder, outputDir, "input.yaml"))
+	assert.FileExists(t, filepath.Join(outputDir, "threagile-example-model.yaml"))
 }
 
-func TestCreateEditingSupportFiles_MissingOutputDir(t *testing.T) {
+func TestCreateEditingSupportFiles_CreatesMissingOutputDir(t *testing.T) {
 	appFolder := t.TempDir()
 	outputDir := filepath.Join(t.TempDir(), "does", "not", "exist")
 
-	err := CreateEditingSupportFiles(appFolder, outputDir)
-	assert.Error(t, err)
+	require.NoError(t, CreateEditingSupportFiles(appFolder, outputDir))
+	assert.FileExists(t, filepath.Join(outputDir, "schema.json"))
 }

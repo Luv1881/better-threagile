@@ -65,6 +65,13 @@ func CreateEditingSupportFiles(appFolder, outputDir string) error {
 func writeAssetFile(appFolder, outputDir, assetName string) error {
 	destination := filepath.Join(outputDir, assetName)
 
+	// Create the output folder so `create-* --output <new-dir>` behaves like
+	// analyze-model and bootstrap (both create their output directories).
+	outputFolder := filepath.Dir(destination)
+	if mkdirError := os.MkdirAll(outputFolder, 0750); mkdirError != nil {
+		return fmt.Errorf("error creating output folder %q: %w", outputFolder, mkdirError)
+	}
+
 	appFile := filepath.Join(appFolder, assetName)
 	if fileExists(appFile) {
 		return copyFile(appFile, destination)

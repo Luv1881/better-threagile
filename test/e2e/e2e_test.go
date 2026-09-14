@@ -506,7 +506,6 @@ paths:
 // ---------------------------------------------------------------------------
 
 func TestCreateCommands(t *testing.T) {
-	t.Skip("known gap: create-* does not create the --output directory (bootstrap and analyze-model do)")
 	dir := t.TempDir()
 	out := filepath.Join(dir, "out")
 

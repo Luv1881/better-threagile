@@ -43,7 +43,18 @@ func (what Authorization) Explain() string {
 	return AuthorizationTypeDescription[what].Description
 }
 
+// legacyAuthorizationValues maps spellings that real-world models still use:
+// upstream renamed the value to the hyphenated form in 2024, breaking models
+// written against the older releases (enduro, DevSecOps, taralizer, ...).
+// Parsing accepts the legacy form; String() always emits the canonical one.
+var legacyAuthorizationValues = map[string]string{
+	"enduser-identity-propagation": "end-user-identity-propagation",
+}
+
 func (what Authorization) Find(value string) (Authorization, error) {
+	if canonical, isLegacy := legacyAuthorizationValues[strings.ToLower(value)]; isLegacy {
+		value = canonical
+	}
 	for index, description := range AuthorizationTypeDescription {
 		if strings.EqualFold(value, description.Name) {
 			return Authorization(index), nil

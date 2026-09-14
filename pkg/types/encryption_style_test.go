@@ -35,6 +35,10 @@ func TestParseEncryptionStyle(t *testing.T) {
 			input:    "data-with-end-user-individual-key",
 			expected: DataWithEndUserIndividualKey,
 		},
+		"legacy data-with-enduser-individual-key": {
+			input:    "data-with-enduser-individual-key",
+			expected: DataWithEndUserIndividualKey,
+		},
 		"unknown": {
 			input:         "unknown",
 			expectedError: fmt.Errorf("unknown encryption style value \"unknown\""),

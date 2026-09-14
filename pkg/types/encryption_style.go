@@ -53,7 +53,18 @@ func (what EncryptionStyle) Title() string {
 	return [...]string{"None", "Transparent", "Data with Symmetric Shared Key", "Data with Asymmetric Shared Key", "Data with End-User Individual Key"}[what]
 }
 
+// legacyEncryptionStyleValues maps spellings that real-world models still use:
+// upstream renamed the value to the hyphenated form in 2024, breaking models
+// written against older releases. Parsing accepts the legacy form; String()
+// always emits the canonical one.
+var legacyEncryptionStyleValues = map[string]string{
+	"data-with-enduser-individual-key": "data-with-end-user-individual-key",
+}
+
 func (what EncryptionStyle) Find(value string) (EncryptionStyle, error) {
+	if canonical, isLegacy := legacyEncryptionStyleValues[strings.ToLower(value)]; isLegacy {
+		value = canonical
+	}
 	for index, description := range EncryptionStyleTypeDescription {
 		if strings.EqualFold(value, description.Name) {
 			return EncryptionStyle(index), nil

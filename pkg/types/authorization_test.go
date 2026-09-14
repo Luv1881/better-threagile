@@ -27,6 +27,14 @@ func TestParseAuthorization(t *testing.T) {
 			input:    "end-user-identity-propagation",
 			expected: EndUserIdentityPropagation,
 		},
+		"legacy enduser-identity-propagation": {
+			input:    "enduser-identity-propagation",
+			expected: EndUserIdentityPropagation,
+		},
+		"legacy value keeps case-insensitive parsing": {
+			input:    "EndUser-Identity-Propagation",
+			expected: EndUserIdentityPropagation,
+		},
 		"unknown": {
 			input:         "unknown",
 			expectedError: fmt.Errorf("unknown authorization value \"unknown\""),

@@ -255,6 +255,42 @@ def bootstrap(binary: str, iac_dir: str, output: str) -> tuple[bool, str]:
     return True, ""
 
 
+def risk_categories(binary: str, model_path: str, workdir: str, name: str) -> set | None:
+    """Risk categories the analyzer reports for a model, or None when the model
+    is not analyzable (some reference models leave required fields empty)."""
+    out = os.path.join(workdir, f"risk-{name}")
+    result = subprocess.run(
+        [binary, "analyze-model", "--model", model_path, "--output", out,
+         "--ignore-orphaned-risk-tracking",
+         "--skip-report-pdf", "--skip-report-adoc",
+         "--skip-data-flow-diagram", "--skip-data-asset-diagram",
+         "--skip-risks-excel", "--skip-tags-excel"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return None
+    with open(os.path.join(out, "risks.json")) as handle:
+        risks = json.load(handle)
+    return {risk.get("category") for risk in risks if isinstance(risk, dict)}
+
+
+def risk_metrics(binary: str, ref_path: str, gen_path: str, workdir: str, name: str) -> dict | None:
+    ref_categories = risk_categories(binary, ref_path, workdir, f"{name}-ref")
+    gen_categories = risk_categories(binary, gen_path, workdir, f"{name}-gen")
+    if ref_categories is None or gen_categories is None:
+        return None
+    shared = ref_categories & gen_categories
+    return {
+        "ref": len(ref_categories),
+        "generated": len(gen_categories),
+        "matched": len(shared),
+        "coverage": round(len(shared) / len(ref_categories), 3) if ref_categories else None,
+        "missing": sorted(ref_categories - gen_categories),
+        "extra": sorted(gen_categories - ref_categories),
+    }
+
+
 def compare_project(binary: str, name: str, ref_path: str, iac_dir: str, workdir: str) -> dict:
     generated_path = os.path.join(workdir, f"{name}.yaml")
     ok, error = bootstrap(binary, iac_dir, generated_path)
@@ -290,17 +326,23 @@ def compare_project(binary: str, name: str, ref_path: str, iac_dir: str, workdir
     gen_host_sets = data_asset_hosts(gen_index)
     data_assets = class_metrics(ref_data, gen_data, ref_host_sets, gen_host_sets)
 
+    # Risk profile: run the analyzer on both models and compare the categories
+    # they report (None when a model is not analyzable, e.g. reference models
+    # with empty required fields).
+    risks = risk_metrics(binary, ref_path, generated_path, workdir, name)
+
     return {
         "project": name,
         "assets": assets,
         "boundaries": boundaries,
         "data_assets": data_assets,
+        "risks": risks,
         "boundary_structural": boundary_structural,
-        "score": aggregate_score(assets, boundaries, data_assets),
+        "score": aggregate_score(assets, boundaries, data_assets, risks),
     }
 
 
-def aggregate_score(assets: dict, boundaries: dict, data_assets: dict) -> float:
+def aggregate_score(assets: dict, boundaries: dict, data_assets: dict, risks: dict | None) -> float:
     parts = []
     for metrics in (assets, boundaries, data_assets):
         if metrics["coverage"] is not None:
@@ -309,6 +351,8 @@ def aggregate_score(assets: dict, boundaries: dict, data_assets: dict) -> float:
         parts.append(assets["precision"])
     if assets.get("type_agreement") is not None:
         parts.append(assets["type_agreement"])
+    if risks and risks["coverage"] is not None:
+        parts.append(risks["coverage"])
     return round(sum(parts) / len(parts), 3) if parts else 0.0
 
 
@@ -332,21 +376,23 @@ def load_corpus(path: str) -> list[tuple[str, str, str]]:
 
 def render_markdown(results: list[dict]) -> str:
     lines = [
-        "| Project | Assets coverage | Assets precision | Type agreement | Boundaries | Data assets | Score |",
-        "|---|---|---|---|---|---|---|",
+        "| Project | Assets coverage | Assets precision | Type agreement | Boundaries | Data assets | Risk profile | Score |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for result in results:
         if "error" in result:
-            lines.append(f"| {result['project']} | ERROR: {result['error']} | | | | | |")
+            lines.append(f"| {result['project']} | ERROR: {result['error']} | | | | | | |")
             continue
-        assets, boundaries, data = result["assets"], result["boundaries"], result["data_assets"]
+        assets, boundaries, data, risks = result["assets"], result["boundaries"], result["data_assets"], result.get("risks")
+        risk_cell = f"{risks['matched']}/{risks['ref']} ({fmt(risks['coverage'])})" if risks else "-"
         lines.append(
-            "| {p} | {am}/{ar} ({ac}) | {ap} | {at} | {bm}/{br} ({bc}) | {dm}/{dr} ({dc}) | {score} |".format(
+            "| {p} | {am}/{ar} ({ac}) | {ap} | {at} | {bm}/{br} ({bc}) | {dm}/{dr} ({dc}) | {rc} | {score} |".format(
                 p=result["project"],
                 am=assets["matched"], ar=assets["ref"], ac=fmt(assets["coverage"]),
                 ap=fmt(assets["precision"]), at=fmt(assets.get("type_agreement")),
                 bm=boundaries["matched"], br=boundaries["ref"], bc=fmt(boundaries["coverage"]),
                 dm=data["matched"], dr=data["ref"], dc=fmt(data["coverage"]),
+                rc=risk_cell,
                 score=fmt(result["score"]),
             )
         )
@@ -362,11 +408,17 @@ def render_details(results: list[dict]) -> str:
         if "error" in result:
             continue
         lines.append(f"\n## {result['project']}")
-        for label, key in (("Technical assets", "assets"), ("Trust boundaries", "boundaries"), ("Data assets", "data_assets")):
-            metrics = result[key]
-            lines.append(f"\n{label}: coverage {fmt(metrics['coverage'])}, precision {fmt(metrics['precision'])}")
-            if metrics.get("type_agreement") is not None:
-                lines.append(f"Type agreement: {fmt(metrics['type_agreement'])}")
+        for label, key in (("Technical assets", "assets"), ("Trust boundaries", "boundaries"), ("Data assets", "data_assets"), ("Risk profile", "risks")):
+            metrics = result.get(key)
+            if not metrics:
+                lines.append(f"\n{label}: not analyzable in the reference")
+                continue
+            if key == "risks":
+                lines.append(f"\n{label}: coverage {fmt(metrics['coverage'])} ({metrics['matched']}/{metrics['ref']} categories)")
+            else:
+                lines.append(f"\n{label}: coverage {fmt(metrics['coverage'])}, precision {fmt(metrics['precision'])}")
+                if metrics.get("type_agreement") is not None:
+                    lines.append(f"Type agreement: {fmt(metrics['type_agreement'])}")
             if metrics["missing"]:
                 lines.append(f"- missing from bootstrap ({len(metrics['missing'])}): {', '.join(sorted(metrics['missing'])[:20])}")
             if metrics["extra"]:

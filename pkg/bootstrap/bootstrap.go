@@ -12,6 +12,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -104,6 +105,12 @@ func Detect(root string) ([]Source, error) {
 }
 
 // classify decides whether a single file is a recognised infrastructure source.
+// openAPIVersion matches an OpenAPI/Swagger declaration together with its
+// version, in YAML (`openapi: 3.0.0`) or JSON (`"openapi": "3.0.0"`) form.
+// Matching the version (not just the key) keeps unrelated files that merely
+// contain an "openapi" section (e.g. .NET launchSettings.json) out.
+var openAPIVersion = regexp.MustCompile(`(?im)("(openapi|swagger)"\s*:\s*['"]?[0-9]|^\s*(openapi|swagger)\s*:\s*['"]?[0-9])`)
+
 func classify(path, name string) (Kind, bool) {
 	lower := strings.ToLower(name)
 
@@ -132,8 +139,7 @@ func classify(path, name string) (Kind, bool) {
 		return "", false
 	}
 	// OpenAPI / Swagger specs declare their version near the top.
-	if strings.Contains(head, "openapi:") || strings.Contains(head, "\"openapi\"") ||
-		strings.Contains(head, "swagger:") || strings.Contains(head, "\"swagger\"") {
+	if openAPIVersion.MatchString(head) {
 		return OpenAPI, true
 	}
 	// Kubernetes manifests carry both apiVersion and kind.

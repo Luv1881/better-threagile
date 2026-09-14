@@ -386,3 +386,45 @@ func contains(s []string, want string) bool {
 	}
 	return false
 }
+
+// The Kubernetes importer shares the image classification table with the
+// compose importer (no drift): same images, same technologies.
+func TestWorkloadImageClassificationCoverage(t *testing.T) {
+	manifest := `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+spec:
+  template:
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:25.0
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: files
+spec:
+  template:
+    spec:
+      containers:
+        - name: weed
+          image: chrislusf/seaweedfs:3.67
+`
+	m, err := Import([]byte(manifest), ImportOptions{})
+	if err != nil {
+		t.Fatalf("import failed: %v", err)
+	}
+	if asset := m.TechnicalAssets["default-auth-k8s"]; asset == nil {
+		t.Fatalf("missing auth asset: %v", m.TechnicalAssets)
+	} else if asset.Type != types.Process || asset.Technologies[0].Name != "identity-provider" {
+		t.Errorf("auth: type=%v tech=%+v, want process/identity-provider", asset.Type, asset.Technologies)
+	}
+	if asset := m.TechnicalAssets["default-files-k8s"]; asset == nil {
+		t.Fatalf("missing files asset: %v", m.TechnicalAssets)
+	} else if asset.Type != types.Datastore || asset.Technologies[0].Name != "file-server" {
+		t.Errorf("files: type=%v tech=%+v, want datastore/file-server", asset.Type, asset.Technologies)
+	}
+}

@@ -275,3 +275,51 @@ func TestDeterministicClassification(t *testing.T) {
 		}
 	}
 }
+
+// Common enterprise images beyond the original shortlist must classify too
+// (found by comparing bootstrapped models against hand-authored ones).
+func TestImageClassificationCoverage(t *testing.T) {
+	compose := `
+services:
+  sql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+  analytics:
+    image: clickhouse/clickhouse-server:24.3
+  objects:
+    image: chrislusf/seaweedfs:3.67
+  auth:
+    image: quay.io/keycloak/keycloak:25.0
+`
+	m, err := Import([]byte(compose), ImportOptions{})
+	if err != nil {
+		t.Fatalf("import failed: %v", err)
+	}
+
+	tests := []struct {
+		id        string
+		tech      string
+		datastore bool
+	}{
+		{"sql-compose", "database", true},
+		{"analytics-compose", "database", true},
+		{"objects-compose", "file-server", true},
+		{"auth-compose", "identity-provider", false},
+	}
+	for _, test := range tests {
+		asset := m.TechnicalAssets[test.id]
+		if asset == nil {
+			t.Errorf("missing asset %s", test.id)
+			continue
+		}
+		wantType := types.Process
+		if test.datastore {
+			wantType = types.Datastore
+		}
+		if asset.Type != wantType {
+			t.Errorf("%s: type = %v, want %v", test.id, asset.Type, wantType)
+		}
+		if len(asset.Technologies) == 0 || asset.Technologies[0].Name != test.tech {
+			t.Errorf("%s: technologies = %+v, want %s", test.id, asset.Technologies, test.tech)
+		}
+	}
+}

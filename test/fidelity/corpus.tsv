@@ -1,0 +1,9 @@
+# Project	reference-model.yaml	infrastructure-dir-to-scan
+# Clone these repos (shallow) next to each other, then run:
+#   gh repo clone artefactual-sdps/enduro ...
+# Paths may use ~ . The corpus is intentionally small: every change to the
+# importers/bootstrap must improve the aggregate, not a single favourite repo.
+VaultNote	~/Desktop/coding/Threat-model/threagile/threagile.yaml	~/Desktop/coding/Threat-model
+enduro	/tmp/corpus/enduro/enduro.threagile.yaml	/tmp/corpus/enduro
+DevSecOps	/tmp/corpus/DevSecOps/ThreatModeling/threagile/threagile.yaml	/tmp/corpus/DevSecOps
+Project-Kavach	/tmp/corpus/Project-Kavach/03 Synthesis/threagile.yaml	/tmp/corpus/Project-Kavach

@@ -213,3 +213,32 @@ func TestBuildModelDeterministicMerge(t *testing.T) {
 		t.Errorf("merge not deterministic: %d vs %d assets", len(m1.TechnicalAssets), len(m2.TechnicalAssets))
 	}
 }
+
+// The OpenAPI classifier must require an actual version declaration: a .NET
+// launchSettings.json (or any file with a bare "openapi" section) is not a spec.
+func TestClassify_OpenAPIRequiresVersion(t *testing.T) {
+	dir := t.TempDir()
+
+	writeFile(t, dir, "launchSettings.json", `{
+  "profiles": {"PublicApi": {"commandName": "Project", "launchBrowser": true}},
+  "openapi": {"enabled": true}
+}`)
+	if kind, ok := classify(filepath.Join(dir, "launchSettings.json"), "launchSettings.json"); ok {
+		t.Errorf("launchSettings.json with an openapi section must not classify as OpenAPI, got %v", kind)
+	}
+
+	writeFile(t, dir, "spec.json", `{"openapi":"3.0.3","info":{"title":"x","version":"1"},"paths":{}}`)
+	if kind, ok := classify(filepath.Join(dir, "spec.json"), "spec.json"); !ok || kind != OpenAPI {
+		t.Errorf("a real JSON OpenAPI spec must classify as OpenAPI, got %v/%v", kind, ok)
+	}
+
+	writeFile(t, dir, "spec.yaml", "openapi: 3.0.3\ninfo:\n  title: x\n")
+	if kind, ok := classify(filepath.Join(dir, "spec.yaml"), "spec.yaml"); !ok || kind != OpenAPI {
+		t.Errorf("a real YAML OpenAPI spec must classify as OpenAPI, got %v/%v", kind, ok)
+	}
+
+	writeFile(t, dir, "swagger.json", `{"swagger":"2.0","info":{"title":"x","version":"1"},"paths":{}}`)
+	if kind, ok := classify(filepath.Join(dir, "swagger.json"), "swagger.json"); !ok || kind != OpenAPI {
+		t.Errorf("a Swagger 2.0 spec must classify as OpenAPI, got %v/%v", kind, ok)
+	}
+}

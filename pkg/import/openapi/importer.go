@@ -30,6 +30,24 @@ func toID(s string) string {
 	return strings.Trim(nonAlnum.ReplaceAllString(strings.ToLower(s), "-"), "-")
 }
 
+// namedTitle builds "<base> <suffix>", falling back to the suffix alone when
+// the spec declares no info.title (and to "API" when both are empty), so
+// generated asset titles never carry leading or duplicated spaces.
+func namedTitle(base, suffix string) string {
+	base = strings.TrimSpace(base)
+	suffix = strings.TrimSpace(suffix)
+	switch {
+	case base == "" && suffix == "":
+		return "API"
+	case base == "":
+		return strings.TrimLeft(suffix, "- ")
+	case suffix == "":
+		return base
+	default:
+		return base + " " + suffix
+	}
+}
+
 // ImportOptions controls import behaviour.
 type ImportOptions struct {
 	// SourceLabel is a short label appended to generated asset IDs. Defaults to "api".
@@ -49,7 +67,7 @@ func Import(data []byte, opts ImportOptions) (*types.Model, error) {
 
 	model := &types.Model{
 		ThreagileVersion: "1.0.0",
-		Title:            spec.Info.Title,
+		Title:            namedTitle(spec.Info.Title, ""),
 		TechnicalAssets:  make(map[string]*types.TechnicalAsset),
 		TrustBoundaries:  make(map[string]*types.TrustBoundary),
 		DataAssets:       make(map[string]*types.DataAsset),
@@ -79,7 +97,7 @@ func Import(data []byte, opts ImportOptions) (*types.Model, error) {
 	clientID := "client-" + opts.SourceLabel
 	clientAsset := &types.TechnicalAsset{
 		Id:              clientID,
-		Title:           spec.Info.Title + " Client",
+		Title:           namedTitle(spec.Info.Title, "Client"),
 		Description:     "API consumer generated from OpenAPI spec",
 		Type:            types.ExternalEntity,
 		Technologies:    types.TechnologyList{&types.Technology{Name: types.Browser}},
@@ -126,7 +144,7 @@ func Import(data []byte, opts ImportOptions) (*types.Model, error) {
 	if len(dataAssets) == 0 {
 		da := &types.DataAsset{
 			Id:              "data-" + opts.SourceLabel,
-			Title:           spec.Info.Title + " Data",
+			Title:           namedTitle(spec.Info.Title, "Data"),
 			Description:     "API request/response data — review and classify PII fields",
 			Confidentiality: types.Confidential,
 			Integrity:       types.Critical,
@@ -239,10 +257,10 @@ func buildAPIAssets(spec *OpenAPI3, tagGroups []string, label string, internet b
 		var id, title string
 		if tag == "" {
 			id = "api-service-" + label
-			title = spec.Info.Title + " API"
+			title = namedTitle(spec.Info.Title, "API")
 		} else {
 			id = "api-" + toID(tag) + "-" + label
-			title = spec.Info.Title + " - " + tag
+			title = namedTitle(spec.Info.Title, "- "+tag)
 		}
 
 		asset := &types.TechnicalAsset{
@@ -270,7 +288,7 @@ func buildAPIAssets(spec *OpenAPI3, tagGroups []string, label string, internet b
 		// Fallback: one generic API asset
 		assets = append(assets, &types.TechnicalAsset{
 			Id:                   "api-service-" + label,
-			Title:                spec.Info.Title + " API",
+			Title:                namedTitle(spec.Info.Title, "API"),
 			Type:                 types.Process,
 			Technologies:         types.TechnologyList{&types.Technology{Name: types.WebServiceREST}},
 			Internet:             internet,

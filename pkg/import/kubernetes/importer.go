@@ -19,6 +19,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/threagile/threagile/pkg/import/imageclass"
 	"github.com/threagile/threagile/pkg/types"
 )
 
@@ -44,33 +45,6 @@ type workload struct {
 	labels    map[string]string // combined object + pod-template labels (for service selector matching)
 	pod       podSpec
 	assetID   string
-}
-
-// datastoreImageRule matches a substring of a container image to a Threagile
-// technology. An ordered slice (not a map) keeps classification deterministic
-// when an image name happens to contain more than one needle — the first match
-// in this list wins.
-type datastoreImageRule struct {
-	needle string
-	tech   string
-}
-
-var knownDatastoreImages = []datastoreImageRule{
-	{"postgres", types.Database},
-	{"mysql", types.Database},
-	{"mariadb", types.Database},
-	{"mongo", types.Database},
-	{"redis", types.Database},
-	{"memcached", types.Database},
-	{"cassandra", types.Database},
-	{"cockroach", types.Database},
-	{"elasticsearch", types.SearchEngine},
-	{"opensearch", types.SearchEngine},
-	{"rabbitmq", types.MessageQueue},
-	{"kafka", types.MessageQueue},
-	{"nats", types.MessageQueue},
-	{"minio", types.FileServer},
-	{"vault", types.Vault},
 }
 
 var workloadKinds = map[string]bool{
@@ -330,15 +304,11 @@ func (b *builder) buildWorkloadAsset(w *workload) {
 // detecting datastores from container images.
 func classifyWorkload(w *workload) (string, types.TechnicalAssetType) {
 	for _, c := range w.pod.Containers {
-		img := strings.ToLower(c.Image)
-		for _, rule := range knownDatastoreImages {
-			if strings.Contains(img, rule.needle) {
-				assetType := types.Datastore
-				if rule.tech == types.MessageQueue || rule.tech == types.Vault {
-					assetType = types.Process
-				}
-				return rule.tech, assetType
+		if hint, ok := imageclass.Classify(c.Image); ok {
+			if hint.Datastore {
+				return hint.Technology, types.Datastore
 			}
+			return hint.Technology, types.Process
 		}
 	}
 	return types.ContainerPlatform, types.Process

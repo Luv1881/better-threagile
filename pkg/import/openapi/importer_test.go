@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/threagile/threagile/pkg/types"
@@ -220,6 +221,32 @@ func TestImport_openapi_pii_heuristic(t *testing.T) {
 		got := looksLikePII(tc.field)
 		if got != tc.expectPII {
 			t.Errorf("looksLikePII(%q): expected %v, got %v", tc.field, tc.expectPII, got)
+		}
+	}
+}
+
+// A spec without info.title (some tools omit it) must not produce titles with
+// leading or duplicated spaces — real-world false-positive imports hit this.
+func TestImport_openapi_missing_title(t *testing.T) {
+	spec := `{"openapi":"3.0.3","info":{"version":"1.0.0"},"paths":{"/health":{"get":{"responses":{"200":{"description":"OK"}}}}}}`
+	model, err := Import([]byte(spec), ImportOptions{})
+	if err != nil {
+		t.Fatalf("import without title failed: %v", err)
+	}
+	if model.Title != "API" {
+		t.Errorf("model title should fall back to API, got %q", model.Title)
+	}
+	for id, asset := range model.TechnicalAssets {
+		if strings.TrimSpace(asset.Title) != asset.Title || asset.Title == "" {
+			t.Errorf("asset %s has a padded/empty title %q", id, asset.Title)
+		}
+		if strings.HasPrefix(asset.Title, "API API") || strings.HasPrefix(asset.Title, "API -") {
+			t.Errorf("asset %s has a duplicated title %q", id, asset.Title)
+		}
+	}
+	for id, dataAsset := range model.DataAssets {
+		if strings.TrimSpace(dataAsset.Title) != dataAsset.Title || dataAsset.Title == "" {
+			t.Errorf("data asset %s has a padded/empty title %q", id, dataAsset.Title)
 		}
 	}
 }

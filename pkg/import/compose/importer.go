@@ -16,6 +16,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/threagile/threagile/pkg/import/imageclass"
 	"github.com/threagile/threagile/pkg/types"
 )
 
@@ -29,34 +30,6 @@ func toID(parts ...string) string {
 type ImportOptions struct {
 	// SourceLabel is appended to generated asset IDs (default "compose").
 	SourceLabel string
-}
-
-type datastoreImageRule struct {
-	needle string
-	tech   string
-}
-
-// Ordered (not a map) so classification is deterministic when an image name
-// contains more than one needle.
-var knownDatastoreImages = []datastoreImageRule{
-	{"postgres", types.Database},
-	{"mysql", types.Database},
-	{"mariadb", types.Database},
-	{"mongo", types.Database},
-	{"redis", types.Database},
-	{"memcached", types.Database},
-	{"cassandra", types.Database},
-	{"cockroach", types.Database},
-	{"elasticsearch", types.SearchEngine},
-	{"opensearch", types.SearchEngine},
-	{"rabbitmq", types.MessageQueue},
-	{"kafka", types.MessageQueue},
-	{"nats", types.MessageQueue},
-	{"minio", types.FileServer},
-	{"nginx", types.ReverseProxy},
-	{"traefik", types.ReverseProxy},
-	{"haproxy", types.LoadBalancer},
-	{"vault", types.Vault},
 }
 
 var secretEnvKey = regexp.MustCompile(`(?i)(secret|password|passwd|token|api[_-]?key|access[_-]?key|private[_-]?key)`)
@@ -319,16 +292,11 @@ func mutableImageTag(image string) bool {
 }
 
 func classifyService(svc composeService) (string, types.TechnicalAssetType) {
-	img := strings.ToLower(svc.Image)
-	for _, rule := range knownDatastoreImages {
-		if strings.Contains(img, rule.needle) {
-			switch rule.tech {
-			case types.Database, types.SearchEngine, types.FileServer:
-				return rule.tech, types.Datastore
-			default:
-				return rule.tech, types.Process
-			}
+	if hint, ok := imageclass.Classify(svc.Image); ok {
+		if hint.Datastore {
+			return hint.Technology, types.Datastore
 		}
+		return hint.Technology, types.Process
 	}
 	return types.WebServer, types.Process
 }

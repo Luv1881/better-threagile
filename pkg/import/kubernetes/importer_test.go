@@ -457,3 +457,82 @@ spec:
 		t.Errorf("pod with postgres must classify as datastore/database, got %v/%+v", asset.Type, asset.Technologies)
 	}
 }
+
+// Kustomize-style overlay directories redeclare the same workloads; the
+// generated model must not list an asset twice in its namespace boundary
+// (the analyzer rejects that as "modeled in multiple trust boundaries").
+func TestImportOverlayDuplicates(t *testing.T) {
+	manifest := `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: app
+spec:
+  template:
+    spec:
+      containers:
+        - name: api
+          image: example/api:1.0
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: app
+spec:
+  template:
+    spec:
+      containers:
+        - name: api
+          image: example/api:2.0
+`
+	m, err := Import([]byte(manifest), ImportOptions{})
+	if err != nil {
+		t.Fatalf("import failed: %v", err)
+	}
+	boundary := m.TrustBoundaries["namespace-app-k8s"]
+	if boundary == nil {
+		t.Fatalf("missing namespace boundary: %v", m.TrustBoundaries)
+	}
+	count := 0
+	for _, id := range boundary.TechnicalAssetsInside {
+		if id == "app-api-k8s" {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Errorf("asset must appear exactly once in its boundary, got %d: %v", count, boundary.TechnicalAssetsInside)
+	}
+}
+
+// Datastore workloads store data by definition: the stub data asset must be
+// attached so storage/encryption rules fire on bootstrapped models.
+func TestDatastoreWorkloadStoresStubDataAsset(t *testing.T) {
+	manifest := `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cache
+spec:
+  template:
+    spec:
+      containers:
+        - name: redis
+          image: redis:7
+`
+	m, err := Import([]byte(manifest), ImportOptions{})
+	if err != nil {
+		t.Fatalf("import failed: %v", err)
+	}
+	asset := m.TechnicalAssets["default-cache-k8s"]
+	if asset == nil {
+		t.Fatalf("missing asset: %v", m.TechnicalAssets)
+	}
+	if len(asset.DataAssetsStored) == 0 {
+		t.Errorf("datastore workload must store a stub data asset, got none")
+	}
+	if m.DataAssets[asset.DataAssetsStored[0]] == nil {
+		t.Errorf("stored data asset %q must exist", asset.DataAssetsStored[0])
+	}
+}

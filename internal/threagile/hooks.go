@@ -27,7 +27,7 @@ policy.yaml is present.`,
 
 	var which []string
 	var dir string
-	var force, printOnly bool
+	var force, printOnly, dryRun bool
 	installCmd := &cobra.Command{
 		Use:   "install",
 		Short: "Install pre-commit / pre-push git hooks for the threat model",
@@ -42,9 +42,15 @@ files are not overwritten unless you pass --force.
 Examples:
   threagile hooks install
   threagile hooks install --hook pre-commit
-  threagile hooks install --print          # preview without installing`,
+  threagile hooks install --print          # preview without installing
+  threagile hooks install --dry-run        # show what would be written/overwritten`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			what.processArgs(cmd, args)
+			out := cmd.OutOrStdout()
+
+			if dryRun && printOnly {
+				return fmt.Errorf("hooks install: --dry-run and --print are mutually exclusive")
+			}
 
 			for _, h := range which {
 				if !supportedHooks[h] {
@@ -81,6 +87,26 @@ Examples:
 				}
 				hooksDir = detected
 			}
+
+			if dryRun {
+				for _, h := range which {
+					path := filepath.Join(hooksDir, h)
+					existing, readErr := os.ReadFile(path)
+					switch {
+					case readErr == nil && !force:
+						fmt.Fprintf(out, "skip (exists): %s\n", path)
+					case readErr == nil:
+						fmt.Fprintf(out, "would overwrite: %s\n", path)
+						if _, diffErr := writeUnifiedDiff(out, h, existing, []byte(renderHookScript(h, bin, model))); diffErr != nil {
+							return fmt.Errorf("hooks install: render diff for %q: %w", path, diffErr)
+						}
+					default:
+						fmt.Fprintf(out, "would install: %s\n", path)
+					}
+				}
+				return nil
+			}
+
 			if err := os.MkdirAll(hooksDir, 0750); err != nil {
 				return fmt.Errorf("hooks install: create %q: %w", hooksDir, err)
 			}
@@ -99,7 +125,7 @@ Examples:
 				if chmodErr := os.Chmod(path, 0700); chmodErr != nil { // #nosec G302 -- a hook must be executable by its owner
 					return fmt.Errorf("hooks install: chmod %q: %w", path, chmodErr)
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "Installed %s hook: %s\n", h, path)
+				fmt.Fprintf(out, "Installed %s hook: %s\n", h, path)
 			}
 			return nil
 		},
@@ -108,6 +134,7 @@ Examples:
 	installCmd.Flags().StringVar(&dir, "dir", "", "hooks directory to write to (default: the repo's git hooks dir)")
 	installCmd.Flags().BoolVar(&force, "force", false, "overwrite existing hook files")
 	installCmd.Flags().BoolVar(&printOnly, "print", false, "print the hook script(s) instead of installing")
+	installCmd.Flags().BoolVar(&dryRun, "dry-run", false, "show which hook files would be written without writing them")
 
 	hooksCmd.AddCommand(installCmd)
 	what.rootCmd.AddCommand(hooksCmd)

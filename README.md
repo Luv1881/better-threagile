@@ -22,8 +22,8 @@ threat intel — without any model changes.
 |---|---|---|
 | Methodologies | STRIDE only | STRIDE · LINDDUN · PASTA · VAST · OCTAVE · Trike · Cloud-Native · Supply-Chain · AI/ML |
 | Rule packs | Built-in Go rules | Built-in Go + 8 embedded YAML packs (`//go:embed` directories) |
-| Zero-config onboarding | — | `bootstrap` — scan a repo (compose / k8s / OpenAPI) → starter model + secure-by-default policy + git hooks in one command |
-| Local guardrails | — | `hooks install` — git pre-commit (validate+lint) / pre-push (gate) so problems surface before CI |
+| Zero-config onboarding | — | `bootstrap` — scan a repo (compose / k8s / OpenAPI) → starter model + secure-by-default policy + git hooks in one command; `--dry-run` previews every write |
+| Local guardrails | — | `hooks install` — git pre-commit (validate+lint) / pre-push (gate) so problems surface before CI; `--dry-run` shows the write plan |
 | Secure-by-default policy | — | `policy init --profile prototype\|balanced\|strict\|regulated` — tuned starter gate, no security expert needed |
 | Health score | — | `score` — one 0–100 / A–F number (completeness + risk posture) to track each sprint; `--min` gate, `--format shields` badge |
 | Sprint / PR scorecard | — | `summary` — one-pass scorecard (health score + top fixes) for a sprint review or PR comment |

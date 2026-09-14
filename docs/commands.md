@@ -11,7 +11,7 @@
 | `diff <old> <new>`       | Show the risk delta (added / removed / changed / unchanged) between two model versions — e.g. an approved baseline vs. the current model; `--format text\|markdown\|json`, `--output <file>` (Markdown is PR-comment ready, with a "how to fix the new findings" remediation list); `--fail-on-new-high` / `--fail-on-new-critical` turn it into a CI gate (exit 3) |                          |
 | `gate`                   | [Policy-as-code CI gate](./gate.md): evaluate `--policy policy.yaml`, exit 3 on violation; `--baseline risks.json`, `--format text\|markdown\|json\|junit` |              |
 | `explain risk <id>`      | Print full explanation of a specific risk by synthetic ID                           |                                              |
-| `fmt [files...]`         | Canonicalise YAML whitespace and field ordering                                     |                                              |
+| `fmt [files...]`         | Canonicalise YAML whitespace and field ordering; `--write` updates in place, `--dry-run` previews the changes as a unified diff |                                              |
 | `paths`                  | [Attack-path analysis](./attack-paths.md): shortest routes from internet-facing assets to crown-jewel data (`--from`, `--to`, `--format`) |       |
 | `sbom`                   | [SBOM + threat-intel correlation](./sbom.md): correlate a CycloneDX SBOM's CVEs with KEV/EPSS, VEX-aware, `--fail-on-kev` gate |       |
 | `mermaid`                | [Mermaid data-flow diagram](./mermaid.md): GitHub/GitLab-renderable flowchart of the model (no Graphviz needed); `--format flowchart\|markdown`, `--direction`, `--with-risks` |       |

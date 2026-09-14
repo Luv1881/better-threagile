@@ -111,3 +111,47 @@ func TestHooksInstall_RejectsUnknownHook(t *testing.T) {
 	_, err := executeCmd(app, args...)
 	require.Error(t, err)
 }
+
+func TestHooksInstall_DryRunDoesNotWrite(t *testing.T) {
+	dir := t.TempDir()
+	args := []string{"hooks", "install", "--dir", dir, "--dry-run"}
+	app := newTestAppWithArgs(args...)
+	stdout, err := executeCmd(app, args...)
+	require.NoError(t, err)
+	assert.Contains(t, stdout, "would install")
+	entries, _ := os.ReadDir(dir)
+	assert.Empty(t, entries, "--dry-run must not write any files")
+}
+
+func TestHooksInstall_DryRunReportsSkipAndOverwrite(t *testing.T) {
+	dir := t.TempDir()
+	existing := filepath.Join(dir, "pre-commit")
+	require.NoError(t, os.WriteFile(existing, []byte("#!/bin/sh\necho keep\n"), 0600))
+
+	// without --force: skipped
+	args := []string{"hooks", "install", "--hook", "pre-commit", "--dir", dir, "--dry-run"}
+	app := newTestAppWithArgs(args...)
+	stdout, err := executeCmd(app, args...)
+	require.NoError(t, err)
+	assert.Contains(t, stdout, "skip (exists)")
+
+	// with --force: preview of the overwrite, diff included
+	args = []string{"hooks", "install", "--hook", "pre-commit", "--dir", dir, "--dry-run", "--force"}
+	app = newTestAppWithArgs(args...)
+	stdout, err = executeCmd(app, args...)
+	require.NoError(t, err)
+	assert.Contains(t, stdout, "would overwrite")
+	assert.Contains(t, stdout, "+++ b/pre-commit", "force preview should show the diff")
+
+	data, readErr := os.ReadFile(existing)
+	require.NoError(t, readErr)
+	assert.Contains(t, string(data), "echo keep", "dry-run must not overwrite, even with --force")
+}
+
+func TestHooksInstall_DryRunAndPrintAreMutuallyExclusive(t *testing.T) {
+	args := []string{"hooks", "install", "--dir", t.TempDir(), "--dry-run", "--print"}
+	app := newTestAppWithArgs(args...)
+	_, err := executeCmd(app, args...)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--dry-run and --print are mutually exclusive")
+}

@@ -1,6 +1,8 @@
 package threagile
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -49,4 +51,50 @@ technical_assets:
 				"the type TODO(review) comment must stay attached to the type field")
 		}
 	}
+}
+
+func TestFmtDryRun_PrintsDiffWithoutWriting(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "model.yaml")
+	original := "title:   messy\n\n\ntechnical_assets: {}\n"
+	require.NoError(t, os.WriteFile(path, []byte(original), 0600))
+
+	args := []string{"fmt", "--dry-run", path}
+	app := newTestAppWithArgs(args...)
+	stdout, err := executeCmd(app, args...)
+	require.NoError(t, err)
+	assert.Contains(t, stdout, "--- a/"+path)
+	assert.Contains(t, stdout, "+++ b/"+path)
+	assert.Contains(t, stdout, "-title:   messy")
+	assert.Contains(t, stdout, "+title: messy")
+
+	data, readErr := os.ReadFile(path)
+	require.NoError(t, readErr)
+	assert.Equal(t, original, string(data), "--dry-run must not modify the file")
+}
+
+func TestFmtDryRun_UnchangedFileIsReported(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "model.yaml")
+	require.NoError(t, os.WriteFile(path, []byte("title: clean\ntechnical_assets: {}\n"), 0600))
+
+	writeArgs := []string{"fmt", "--write", path}
+	app := newTestAppWithArgs(writeArgs...)
+	_, err := executeCmd(app, writeArgs...)
+	require.NoError(t, err)
+
+	args := []string{"fmt", "--dry-run", path}
+	app = newTestAppWithArgs(args...)
+	stdout, err := executeCmd(app, args...)
+	require.NoError(t, err)
+	assert.Contains(t, stdout, "unchanged: "+path)
+	assert.NotContains(t, stdout, "--- a/", "no diff for an already formatted file")
+}
+
+func TestFmtDryRun_RejectsWriteCombination(t *testing.T) {
+	args := []string{"fmt", "--dry-run", "--write", filepath.Join(t.TempDir(), "model.yaml")}
+	app := newTestAppWithArgs(args...)
+	_, err := executeCmd(app, args...)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--dry-run and --write are mutually exclusive")
 }

@@ -9,6 +9,7 @@ developer already expects from a linter.
 threagile hooks install                 # pre-commit + pre-push
 threagile hooks install --hook pre-commit
 threagile hooks install --print         # preview the scripts without installing
+threagile hooks install --dry-run       # show which hook files would be written
 ```
 
 ## What gets installed
@@ -35,6 +36,11 @@ The generated scripts:
 | `--dir` | repo's git hooks dir | write hooks somewhere else (e.g. a shared `core.hooksPath`) |
 | `--force` | `false` | overwrite existing hook files |
 | `--print` | `false` | print the script(s) instead of installing |
+| `--dry-run` | `false` | show which hook files would be installed/overwritten (diffs for overwrites) without writing |
+
+`--print` and `--dry-run` are mutually exclusive: `--print` shows the hook
+script contents, `--dry-run` shows the write plan against the target directory
+(with a unified diff for every file `--force` would replace).
 
 Existing hook files are never overwritten unless you pass `--force`. The hooks
 directory is discovered with `git rev-parse --git-path hooks`, so worktrees and

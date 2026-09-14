@@ -10,6 +10,7 @@ from nothing to an analyzable model in one command. Deterministic, no AI.
 threagile bootstrap                         # scan ., write threagile.yaml + policy.yaml
 threagile bootstrap --dir ./infra --with-hooks
 threagile bootstrap --policy-profile strict --force
+threagile bootstrap --dry-run               # plan + diffs, nothing written
 ```
 
 ## What it detects
@@ -39,6 +40,11 @@ authoring format so it round-trips straight through `analyze-model`.
 Existing files are never overwritten unless you pass `--force`. If no importable
 infrastructure is found, `bootstrap` says so and points you at `threagile init`
 rather than writing an empty model.
+
+Pass `--dry-run` to see the exact plan — every file that would be created, kept
+or overwritten — without writing anything. Overwrites are shown as a unified
+diff (applyable with `patch -p1`), and an existing starter model without
+`--force` fails the preview exactly like the real run would.
 
 ## The one-minute adoption path
 

@@ -19,6 +19,7 @@ func (what *Threagile) initBootstrap() *Threagile {
 	var policyProfile string
 	var force bool
 	var withHooks bool
+	var dryRun bool
 
 	cmd := &cobra.Command{
 		Use:   "bootstrap",
@@ -32,7 +33,8 @@ git hooks, then prints the next steps. Deterministic, no AI.
 Examples:
   threagile bootstrap
   threagile bootstrap --dir ./infra --with-hooks
-  threagile bootstrap --output threagile.yaml --policy-profile strict`,
+  threagile bootstrap --output threagile.yaml --policy-profile strict
+  threagile bootstrap --dry-run          # preview every write as a plan/diff`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			what.processArgs(cmd, args)
 			out := cmd.OutOrStdout()
@@ -64,11 +66,28 @@ Examples:
 				return fmt.Errorf("bootstrap: marshal model: %w", err)
 			}
 			modelPath := filepath.Clean(output)
-			if err := writeNew(modelPath, modelBytes, force); err != nil {
-				return fmt.Errorf("bootstrap: %w", err)
-			}
-			fmt.Fprintf(out, "\nWrote starter model: %s (%d assets, %d data assets, %d trust boundaries)\n",
+			modelSummary := fmt.Sprintf("%s (%d assets, %d data assets, %d trust boundaries)",
 				modelPath, len(model.TechnicalAssets), len(model.DataAssets), len(model.TrustBoundaries))
+			if dryRun {
+				// Mirror writeNew exactly: an existing starter model without --force
+				// is an error for the real run, so the preview must fail the same way.
+				if err := checkOverwritable(modelPath, force); err != nil {
+					return fmt.Errorf("bootstrap: %w", err)
+				}
+				if existing, readErr := os.ReadFile(modelPath); readErr == nil {
+					fmt.Fprintf(out, "\nWould overwrite starter model: %s\n", modelSummary)
+					if _, diffErr := writeUnifiedDiff(out, modelPath, existing, modelBytes); diffErr != nil {
+						return fmt.Errorf("bootstrap: render diff: %w", diffErr)
+					}
+				} else {
+					fmt.Fprintf(out, "\nWould write starter model: %s\n", modelSummary)
+				}
+			} else {
+				if err := writeNew(modelPath, modelBytes, force); err != nil {
+					return fmt.Errorf("bootstrap: %w", err)
+				}
+				fmt.Fprintf(out, "\nWrote starter model: %s\n", modelSummary)
+			}
 
 			// Secure-by-default gate policy.
 			if policyProfile != "" {
@@ -76,7 +95,20 @@ Examples:
 				if perr != nil {
 					return fmt.Errorf("bootstrap: %w", perr)
 				}
-				if werr := writeNew("policy.yaml", policyBytes, force); werr != nil {
+				if dryRun {
+					existingPolicy, readErr := os.ReadFile("policy.yaml")
+					switch {
+					case readErr == nil && !force:
+						fmt.Fprintf(out, "Would keep existing policy.yaml (use --force to replace)\n")
+					case readErr == nil:
+						fmt.Fprintf(out, "Would overwrite gate policy: policy.yaml (%s profile)\n", policyProfile)
+						if _, diffErr := writeUnifiedDiff(out, "policy.yaml", existingPolicy, policyBytes); diffErr != nil {
+							return fmt.Errorf("bootstrap: render diff: %w", diffErr)
+						}
+					default:
+						fmt.Fprintf(out, "Would write gate policy: policy.yaml (%s profile)\n", policyProfile)
+					}
+				} else if werr := writeNew("policy.yaml", policyBytes, force); werr != nil {
 					fmt.Fprintf(out, "Kept existing policy.yaml (use --force to replace)\n")
 				} else {
 					fmt.Fprintf(out, "Wrote gate policy: policy.yaml (%s profile)\n", policyProfile)
@@ -87,6 +119,15 @@ Examples:
 				hooksDir, herr := gitHooksDir()
 				if herr != nil {
 					fmt.Fprintf(out, "Skipped hooks: %v\n", herr)
+				} else if dryRun {
+					for _, h := range []string{"pre-commit", "pre-push"} {
+						path := filepath.Join(hooksDir, h)
+						if _, statErr := os.Stat(path); statErr == nil && !force {
+							fmt.Fprintf(out, "Would skip existing git hook: %s (use --force to overwrite)\n", path)
+						} else {
+							fmt.Fprintf(out, "Would install git hook: %s\n", path)
+						}
+					}
 				} else {
 					installed := installHooks(hooksDir, threagileBinaryPath(), absModel(modelPath), []string{"pre-commit", "pre-push"}, force)
 					for _, h := range installed {
@@ -98,6 +139,10 @@ Examples:
 			for _, n := range notes {
 				fmt.Fprintf(out, "Note: %s\n", n)
 			}
+			if dryRun {
+				fmt.Fprintln(out, "\n(dry run — nothing was written; re-run without --dry-run to apply)")
+				return nil
+			}
 			printNextSteps(out, modelPath, withHooks)
 			return nil
 		},
@@ -108,6 +153,7 @@ Examples:
 	cmd.Flags().StringVar(&policyProfile, "policy-profile", "balanced", "gate policy profile to scaffold (empty to skip)")
 	cmd.Flags().BoolVar(&force, "force", false, "overwrite existing files")
 	cmd.Flags().BoolVar(&withHooks, "with-hooks", false, "also install git pre-commit/pre-push hooks")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show what would be written (plan + diffs) without writing anything")
 
 	what.rootCmd.AddCommand(cmd)
 	return what
@@ -135,8 +181,8 @@ func printDetected(out io.Writer, sources []bootstrap.Source) {
 
 // writeNew writes data unless the file exists and force is false.
 func writeNew(path string, data []byte, force bool) error {
-	if _, err := os.Stat(path); err == nil && !force {
-		return fmt.Errorf("%q already exists (use --force to overwrite)", path)
+	if err := checkOverwritable(path, force); err != nil {
+		return err
 	}
 	if parent := filepath.Dir(path); parent != "." && parent != "" {
 		if err := os.MkdirAll(parent, 0750); err != nil {
@@ -144,6 +190,16 @@ func writeNew(path string, data []byte, force bool) error {
 		}
 	}
 	return os.WriteFile(path, data, 0600) // #nosec G304 -- operator-supplied output path
+}
+
+// checkOverwritable reports the same error writeNew would return when path
+// already exists and force is false. Shared with bootstrap --dry-run so the
+// preview fails exactly like the real run on an existing starter model.
+func checkOverwritable(path string, force bool) error {
+	if _, err := os.Stat(path); err == nil && !force {
+		return fmt.Errorf("%q already exists (use --force to overwrite)", path)
+	}
+	return nil
 }
 
 func absModel(p string) string {

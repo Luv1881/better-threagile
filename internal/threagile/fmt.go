@@ -9,14 +9,18 @@ import (
 )
 
 func (what *Threagile) initFmt() *Threagile {
-	var writeInPlace bool
+	var writeInPlace, dryRun bool
 
 	fmtCmd := &cobra.Command{
 		Use:   FmtCommand + " [model.yaml...]",
 		Short: "Canonicalise whitespace and key ordering in model YAML files",
-		Long:  "Reads one or more model YAML files, normalises formatting, and writes the result. Use --write to update files in place (default: print to stdout).",
+		Long:  "Reads one or more model YAML files, normalises formatting, and writes the result. Use --write to update files in place (default: print to stdout), or --dry-run to preview the changes as a unified diff without writing.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			what.processArgs(cmd, args)
+
+			if dryRun && writeInPlace {
+				return fmt.Errorf("fmt: --dry-run and --write are mutually exclusive")
+			}
 
 			files := args
 			if len(files) == 0 {
@@ -40,12 +44,21 @@ func (what *Threagile) initFmt() *Threagile {
 					return fmt.Errorf("failed to marshal %q: %w", f, err)
 				}
 
-				if writeInPlace {
+				switch {
+				case dryRun:
+					changed, diffErr := writeUnifiedDiff(cmd.OutOrStdout(), f, data, formatted)
+					if diffErr != nil {
+						return fmt.Errorf("failed to render diff for %q: %w", f, diffErr)
+					}
+					if !changed {
+						cmd.Printf("unchanged: %s\n", f)
+					}
+				case writeInPlace:
 					if err := os.WriteFile(f, formatted, 0600); err != nil {
 						return fmt.Errorf("failed to write %q: %w", f, err)
 					}
 					cmd.Printf("formatted: %s\n", f)
-				} else {
+				default:
 					cmd.Printf("# %s\n", f)
 					cmd.Print(string(formatted))
 				}
@@ -55,6 +68,7 @@ func (what *Threagile) initFmt() *Threagile {
 	}
 
 	fmtCmd.Flags().BoolVarP(&writeInPlace, "write", "w", false, "write formatted output back to each file in place")
+	fmtCmd.Flags().BoolVar(&dryRun, "dry-run", false, "show a unified diff of the changes without writing anything")
 	what.rootCmd.AddCommand(fmtCmd)
 	return what
 }

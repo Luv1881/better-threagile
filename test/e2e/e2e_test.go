@@ -65,7 +65,8 @@ type result struct {
 }
 
 // run executes the built binary with the given working directory and args.
-// Root persistent flags must come before the subcommand (see HANDOVER.md).
+// Root and command-local flags may appear in either order (see
+// docs/architecture.md).
 func run(t *testing.T, dir string, args ...string) result {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -153,6 +154,18 @@ func TestListingCommands(t *testing.T) {
 	}
 }
 
+func TestInteractive_ExitWords(t *testing.T) {
+	// The interactive shell dispatches lines through cobra; the exit words are
+	// handled by the shell itself, so piping "quit" must end the process.
+	dir := t.TempDir()
+	r := runWithInput(t, dir, "quit\n", "--interactive")
+	assert.Equal(t, 0, r.code, "typing quit in interactive mode must exit cleanly (stdout: %s)", r.stdout)
+
+	// End of input (Ctrl-D equivalent) must also exit cleanly, not look like a bug.
+	r = runWithInput(t, dir, "", "--interactive")
+	assert.Equal(t, 0, r.code, "EOF in interactive mode must exit cleanly (stdout: %s)", r.stdout)
+}
+
 func TestRemainingCommands(t *testing.T) {
 	dir := t.TempDir()
 
@@ -172,7 +185,9 @@ func TestRemainingCommands(t *testing.T) {
 	assert.Equal(t, 0, r.code, r.stderr)
 	assert.NotEmpty(t, r.stdout)
 
-	// Model macros are interactive; confirm the prompt and let it apply.
+	// Model macros are interactive: this confirms the prompt path end to end and
+	// that the macro's YAML rewrite still validates (the stub has no
+	// internet-facing asset, so the macro is a no-op beyond the rewrite).
 	model := writeFile(t, dir, "threagile.yaml", readFile(t, repoPath("demo", "stub", "threagile.yaml")))
 	r = runWithInput(t, dir, "Yes\n", "execute-model-macro", "discover-attack-surface", "--model", model)
 	assert.Equal(t, 0, r.code, "execute-model-macro must apply after confirmation (stderr: %s)", r.stderr)

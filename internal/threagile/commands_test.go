@@ -151,3 +151,16 @@ func TestGenerateCICommand_ExistsAndHasFlags(t *testing.T) {
 		t.Errorf("command %q not found", GenerateCICommand)
 	}
 }
+
+func TestIsInteractiveExit(t *testing.T) {
+	for _, word := range []string{"quit", "exit", "bye", "x", "q", "QUIT", "Exit"} {
+		if !isInteractiveExit(word) {
+			t.Errorf("%q must end the interactive shell", word)
+		}
+	}
+	for _, word := range []string{"validate", "analyze-model", "quitter", ""} {
+		if isInteractiveExit(word) {
+			t.Errorf("%q must not end the interactive shell", word)
+		}
+	}
+}

@@ -3,6 +3,7 @@ package threagile
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -129,7 +130,6 @@ func (what *Threagile) initFlags() *Threagile {
 	what.rootCmd.PersistentFlags().BoolVar(&what.flags.generateReportPDFFlag, generateReportPDFFlagName, !what.config.GetSkipReportPDF(), "(deprecated) generate generating report pdf, including diagrams")
 	what.rootCmd.PersistentFlags().BoolVar(&what.flags.generateReportADOCFlag, generateReportADOCFlagName, !what.config.GetSkipReportADOC(), "(deprecated) generate generating report adoc, including diagrams")
 
-	// AttractivenessValue not available as flags
 	// ReportConfigurationValue not available as flags
 
 	what.rootCmd.PersistentFlags().StringVar(&what.flags.RulesDirValue, rulesDirFlagName, what.config.GetRulesDir(), "directory of extra YAML risk rule files to load at runtime")
@@ -143,6 +143,17 @@ func (what *Threagile) initFlags() *Threagile {
 	what.rootCmd.PersistentFlags().StringVar(&what.flags.RulePackValue, rulePackFlagName, what.config.GetRulePack(), "load a built-in methodology rule pack by name (linddun, pasta, vast)")
 
 	return what
+}
+
+// isInteractiveExit reports whether the interactive shell should end on this
+// first word (case-insensitive).
+func isInteractiveExit(word string) bool {
+	switch strings.ToLower(word) {
+	case "quit", "exit", "bye", "x", "q":
+		return true
+	default:
+		return false
+	}
 }
 
 func (what *Threagile) run(thisCmd *cobra.Command, args []string) {
@@ -183,7 +194,8 @@ func (what *Threagile) run(thisCmd *cobra.Command, args []string) {
 
 	for {
 		line, readError := shell.Readline()
-		if errors.Is(readError, readline.ErrInterrupt) {
+		if errors.Is(readError, readline.ErrInterrupt) || errors.Is(readError, io.EOF) {
+			// Ctrl-C and Ctrl-D both leave the interactive shell cleanly.
 			return
 		}
 		if readError != nil {
@@ -199,6 +211,13 @@ func (what *Threagile) run(thisCmd *cobra.Command, args []string) {
 		if parseError != nil {
 			what.rootCmd.Printf("failed to parse command line: %s", parseError.Error())
 			continue
+		}
+
+		// Ending the session is a shell concern, not a subcommand: handle the
+		// well-known words here instead of shipping a `quit` command that would
+		// also show up in --help.
+		if isInteractiveExit(params[0]) {
+			return
 		}
 
 		cmd, args, findError := what.rootCmd.Find(params)
@@ -587,7 +606,6 @@ func (what *Threagile) processArgs(cmd *cobra.Command, args []string) bool {
 		what.config.SkipReportADOCValue = !what.flags.generateReportADOCFlag
 	}
 
-	// AttractivenessValue not available as flags
 	// ReportConfigurationValue not available as flags
 
 	what.initFlags()

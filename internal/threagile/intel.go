@@ -162,6 +162,7 @@ func (what *Threagile) newIntelStatusCmd(cacheDir *string) *cobra.Command {
 				ttl  time.Duration
 			}{
 				{"kev", kev.DefaultTTL},
+				{"epss", epss.DefaultTTL},
 			}
 
 			cmd.Printf("Cache directory: %s\n\n", *cacheDir)

@@ -71,5 +71,6 @@
 |--------------------------|-------------------------------------------------------------------------------------|-----------------------|
 | `server`                 | Run in [server mode](./mode-server.md) with REST API and Web UI                     |                       |
 | `print-license`          | Print the software license                                                          |                       |
+| `print-3rd-party-licenses` | Print the licenses of bundled third-party software                                |                       |
 
 See [CLI Cookbook](./cli-cookbook.md) for real examples of every command.

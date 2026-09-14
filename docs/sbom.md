@@ -46,13 +46,18 @@ pipeline to block releases shipping a known-exploited dependency.
 | `--sbom` | (required) | CycloneDX SBOM JSON file |
 | `--cache-dir` | `~/.config/threagile/intel` | Intel cache directory |
 | `--refresh-kev` | false | Refresh the KEV catalog if stale (network) |
-| `--epss` | false | Fetch live EPSS scores for the SBOM's CVEs (network) |
+| `--epss` | false | Fetch live EPSS scores for the SBOM's CVEs (network); the result is cached for offline runs |
 | `--include-suppressed` | false | Show VEX-suppressed vulnerabilities |
 | `--fail-on-kev` | false | Exit 3 if any KEV-listed CVE is present |
 | `--format` | `text` | `text`, `markdown` (PR-comment ready), or `json` |
 | `--output` | — | Also write the rendered report to a file |
 
 ## Notes
+
+- A live `--epss` fetch **replaces** the cached snapshot with the scores for the
+  current SBOM's CVEs (last successful fetch wins; it is a lookup cache, not a
+  complete CVE database). Without `--epss`, cached scores are used regardless of
+  age; `threagile intel status` shows how old they are.
 
 - Correlation operates on vulnerabilities **embedded in the SBOM** (CVE IDs from
   a scanner). A components-only SBOM with no `vulnerabilities` array yields no

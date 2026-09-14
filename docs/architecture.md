@@ -7,7 +7,7 @@ for the command catalogue).
 
 ## The shape of the tool
 
-One static Go binary, no runtime service. A threat model is a YAML file; the
+One static Go binary (plus an optional `server` mode for the REST API/UI). A threat model is a YAML file; the
 binary parses it, runs risk rules over the resulting typed model, and writes
 reports (PDF/AsciiDoc/JSON/SARIF/Excel), gate verdicts and diagrams. Everything
 is deterministic: the same model produces byte-identical output, which is what
@@ -23,17 +23,18 @@ model YAML ──► pkg/input          raw schema (yaml tags, includes:, defaul
                  │                trust boundary membership, risk tracking
                  ▼  types.Model
               pkg/model/read.go   analysis pipeline
-                 │                ├─ parallel rule execution (WaitGroup)
                  │                ├─ RAA (relative attacker attractiveness)
-                 │                └─ risk status application (tracking/expiry)
+                 │                ├─ parallel rule execution (WaitGroup)
+                 │                └─ wildcard tracking, expiry, status application
                  ▼
               pkg/report          PDF, AsciiDoc, JSON, SARIF, GitLab SAST,
-              pkg/gate            Excel, diagrams (Graphviz/DOT)
+                 │                Excel, diagrams (Graphviz/DOT)
+              pkg/gate            policy verdicts (exit 3)
               internal/threagile  CLI: flags → Config → commands
 ```
 
 `internal/threagile` is the only place that knows about flags, config files and
-process exit codes; `pkg/` is the engine and never imports `internal/`.
+process exit codes; production code in `pkg/` never imports `internal/`.
 
 ## Package map
 
@@ -42,7 +43,7 @@ process exit codes; `pkg/` is the engine and never imports `internal/`.
 | `cmd/threagile` | `main`, version stamp |
 | `internal/threagile` | CLI commands, config resolution, exit codes (0 ok / 1 error / 3 gate), `--dry-run` previews |
 | `pkg/input` | The YAML schema users write; `includes:` merging; defaults |
-| `pkg/types` | The domain model (`Model`, `TechnicalAsset`, `Risk`, ...), enums, RAA, risk status/acceptance |
+| `pkg/types` | The domain model (`Model`, `TechnicalAsset`, `Risk`, ...), enums, risk status/acceptance (the RAA *field* lives on `TechnicalAsset`; its calculation is `pkg/model/raa.go`) |
 | `pkg/model` | `ParseModel` (input → types) and `ReadAndAnalyzeModel` (parse + rules + statuses + RAA) |
 | `pkg/risks` | Built-in Go rules (`builtin/`), the script-rule DSL (`script/`), methodology packs (`methodologies/`, embedded) |
 | `pkg/report` | Every output format and the embedded report template/logo |
@@ -68,17 +69,20 @@ process exit codes; `pkg/` is the engine and never imports `internal/`.
   application.
 - **Script rules get a read-only model.** The script-rule engine converts the
   model to its map form once and shares it across workers; rules must not write.
-- **Embedded assets have canonical sources at the repo root.** `pkg/report/template`,
-  `pkg/examples/assets` and `pkg/server/static` are snapshots of files under
-  `report/`, `support/`, `demo/` and `server/`; sync tests
-  (`assets_sync_test.go`, `static_sync_test.go`) compare them byte-for-byte.
-  Change the canonical file, re-copy, and the test passes.
+- **Embedded assets have canonical sources at the repo root.** `pkg/examples/assets`
+  snapshots `demo/` and `support/`, and `pkg/server/static` snapshots
+  `server/static`; `assets_sync_test.go` and `static_sync_test.go` compare them
+  byte-for-byte. Change the canonical file, re-copy, and the test passes.
+  (`pkg/report/template` holds its files directly — templates are edited in
+  place, no snapshot copy.)
 - **App-folder files win over embedded ones.** Importers and report generation
   prefer a file in `--app-dir` and fall back to the embedded copy, so Docker
   layouts and hand-customized assets keep working.
-- **Root flags must come before command-local flags on the CLI.**
-  `processSystemArgs(os.Args[1:])` reads `os.Args` directly; tests use
-  `newTestAppWithArgs(...)`.
+- **Root and command-local flags may appear in either order.** The extraction
+  pass (`processSystemArgs`) whitelists unknown flags so a root flag after a
+  command-local one is still honoured; `flag_ordering_test.go` guards this.
+  Tests construct the app via `newTestAppWithArgs(...)` because `Init()` reads
+  `os.Args`.
 - **`validate` must never accept a model `analyze-model` rejects.** `validate`
   runs the same typed conversion (without rules) — if you add a parse-time
   check, validate picks it up for free; don't add a second parser.
@@ -110,7 +114,9 @@ python3 test/fidelity/compare.py test/fidelity/corpus.tsv --binary ./bin/threagi
   usually means a stale cache: rerun with `GOLANGCI_LINT_CACHE=$(mktemp -d)`.
 - `#nosec` annotations require a one-line justification comment (see
   `pkg/report/report_diagrams.go` for the house style).
-- CI enforces a coverage floor (52%) and fuzz smoke tests for every importer.
+- CI enforces a coverage floor (52%) and runs fuzz smoke tests for a subset of
+  the importers; every parser has a fuzz target, run them all locally with
+  `go test ./pkg/import/... -run=NONE -fuzz=FuzzImport -fuzztime=10s`.
 - When changing behaviour of a command, add or update the assertion in
   `test/e2e/e2e_test.go` — it runs the real binary and checks exit codes and
   written artefacts, not just in-process return values.
